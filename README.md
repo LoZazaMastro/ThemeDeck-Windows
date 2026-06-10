@@ -1,123 +1,81 @@
-# ThemeDeck Documentation
+# ThemeDeck Windows
 
-<a href='https://ko-fi.com/U6U516PSAI' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi5.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+ThemeDeck Windows is a Windows-friendly fork of [ThemeDeck](https://github.com/BrenticusMaximus/ThemeDeck) for Decky Loader.
 
-## Overview
+It lets you add music to Steam game pages in Gaming Mode, with optional ambient music for the main interface and a separate Store track. This fork keeps the Decky plugin name as **ThemeDeck**, while adding Windows-focused fixes and quality-of-life features.
 
-ThemeDeck lets you add and manage custom music across your Steam library and key Steam UI pages.
+## What It Does
 
-<a href="https://discord.gg/Smh4K5Ad">For support, suggestions, etc. please visit my Discord</a>.
+- Plays a custom music track when you open a game's details page.
+- Lets you pick local audio files or search YouTube with `yt-dlp`.
+- Downloads and assigns tracks from YouTube results.
+- Supports preview playback before assigning a track.
+- Supports per-game volume, start skip, and loop settings.
+- Adds a general volume control only for per-game tracks.
+- Supports a global/ambient track for non-game pages.
+- Supports a separate Store-only track.
+- Stops ThemeDeck music when a game is launched or running.
+- Can auto-assign missing game tracks using YouTube search.
+- Detects the Decky/Steam language and translates the UI automatically.
 
-## Install Package
+## Languages
 
-1. Go to https://github.com/BrenticusMaximus/ThemeDeck/releases/ and download the latest ZIP, not the source code.
+The UI can automatically switch between:
 
-2. Put it anywhere on your steam deck where you'll be able to find it later.
+- English
+- Italian
+- French
+- Spanish
+- Portuguese
+- Brazilian Portuguese
+- German
+- Dutch
+- Ukrainian
+- Chinese
+- Japanese
 
-3. On steam deck, go to decky settings, general, enable developer mode.
+If the Steam/Decky language is not supported, ThemeDeck falls back to English.
 
-4. On steam deck, go to decky settings, developer, 'install plugin from zip file', and find the zip from step 2. 
+## Windows Notes
 
-![ThemeDeck February 19 2026 update thumbnail](https://images.steamusercontent.com/ugc/10217922894651388729/0056712F90842A587703E222C9AD211D53B2344E/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false)
+This fork is aimed at Decky Loader running on Windows.
 
-## Main Features
+The Windows release includes `yt-dlp.exe` so YouTube search/download can work without relying on Linux-only command paths. The plugin only controls its own audio playback. It does not mute or change the Windows system volume.
 
-- Add custom music to any game page in your library.
-- Use either local music files or YouTube search to find tracks.
-- Preview tracks before assigning them.
-- One-tap "Download & Assign" from YouTube results.
-- Auto-fill search terms based on the game you selected.
-- Highlight which YouTube result is already assigned.
-- Set per-game volume.
-- Master volume control to override all game music.
-- Skip silent intros with per-game "truncate start" timing.
-- Remove or change a game's assigned track at any time.
-- Auto-play music when opening game pages.
-- Displays a live "Now Playing" card overlay on game pages.
-- Includes a real, beat-reactive audio visualizer in the "Now Playing" card.
-- Assign a global/ambient track for non-game areas.
-- Assign a separate store-only track for Steam Store pages.
-- Choose how ambient music behaves when interrupted (stop, pause, or mute until return).
-- Optionally disable ambient music while in the Steam Store.
-- Prevent all plugin music from playing in Desktop Mode.
-- Prevent all plugin music from playing while a game is launched/running.
-- Bulk auto-assign music to games that don’t have tracks yet.
-- See live bulk progress and stop the process anytime.
-- View a list of games still missing music.
-- See live name-loading progress while that missing-games list is built.
-- Works with both installed and uninstalled games in your library.
+## Installation
 
-## Release Updates
+1. Download the latest release ZIP.
+2. Open Decky Loader.
+3. Enable developer mode if needed.
+4. Install the ZIP through Decky's developer/plugin install flow.
+5. Restart Steam if Decky asks for it.
 
-## April 27, 2026 Update (v2.6.0)
+After installation, open a game's details page, use the gear menu, and choose the ThemeDeck music option.
 
-- Added a ThemeDeck master volume override at the bottom of settings.
-- At 100%, ThemeDeck respects each game/global/store track volume; below 100%, all ThemeDeck music plays at the selected master level.
+## FAQ
 
-## April 21, 2026 Update (v2.5.5)
+### Does this rename the plugin inside Decky?
 
-- Added a "Now Playing" overlay card that shows the current track and source context.
-- Added a real audio-reactive visualizer tied to the active music playback.
-- Improved visualizer reliability across game-to-game navigation by rebuilding audio analysis when track sources change.
+No. The repository is called **ThemeDeck Windows**, but the plugin still appears as **ThemeDeck** in Decky.
 
-## March 3, 2026 Update (v2.5.4)
+### Does it change my PC volume?
 
-This update includes UI and playback behavior improvements:
+No. ThemeDeck only changes the volume of audio played by ThemeDeck itself.
 
-- Moved per-game controls (Volume, Start skip, Loop track) from the long main settings list into each game page.
-- Added a per-game Play/Pause preview button beside Remove music on each game page.
-- Fixed playback precedence on game pages: assigned game music now takes priority; if a game has no assigned track, global ambient continues.
-- Fixed context-menu behavior so pressing Start on a game from home/library no longer starts that game music outside the full game page.
+### Does YouTube search cost anything?
 
-## February 28, 2026 Update (v2.5.3)
+No. It uses `yt-dlp`. Availability depends on YouTube and `yt-dlp`, so updating `yt-dlp` from inside the plugin can help if search/download stops working.
 
-- Improved playback stability so global/ambient audio no longer conflicts with per-game playback during navigation/launch transitions.
-- Added per-track loop control for game, global, and store tracks so each assignment can loop or play once.
+### Can I still use local files?
 
-## February 27, 2026 Update (v2.5.2)
+Yes. Local files are still supported, and they are usually the most stable option.
 
-- Added finer control for when game music stops: launch start or launch finish.
-- Added a dedicated store-track enable/disable control.
+## Credits
 
-## February 25, 2026 Update (v2.5.1)
+ThemeDeck was originally created by [BrenticusMaximus](https://github.com/BrenticusMaximus).
 
-- Fixed a critical launch-state issue so ThemeDeck does not play global/ambient or game-page music while a game is running.
+This Windows fork is maintained by [ZazaMastro](https://github.com/ZazaMastro).
 
-## February 25, 2026 Update (v2.5.0)
+## License
 
-- Added bulk auto-assign for games without music.
-- Added a "Show games without music" list with live name-resolution progress.
-- Improved game ID handling to reduce duplicate/alias entries.
-
-## February 25, 2026 Update (v2.4.2)
-
-- Prevented global/ambient auto-play inside ThemeDeck assignment pages, so global music does not play while selecting or assigning per-game tracks.
-
-## February 24, 2026 Update (v2.4.1)
-
-- Ensured ThemeDeck does not play any music tracks while Steam is in Desktop Mode.
-
-## February 24, 2026 Update (v2.4.0)
-
-- Added an optional **store-only music track** that plays only on Steam Store pages.
-- Included independent preview, volume, remove, and truncate-start controls for the store track.
-
-## February 23, 2026 Update (v2.3.0)
-
-- Added an optional **global/ambient music track** for non-game pages.
-- Included separate volume and playback controls for the ambient track.
-
-## February 21, 2026 Update (v2.2.0)
-
-- Added support for assigning ThemeDeck music to games that are not installed yet, as long as the game has a Steam game page.
-
-## February 21, 2026 Update (v2.1.0)
-
-- Added per-game **Truncate beginning of song** (0-30 seconds) so users can skip silent intros with a custom start offset.
-
-## February 19, 2026 Update (v2.0.0)
-
-- Added **YouTube search/download support powered by `yt-dlp`** for searching, previewing, downloading, and assigning game music directly in ThemeDeck.
-- Kept support for manually assigning local music tracks.
-
-<a href='https://ko-fi.com/U6U516PSAI' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi5.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+ThemeDeck Windows keeps the original BSD 3-Clause license.

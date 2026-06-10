@@ -1,7 +1,7 @@
 {
   "name": "themedeck",
-  "version": "2.6.0",
-  "description": "ThemeDeck plays game, global, and store-specific music tracks based on where you are in Gaming Mode.",
+  "version": "2.5.4",
+  "description": "A Windows-friendly Decky Loader fork of ThemeDeck for game, ambient, and store music in Steam Gaming Mode.",
   "type": "module",
   "scripts": {
     "stamp": "node scripts/stamp-build.mjs",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-name/themedeck.git"
+    "url": "git+https://github.com/ZazaMastro/ThemeDeck-Windows.git"
   },
   "keywords": [
     "decky",
@@ -20,12 +20,12 @@
     "music",
     "themes"
   ],
-  "author": "Your Name <you@example.com>",
+  "author": "BrenticusMaximus, ZazaMastro",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/your-name/themedeck/issues"
+    "url": "https://github.com/ZazaMastro/ThemeDeck-Windows/issues"
   },
-  "homepage": "https://github.com/your-name/themedeck#readme",
+  "homepage": "https://github.com/ZazaMastro/ThemeDeck-Windows#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.1",
     "@decky/ui": "^4.7.2",

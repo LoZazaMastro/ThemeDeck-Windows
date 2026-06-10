@@ -6,27 +6,40 @@ import html as html_lib
 import json
 import os
 import re
+import secrets
 import shutil
 import ssl
 import subprocess
 import tempfile
 import threading
+import time
 import traceback
 import urllib.parse
 import urllib.request
 import urllib.error
-import time
+import zlib
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
 import decky
 
-SUPPORTED_AUDIO_EXTENSIONS = {"mp3", "aac", "flac", "ogg", "wav", "m4a"}
+IS_WINDOWS = os.name == "nt"
+SUPPORTED_AUDIO_EXTENSIONS = {"mp3", "aac", "flac", "ogg", "wav", "m4a", "webm"}
 YTDLP_RELEASE_URLS = (
-    "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp",
-    "https://yt-dlp.org/downloads/latest/yt-dlp",
-    "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
+    (
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
+        "https://yt-dlp.org/downloads/latest/yt-dlp.exe",
+    )
+    if IS_WINDOWS
+    else (
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp",
+        "https://yt-dlp.org/downloads/latest/yt-dlp",
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
+    )
 )
+NOW_PLAYING_SNAPSHOT_URL = "http://127.0.0.1:38947/snapshot"
+NOW_PLAYING_IGNORE_TOKENS = ("steam", "steamwebhelper", "decky", "themedeck", "theme deck")
 
 
 def clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
@@ -42,30 +55,41 @@ class Plugin:
         self._tracks: dict[str, dict[str, Any]] = {}
         self._global_track_key = "__global__"
         self._store_track_key = "__store__"
+        self._plugin_dir = Path(
+            getattr(decky, "DECKY_PLUGIN_DIR", Path(__file__).resolve().parent)
+        )
         self._settings_dir = Path(decky.DECKY_PLUGIN_SETTINGS_DIR)
         self._tracks_file = self._settings_dir / "tracks.json"
         self._bin_dir = self._settings_dir / "bin"
-        self._yt_dlp_path = self._bin_dir / "yt-dlp"
+        self._yt_dlp_name = "yt-dlp.exe" if IS_WINDOWS else "yt-dlp"
+        self._yt_dlp_path = self._bin_dir / self._yt_dlp_name
+        self._ffmpeg_name = "ffmpeg.exe" if IS_WINDOWS else "ffmpeg"
+        self._ffprobe_name = "ffprobe.exe" if IS_WINDOWS else "ffprobe"
         self._yt_venv_dir = self._settings_dir / "ytvenv"
-        self._yt_venv_bin = self._yt_venv_dir / "bin"
-        self._yt_venv_python = self._yt_venv_bin / "python"
-        self._yt_venv_yt_dlp = self._yt_venv_bin / "yt-dlp"
+        self._yt_venv_bin = self._yt_venv_dir / ("Scripts" if IS_WINDOWS else "bin")
+        self._yt_venv_python = self._yt_venv_bin / ("python.exe" if IS_WINDOWS else "python")
+        self._yt_venv_yt_dlp = self._yt_venv_bin / self._yt_dlp_name
         self._downloads_dir = self._settings_dir / "downloads"
-        self._playback_process: subprocess.Popen[bytes] | None = None
-        self._playback_player: str | None = None
-        self._playback_started_at: float = 0.0
-        self._playback_start_offset: float = 0.0
-        self._playback_log_file = self._settings_dir / "backend-player.log"
+        self._delete_downloaded_tracks_task: asyncio.Task[Any] | None = None
+        self._delete_downloaded_tracks_job_id = 0
+        self._delete_downloaded_tracks_progress = (
+            self._new_delete_downloaded_tracks_progress("idle")
+        )
+        self._audio_server: ThreadingHTTPServer | None = None
+        self._audio_server_thread: threading.Thread | None = None
+        self._audio_server_port: int | None = None
+        self._audio_server_token = secrets.token_urlsafe(24)
 
     async def _main(self) -> None:
         self._settings_dir.mkdir(parents=True, exist_ok=True)
         self._bin_dir.mkdir(parents=True, exist_ok=True)
         self._downloads_dir.mkdir(parents=True, exist_ok=True)
         self._load_tracks()
+        await asyncio.to_thread(self._start_audio_server)
         decky.logger.info("ThemeDeck backend ready")
 
     async def _unload(self) -> None:
-        self._stop_playback_process()
+        await asyncio.to_thread(self._stop_audio_server)
         decky.logger.info("ThemeDeck backend unloaded")
 
     async def _migration(self) -> None:
@@ -76,183 +100,14 @@ class Plugin:
     async def get_tracks(self) -> dict[str, dict[str, Any]]:
         return self._tracks
 
-    async def play_track_backend(
-        self,
-        path: str,
-        volume: float = 1.0,
-        loop: bool = True,
-        start_offset: float = 0.0,
-    ) -> dict[str, Any]:
-        resolved = Path(path).expanduser().resolve()
-        if not resolved.exists() or not resolved.is_file():
-            raise FileNotFoundError(f"Audio file not found: {resolved}")
-        try:
-            resolved.open("rb").close()
-        except PermissionError as error:
-            raise PermissionError(f"Permission denied: {resolved}") from error
-
-        player = self._resolve_audio_player()
-        if not player:
-            raise RuntimeError("No supported backend player found")
-
-        volume_pct = int(round(clamp(volume) * 100))
-        offset_seconds = clamp_seconds(start_offset)
-        self._stop_playback_process()
-
-        ffplay_path = self._find_command_path("ffplay")
-        if player == "mpv":
-            command = [
-                "mpv",
-                "--no-video",
-                "--quiet",
-                "--audio-display=no",
-                f"--volume={volume_pct}",
-                f"--start={offset_seconds}",
-                "--loop-file=inf" if loop else "--loop-file=no",
-                str(resolved),
-            ]
-        elif player == "mpg123":
-            scale = max(1, int(round(clamp(volume) * 32768)))
-            command = [
-                "mpg123",
-                "-q",
-                "-f",
-                str(scale),
-            ]
-            if loop:
-                command.extend(["--loop", "-1"])
-            # mpg123 accepts frame-based skip, not second-based seek; keep behavior
-            # stable by always starting from beginning for backend fallback.
-            command.append(str(resolved))
-        elif player == "ffmpeg":
-            command = [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-nostdin",
-            ]
-            if loop:
-                command.extend(["-stream_loop", "-1"])
-            command.extend(
-                [
-                    "-ss",
-                    str(offset_seconds),
-                    "-i",
-                    str(resolved),
-                    "-vn",
-                    "-af",
-                    f"volume={clamp(volume)}",
-                    "-f",
-                    "pulse",
-                    "default",
-                ]
-            )
-        elif player == "ffplay":
-            ffplay_exec = ffplay_path or "ffplay"
-            command = [
-                ffplay_exec,
-                "-nodisp",
-                "-loglevel",
-                "error",
-                "-ss",
-                str(offset_seconds),
-                "-af",
-                f"volume={clamp(volume)}",
-            ]
-            if loop:
-                # ffplay on Steam Deck does not support -stream_loop; use -loop 0.
-                command.extend(["-loop", "0"])
-            else:
-                command.append("-autoexit")
-            command.append(str(resolved))
-        else:
-            raise RuntimeError(f"Unsupported backend player selection: {player}")
-
-        decky.logger.info(
-            "play_track_backend start "
-            f"player={player} path={resolved} "
-            f"ffplay={ffplay_path} ffmpeg={self._find_command_path('ffmpeg')} "
-            f"mpv={self._find_command_path('mpv')} mpg123={self._find_command_path('mpg123')}"
-        )
-        self._settings_dir.mkdir(parents=True, exist_ok=True)
-        log_handle = self._playback_log_file.open("ab")
-        log_handle.write(
-            f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] start player={player} path={resolved}\n".encode(
-                "utf-8", errors="ignore"
-            )
-        )
-        log_handle.flush()
-        process = subprocess.Popen(
-            command,
-            stdout=log_handle,
-            stderr=log_handle,
-            stdin=subprocess.DEVNULL,
-            start_new_session=True,
-            env=self._build_backend_audio_env(),
-        )
-        self._playback_process = process
-        self._playback_player = player
-        self._playback_started_at = time.time()
-        self._playback_start_offset = offset_seconds
-        threading.Thread(
-            target=self._monitor_playback_process,
-            args=(process, player, str(resolved), log_handle),
-            daemon=True,
-        ).start()
-        return {
-            "ok": True,
-            "pid": process.pid,
-            "player": player,
-            "path": str(resolved),
-            "loop": bool(loop),
-            "volume": clamp(volume),
-            "start_offset": offset_seconds,
-        }
-
-    async def stop_backend_playback(self) -> dict[str, Any]:
-        stopped = self._stop_playback_process()
-        return {"ok": True, "stopped": stopped}
-
-    async def get_backend_playback_state(self) -> dict[str, Any]:
-        process = self._playback_process
-        running = bool(process and process.poll() is None)
-        elapsed = 0.0
-        if running:
-            elapsed = max(0.0, time.time() - self._playback_started_at)
-        return {
-            "running": running,
-            "player": self._playback_player,
-            "pid": process.pid if process else None,
-            "elapsed": elapsed,
-            "start_offset": self._playback_start_offset,
-        }
-
-    async def log_client_event(
-        self, level: str, message: str, payload: dict[str, Any] | None = None
-    ) -> bool:
-        level_name = str(level or "info").strip().lower()
-        normalized_message = self._trim_message(str(message or "").strip() or "event", 240)
-        payload_suffix = ""
-        if payload is not None:
-            try:
-                payload_text = json.dumps(payload, ensure_ascii=True, sort_keys=True)
-            except Exception:
-                payload_text = repr(payload)
-            payload_suffix = f" payload={self._trim_message(payload_text, 1400)}"
-        line = f"[client] {normalized_message}{payload_suffix}"
-        if level_name == "error":
-            decky.logger.error(line)
-        elif level_name in {"warn", "warning"}:
-            decky.logger.warning(line)
-        elif level_name == "debug":
-            decky.logger.debug(line)
-        else:
-            decky.logger.info(line)
-        return True
-
     async def get_localconfig_app_ids(self) -> dict[str, Any]:
-        return {"app_ids": self._read_localconfig_app_ids()}
+        return {
+            "app_ids": self._read_localconfig_app_ids(),
+            "shortcuts": self._read_steam_shortcuts(),
+        }
+
+    async def get_external_media_state(self) -> dict[str, Any]:
+        return await asyncio.to_thread(self._read_external_media_state)
 
     async def resolve_store_app_names(self, app_ids: list[int]) -> dict[str, str]:
         unique_ids = sorted(
@@ -310,7 +165,7 @@ class Plugin:
         return resolved
 
     async def set_track(
-        self, app_id: int, path: str, filename: str
+        self, app_id: int, path: str, filename: str, normalized: bool | None = None
     ) -> dict[str, dict[str, Any]]:
         key = str(app_id)
         decky.logger.info(f"set_track request app={app_id} path={path}")
@@ -322,13 +177,22 @@ class Plugin:
                 resolved.open("rb").close()
             except PermissionError as error:
                 raise PermissionError(f"Permission denied: {resolved}") from error
+            previous = self._tracks.get(key, {})
+            keep_previous_normalized = (
+                normalized is None and str(resolved) == str(previous.get("path", ""))
+            )
             self._tracks[key] = {
                 "app_id": app_id,
                 "path": str(resolved),
                 "filename": filename,
-                "volume": self._tracks.get(key, {}).get("volume", 1.0),
-                "start_offset": self._tracks.get(key, {}).get("start_offset", 0.0),
-                "loop": bool(self._tracks.get(key, {}).get("loop", True)),
+                "volume": previous.get("volume", 1.0),
+                "start_offset": previous.get("start_offset", 0.0),
+                "loop": bool(previous.get("loop", True)),
+                "normalized": bool(
+                    previous.get("normalized", False)
+                    if keep_previous_normalized
+                    else normalized
+                ),
             }
             self._save_tracks()
             decky.logger.info(f"set_track stored app={app_id} path={resolved}")
@@ -338,6 +202,9 @@ class Plugin:
                 f"set_track failed app={app_id} path={path}: {error}"
             )
             raise
+
+    async def get_track_audio_url(self, path: str) -> dict[str, Any]:
+        return await asyncio.to_thread(self._get_track_audio_url_sync, path)
 
     async def load_track_audio(self, path: str) -> dict[str, Any]:
         resolved = Path(path).expanduser().resolve()
@@ -350,15 +217,7 @@ class Plugin:
         except PermissionError as error:
             raise PermissionError(f"Permission denied: {resolved}") from error
 
-        suffix = resolved.suffix.lower().lstrip(".")
-        mime = {
-            "mp3": "audio/mpeg",
-            "aac": "audio/aac",
-            "flac": "audio/flac",
-            "ogg": "audio/ogg",
-            "wav": "audio/wav",
-            "m4a": "audio/mp4",
-        }.get(suffix, "application/octet-stream")
+        mime = self._mime_for_audio_path(resolved)
 
         encoded = base64.b64encode(data).decode("ascii")
         stats = resolved.stat()
@@ -366,6 +225,209 @@ class Plugin:
             f"load_track_audio served bytes={len(data)} mtime={stats.st_mtime}"
         )
         return {"data": encoded, "mime": mime, "mtime": stats.st_mtime}
+
+    def _mime_for_audio_path(self, path: Path) -> str:
+        suffix = path.suffix.lower().lstrip(".")
+        return {
+            "mp3": "audio/mpeg",
+            "aac": "audio/aac",
+            "flac": "audio/flac",
+            "ogg": "audio/ogg",
+            "wav": "audio/wav",
+            "m4a": "audio/mp4",
+            "webm": "audio/webm",
+        }.get(suffix, "application/octet-stream")
+
+    def _known_audio_paths(self) -> set[str]:
+        paths: set[str] = set()
+        for track in list(self._tracks.values()):
+            path = track.get("path") if isinstance(track, dict) else None
+            if not path:
+                continue
+            try:
+                paths.add(str(Path(str(path)).expanduser().resolve()))
+            except Exception:
+                continue
+        return paths
+
+    def _can_stream_audio_path(self, path: Path) -> bool:
+        try:
+            resolved = path.expanduser().resolve()
+        except Exception:
+            return False
+        if not resolved.exists() or not resolved.is_file():
+            return False
+        if resolved.suffix.lower().lstrip(".") not in SUPPORTED_AUDIO_EXTENSIONS:
+            return False
+        return str(resolved) in self._known_audio_paths()
+
+    def _start_audio_server(self) -> None:
+        if self._audio_server:
+            return
+
+        plugin = self
+
+        class ThemeDeckAudioRequestHandler(BaseHTTPRequestHandler):
+            server_version = "ThemeDeckAudio/1.0"
+
+            def do_OPTIONS(self) -> None:
+                self.send_response(204)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Range")
+                self.end_headers()
+
+            def do_HEAD(self) -> None:
+                plugin._handle_audio_stream_request(self, head_only=True)
+
+            def do_GET(self) -> None:
+                plugin._handle_audio_stream_request(self, head_only=False)
+
+            def log_message(self, _format: str, *_args: Any) -> None:
+                return
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), ThemeDeckAudioRequestHandler)
+        server.daemon_threads = True
+        thread = threading.Thread(
+            target=server.serve_forever,
+            name="ThemeDeckAudioServer",
+            daemon=True,
+        )
+        thread.start()
+        self._audio_server = server
+        self._audio_server_thread = thread
+        self._audio_server_port = int(server.server_address[1])
+        decky.logger.info(
+            f"ThemeDeck audio stream server listening on 127.0.0.1:{self._audio_server_port}"
+        )
+
+    def _stop_audio_server(self) -> None:
+        server = self._audio_server
+        if not server:
+            return
+        self._audio_server = None
+        self._audio_server_port = None
+        try:
+            server.shutdown()
+            server.server_close()
+        except Exception as error:
+            decky.logger.error(f"Failed to stop audio stream server: {error}")
+        thread = self._audio_server_thread
+        self._audio_server_thread = None
+        if thread and thread.is_alive():
+            thread.join(timeout=1)
+
+    def _get_track_audio_url_sync(self, path: str) -> dict[str, Any]:
+        resolved = Path(path).expanduser().resolve()
+        if not self._can_stream_audio_path(resolved):
+            raise PermissionError(f"Audio file is not assigned in ThemeDeck: {resolved}")
+        self._start_audio_server()
+        if not self._audio_server_port:
+            raise RuntimeError("ThemeDeck audio stream server is not available")
+        stats = resolved.stat()
+        query = urllib.parse.urlencode(
+            {
+                "token": self._audio_server_token,
+                "path": str(resolved),
+                "v": str(stats.st_mtime),
+            }
+        )
+        return {
+            "url": f"http://127.0.0.1:{self._audio_server_port}/audio?{query}",
+            "mime": self._mime_for_audio_path(resolved),
+            "mtime": stats.st_mtime,
+            "size": stats.st_size,
+        }
+
+    def _handle_audio_stream_request(
+        self, handler: BaseHTTPRequestHandler, head_only: bool
+    ) -> None:
+        try:
+            parsed = urllib.parse.urlparse(handler.path)
+            if parsed.path != "/audio":
+                handler.send_error(404)
+                return
+
+            params = urllib.parse.parse_qs(parsed.query)
+            token = params.get("token", [""])[0]
+            if token != self._audio_server_token:
+                handler.send_error(403)
+                return
+
+            raw_path = params.get("path", [""])[0]
+            if not raw_path:
+                handler.send_error(400)
+                return
+
+            resolved = Path(raw_path).expanduser().resolve()
+            if not self._can_stream_audio_path(resolved):
+                handler.send_error(403)
+                return
+
+            file_size = resolved.stat().st_size
+            if file_size <= 0:
+                handler.send_error(404)
+                return
+
+            start = 0
+            end = file_size - 1
+            status = 200
+            range_header = handler.headers.get("Range", "")
+            if range_header:
+                match = re.match(r"bytes=(\d*)-(\d*)$", range_header.strip())
+                if not match:
+                    handler.send_error(416)
+                    return
+                start_text, end_text = match.groups()
+                if start_text:
+                    start = int(start_text)
+                    end = int(end_text) if end_text else file_size - 1
+                elif end_text:
+                    suffix_length = int(end_text)
+                    start = max(file_size - suffix_length, 0)
+                    end = file_size - 1
+                if start < 0 or start >= file_size or end < start:
+                    handler.send_response(416)
+                    handler.send_header("Content-Range", f"bytes */{file_size}")
+                    handler.send_header("Access-Control-Allow-Origin", "*")
+                    handler.end_headers()
+                    return
+                end = min(end, file_size - 1)
+                status = 206
+
+            content_length = end - start + 1
+            handler.send_response(status)
+            handler.send_header("Content-Type", self._mime_for_audio_path(resolved))
+            handler.send_header("Accept-Ranges", "bytes")
+            handler.send_header("Content-Length", str(content_length))
+            handler.send_header("Access-Control-Allow-Origin", "*")
+            handler.send_header("Cache-Control", "private, max-age=3600")
+            if status == 206:
+                handler.send_header(
+                    "Content-Range", f"bytes {start}-{end}/{file_size}"
+                )
+            handler.end_headers()
+
+            if head_only:
+                return
+
+            remaining = content_length
+            with resolved.open("rb") as audio_file:
+                audio_file.seek(start)
+                while remaining > 0:
+                    chunk = audio_file.read(min(256 * 1024, remaining))
+                    if not chunk:
+                        break
+                    handler.wfile.write(chunk)
+                    remaining -= len(chunk)
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            return
+        except Exception as error:
+            decky.logger.error(f"Audio stream request failed: {error}")
+            try:
+                handler.send_error(500)
+            except Exception:
+                pass
 
     async def set_volume(
         self, app_id: int, volume: float
@@ -515,6 +577,50 @@ class Plugin:
         self._save_tracks()
         return self._tracks
 
+    async def delete_downloaded_tracks(self) -> dict[str, Any]:
+        return await asyncio.to_thread(self._delete_downloaded_tracks_sync)
+
+    async def start_delete_downloaded_tracks(self) -> dict[str, Any]:
+        if (
+            self._delete_downloaded_tracks_task
+            and not self._delete_downloaded_tracks_task.done()
+        ):
+            return dict(self._delete_downloaded_tracks_progress)
+
+        self._delete_downloaded_tracks_job_id += 1
+        job_id = self._delete_downloaded_tracks_job_id
+        self._set_delete_downloaded_tracks_progress(
+            {
+                "running": True,
+                "status": "planning",
+                "total": 0,
+                "completed": 0,
+                "total_files": 0,
+                "removed_files": 0,
+                "total_tracks": 0,
+                "removed_tracks": 0,
+                "current_path": "",
+                "message": "Preparing deletion...",
+                "error": "",
+                "updated_at": time.time(),
+            }
+        )
+        self._delete_downloaded_tracks_task = asyncio.create_task(
+            self._delete_downloaded_tracks_worker(job_id)
+        )
+        return dict(self._delete_downloaded_tracks_progress)
+
+    async def get_delete_downloaded_tracks_progress(self) -> dict[str, Any]:
+        return dict(self._delete_downloaded_tracks_progress)
+
+    async def get_audio_normalization_status(self) -> dict[str, Any]:
+        invocation = self._resolve_ffmpeg_invocation()
+        return {
+            "available": bool(invocation),
+            "path": invocation.get("path") if invocation else None,
+            "source": invocation.get("source") if invocation else None,
+        }
+
     async def list_directory(
         self, path: str | None = None
     ) -> dict[str, Any]:
@@ -566,9 +672,13 @@ class Plugin:
 
     async def update_yt_dlp(self) -> dict[str, Any]:
         self._bin_dir.mkdir(parents=True, exist_ok=True)
-        venv_error = await self._install_yt_dlp_in_venv()
+        venv_error = None if IS_WINDOWS else await self._install_yt_dlp_in_venv()
         status = await self.get_yt_dlp_status()
-        if status.get("installed") and status.get("source") in {"venv", "system"}:
+        if (
+            not IS_WINDOWS
+            and status.get("installed")
+            and status.get("source") in {"venv", "system"}
+        ):
             if status.get("version"):
                 decky.logger.info(
                     f"yt-dlp available via {status.get('source')} ({status.get('version')})"
@@ -576,7 +686,9 @@ class Plugin:
             return status
 
         file_descriptor, temp_name = tempfile.mkstemp(
-            prefix="yt-dlp-", dir=str(self._bin_dir)
+            prefix="yt-dlp-",
+            suffix=".exe" if IS_WINDOWS else "",
+            dir=str(self._bin_dir),
         )
         os.close(file_descriptor)
         temp_path = Path(temp_name)
@@ -597,10 +709,10 @@ class Plugin:
             decky.logger.info(f"yt-dlp updated successfully ({version})")
         except Exception as error:
             decky.logger.error(f"Failed to update yt-dlp: {error}")
-            pip_error = await self._try_install_yt_dlp_with_pip()
+            pip_error = None if IS_WINDOWS else await self._try_install_yt_dlp_with_pip()
             status = await self.get_yt_dlp_status()
             if status.get("installed"):
-                decky.logger.info("yt-dlp became available via pip/system fallback")
+                decky.logger.info("yt-dlp update failed; keeping current available binary")
                 return status
             summary = self._trim_message(str(error), 140)
             if venv_error:
@@ -661,8 +773,6 @@ class Plugin:
                         duration = int(float(duration_raw))
                     except ValueError:
                         duration = None
-                if duration is not None and duration > 15 * 60:
-                    continue
                 url_raw = parts[4].strip() if len(parts) > 4 else ""
                 if url_raw.startswith("http://") or url_raw.startswith("https://"):
                     webpage_url = url_raw
@@ -714,7 +824,11 @@ class Plugin:
         return {"stream_url": stream_url}
 
     async def download_youtube_audio(
-        self, app_id: int, video_url: str
+        self,
+        app_id: int,
+        video_url: str,
+        normalize_audio: bool = False,
+        upmix_audio: bool = False,
     ) -> dict[str, Any]:
         if app_id <= 0:
             raise ValueError("Invalid app id")
@@ -729,11 +843,6 @@ class Plugin:
             "--no-warnings",
             "--no-check-certificate",
             "--no-playlist",
-            "--extract-audio",
-            "--audio-format",
-            "mp3",
-            "--audio-quality",
-            "0",
             "--restrict-filenames",
             "--force-overwrites",
             "--paths",
@@ -742,8 +851,20 @@ class Plugin:
             "%(title).150B [%(id)s].%(ext)s",
             "--print",
             "after_move:filepath",
-            normalized_url,
         ]
+        if IS_WINDOWS:
+            command.extend(["-f", "ba[ext=m4a]/ba[ext=webm]/bestaudio/best"])
+        else:
+            command.extend(
+                [
+                    "--extract-audio",
+                    "--audio-format",
+                    "mp3",
+                    "--audio-quality",
+                    "0",
+                ]
+            )
+        command.append(normalized_url)
         result = await self._run_command(command, timeout=900, env=yt_dlp["env"])
         if result.returncode != 0:
             raise RuntimeError(
@@ -759,11 +880,39 @@ class Plugin:
         if not downloaded_path:
             raise RuntimeError("Download completed but no audio file was found")
 
-        tracks = await self.set_track(app_id, str(downloaded_path), downloaded_path.name)
+        normalized = False
+        upmixed = False
+        ffmpeg_processed = False
+        ffmpeg_error: str | None = None
+        if normalize_audio or upmix_audio:
+            try:
+                processed_path = await self._process_audio_file(
+                    downloaded_path,
+                    normalize_audio=normalize_audio,
+                    upmix_audio=upmix_audio,
+                )
+                downloaded_path = processed_path
+                normalized = normalize_audio
+                upmixed = upmix_audio
+                ffmpeg_processed = True
+            except Exception as error:
+                ffmpeg_error = self._trim_message(str(error), 180)
+                decky.logger.error(
+                    f"FFmpeg audio processing skipped for {downloaded_path}: {error}"
+                )
+
+        tracks = await self.set_track(
+            app_id, str(downloaded_path), downloaded_path.name, normalized
+        )
         return {
             "tracks": tracks,
             "path": str(downloaded_path),
             "filename": downloaded_path.name,
+            "normalized": normalized,
+            "upmixed": upmixed,
+            "ffmpeg_processed": ffmpeg_processed,
+            "ffmpeg_error": ffmpeg_error,
+            "normalization_error": ffmpeg_error,
         }
 
     def _load_tracks(self) -> None:
@@ -781,94 +930,14 @@ class Plugin:
                 if "loop" not in track:
                     track["loop"] = True
                     changed = True
+                if "normalized" not in track and str(key).lstrip("-").isdigit():
+                    track["normalized"] = False
+                    changed = True
             if changed:
                 self._save_tracks()
         except Exception as error:
             decky.logger.error(f"Failed to read tracks.json: {error}")
-
-    def _resolve_audio_player(self) -> str | None:
-        if self._find_command_path("ffplay"):
-            return "ffplay"
-        if self._find_command_path("ffmpeg"):
-            return "ffmpeg"
-        if self._find_command_path("mpv"):
-            return "mpv"
-        if self._find_command_path("mpg123"):
-            return "mpg123"
-        return None
-
-    def _find_command_path(self, command: str) -> str | None:
-        resolved = shutil.which(command)
-        if resolved:
-            return resolved
-        direct = Path("/usr/bin") / command
-        if direct.exists() and os.access(direct, os.X_OK):
-            return str(direct)
-        return None
-
-    def _build_backend_audio_env(self) -> dict[str, str]:
-        env = dict(os.environ)
-        uid = os.getuid()
-        runtime_dir = env.get("XDG_RUNTIME_DIR") or f"/run/user/{uid}"
-        env["XDG_RUNTIME_DIR"] = runtime_dir
-        pulse_native = Path(runtime_dir) / "pulse" / "native"
-        if pulse_native.exists():
-            env["PULSE_SERVER"] = f"unix:{pulse_native}"
-        return env
-
-    def _stop_playback_process(self) -> bool:
-        process = self._playback_process
-        self._playback_process = None
-        self._playback_player = None
-        if not process:
-            return False
-        try:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=1.0)
-                except Exception:
-                    process.kill()
-                    process.wait(timeout=1.0)
-            else:
-                # Reap exited child to avoid zombies.
-                process.wait(timeout=0.1)
-            return True
-        except Exception as error:
-            decky.logger.error(f"Failed stopping backend playback process: {error}")
-            return False
-
-    def _monitor_playback_process(
-        self,
-        process: subprocess.Popen[bytes],
-        player: str,
-        path: str,
-        log_handle: Any,
-    ) -> None:
-        try:
-            return_code = process.wait()
-            decky.logger.info(
-                f"backend playback exited player={player} rc={return_code} path={path}"
-            )
-            try:
-                log_handle.write(
-                    f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] exit rc={return_code}\n".encode(
-                        "utf-8", errors="ignore"
-                    )
-                )
-                log_handle.flush()
-            except Exception:
-                pass
-        except Exception as error:
-            decky.logger.error(f"backend playback monitor failed: {error}")
-        finally:
-            try:
-                log_handle.close()
-            except Exception:
-                pass
-            if self._playback_process is process:
-                self._playback_process = None
-                self._playback_player = None
+            self._tracks = {}
 
     def _save_tracks(self) -> None:
         try:
@@ -877,11 +946,233 @@ class Plugin:
         except Exception as error:
             decky.logger.error(f"Failed to save tracks.json: {error}")
 
-    def _read_localconfig_app_ids(self) -> list[int]:
+    def _delete_downloaded_tracks_sync(self) -> dict[str, Any]:
+        self._downloads_dir.mkdir(parents=True, exist_ok=True)
+        downloads_root = self._downloads_dir.resolve()
+        removed_files = 0
+        removed_dirs = 0
+        removed_tracks = 0
+
+        for key, track in list(self._tracks.items()):
+            if not isinstance(track, dict):
+                continue
+            path_value = track.get("path")
+            if not path_value:
+                continue
+            try:
+                resolved = Path(str(path_value)).expanduser().resolve()
+            except Exception:
+                continue
+            if self._is_path_within(resolved, downloads_root):
+                self._tracks.pop(key, None)
+                removed_tracks += 1
+
+        for child in list(downloads_root.iterdir()):
+            try:
+                if child.is_symlink() or child.is_file():
+                    child.unlink()
+                    removed_files += 1
+                elif child.is_dir():
+                    removed_files += sum(
+                        1
+                        for nested in child.rglob("*")
+                        if nested.is_symlink() or nested.is_file()
+                    )
+                    shutil.rmtree(child)
+                    removed_dirs += 1
+            except Exception as error:
+                decky.logger.error(f"Failed to delete downloaded track path {child}: {error}")
+
+        self._save_tracks()
+        return {
+            "tracks": self._tracks,
+            "removed_files": removed_files,
+            "removed_dirs": removed_dirs,
+            "removed_tracks": removed_tracks,
+        }
+
+    async def _delete_downloaded_tracks_worker(self, job_id: int) -> None:
+        try:
+            downloads_root = self._downloads_dir.resolve()
+            self._downloads_dir.mkdir(parents=True, exist_ok=True)
+            files_to_delete: list[Path] = []
+            dirs_to_delete: list[Path] = []
+
+            for child in list(downloads_root.rglob("*")):
+                try:
+                    if child.is_symlink() or child.is_file():
+                        files_to_delete.append(child)
+                    elif child.is_dir():
+                        dirs_to_delete.append(child)
+                except Exception:
+                    continue
+
+            dirs_to_delete.sort(key=lambda path: len(path.parts), reverse=True)
+            track_keys: list[str] = []
+            for key, track in list(self._tracks.items()):
+                if not isinstance(track, dict):
+                    continue
+                path_value = track.get("path")
+                if not path_value:
+                    continue
+                try:
+                    resolved = Path(str(path_value)).expanduser().resolve()
+                except Exception:
+                    continue
+                if self._is_path_within(resolved, downloads_root):
+                    track_keys.append(key)
+
+            total = len(files_to_delete) + len(dirs_to_delete) + len(track_keys)
+            self._set_delete_downloaded_tracks_progress(
+                {
+                    "running": True,
+                    "status": "deleting",
+                    "total": total,
+                    "completed": 0,
+                    "total_files": len(files_to_delete),
+                    "removed_files": 0,
+                    "total_tracks": len(track_keys),
+                    "removed_tracks": 0,
+                    "current_path": "",
+                    "message": "Deleting downloaded audio files...",
+                    "error": "",
+                    "updated_at": time.time(),
+                }
+            )
+
+            completed = 0
+            removed_files = 0
+            removed_tracks = 0
+
+            for key in track_keys:
+                if job_id != self._delete_downloaded_tracks_job_id:
+                    return
+                self._tracks.pop(key, None)
+                removed_tracks += 1
+                completed += 1
+                self._update_delete_downloaded_tracks_progress(
+                    completed=completed,
+                    removed_tracks=removed_tracks,
+                    current_path=f"track:{key}",
+                )
+                await asyncio.sleep(0)
+
+            for path in files_to_delete:
+                if job_id != self._delete_downloaded_tracks_job_id:
+                    return
+                try:
+                    path.unlink(missing_ok=True)
+                    removed_files += 1
+                except Exception as error:
+                    decky.logger.error(f"Failed to delete downloaded file {path}: {error}")
+                completed += 1
+                self._update_delete_downloaded_tracks_progress(
+                    completed=completed,
+                    removed_files=removed_files,
+                    current_path=str(path),
+                )
+                await asyncio.sleep(0)
+
+            for path in dirs_to_delete:
+                if job_id != self._delete_downloaded_tracks_job_id:
+                    return
+                try:
+                    path.rmdir()
+                except OSError:
+                    try:
+                        shutil.rmtree(path)
+                    except Exception as error:
+                        decky.logger.error(
+                            f"Failed to delete downloaded directory {path}: {error}"
+                        )
+                completed += 1
+                self._update_delete_downloaded_tracks_progress(
+                    completed=completed,
+                    current_path=str(path),
+                )
+                await asyncio.sleep(0)
+
+            self._save_tracks()
+            self._set_delete_downloaded_tracks_progress(
+                {
+                    **self._delete_downloaded_tracks_progress,
+                    "running": False,
+                    "status": "completed",
+                    "completed": total,
+                    "removed_files": removed_files,
+                    "removed_tracks": removed_tracks,
+                    "current_path": "",
+                    "message": "Deletion complete.",
+                    "error": "",
+                    "updated_at": time.time(),
+                }
+            )
+        except Exception as error:
+            decky.logger.error(f"Downloaded track deletion failed: {error}")
+            self._set_delete_downloaded_tracks_progress(
+                {
+                    **self._delete_downloaded_tracks_progress,
+                    "running": False,
+                    "status": "failed",
+                    "message": "Deletion failed.",
+                    "error": self._trim_message(str(error), 220),
+                    "updated_at": time.time(),
+                }
+            )
+
+    def _new_delete_downloaded_tracks_progress(self, status: str) -> dict[str, Any]:
+        return {
+            "running": False,
+            "status": status,
+            "total": 0,
+            "completed": 0,
+            "total_files": 0,
+            "removed_files": 0,
+            "total_tracks": 0,
+            "removed_tracks": 0,
+            "current_path": "",
+            "message": "",
+            "error": "",
+            "updated_at": time.time(),
+        }
+
+    def _set_delete_downloaded_tracks_progress(self, progress: dict[str, Any]) -> None:
+        self._delete_downloaded_tracks_progress = progress
+
+    def _update_delete_downloaded_tracks_progress(self, **updates: Any) -> None:
+        self._delete_downloaded_tracks_progress = {
+            **self._delete_downloaded_tracks_progress,
+            **updates,
+            "updated_at": time.time(),
+        }
+
+    @staticmethod
+    def _is_path_within(path: Path, parent: Path) -> bool:
+        try:
+            path.relative_to(parent)
+            return True
+        except ValueError:
+            return False
+
+    def _steam_userdata_roots(self) -> list[Path]:
         candidates = [
             Path.home() / ".local" / "share" / "Steam" / "userdata",
             Path.home() / ".steam" / "steam" / "userdata",
         ]
+        if IS_WINDOWS:
+            windows_candidates: list[Path] = []
+            for env_name in ("PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA"):
+                value = os.environ.get(env_name)
+                if value:
+                    windows_candidates.append(Path(value) / "Steam" / "userdata")
+            steam_path = self._read_windows_steam_path()
+            if steam_path:
+                windows_candidates.append(steam_path / "userdata")
+            candidates = windows_candidates + candidates
+        return candidates
+
+    def _read_localconfig_app_ids(self) -> list[int]:
+        candidates = self._steam_userdata_roots()
         app_ids: set[int] = set()
         for base in candidates:
             if not base.exists():
@@ -952,6 +1243,217 @@ class Plugin:
                         app_ids.add(app_id)
 
         return app_ids
+
+    def _read_steam_shortcuts(self) -> list[dict[str, Any]]:
+        shortcuts: dict[int, dict[str, Any]] = {}
+        for base in self._steam_userdata_roots():
+            if not base.exists():
+                continue
+            try:
+                for user_dir in base.iterdir():
+                    if not user_dir.is_dir():
+                        continue
+                    shortcut_file = user_dir / "config" / "shortcuts.vdf"
+                    if not shortcut_file.exists() or not shortcut_file.is_file():
+                        continue
+                    for shortcut in self._extract_shortcuts_from_vdf(shortcut_file):
+                        name = self._clean_game_title_safe(str(shortcut.get("name") or ""))
+                        if not name:
+                            continue
+                        exe = str(shortcut.get("exe") or "")
+                        app_id = shortcut.get("appid")
+                        if not isinstance(app_id, int) or app_id <= 0:
+                            app_id = self._shortcut_app_id(exe, name)
+                        if app_id <= 0:
+                            continue
+                        shortcuts[app_id] = {
+                            "appid": app_id,
+                            "name": name,
+                            "isNonSteam": True,
+                        }
+            except Exception as error:
+                decky.logger.error(
+                    f"Failed scanning Steam shortcuts under {base}: {error}"
+                )
+        return sorted(shortcuts.values(), key=lambda item: item["name"].casefold())
+
+    def _extract_shortcuts_from_vdf(self, path: Path) -> list[dict[str, Any]]:
+        try:
+            data = path.read_bytes()
+        except Exception as error:
+            decky.logger.error(f"Failed reading shortcuts.vdf {path}: {error}")
+            return []
+
+        try:
+            root, _pos = self._parse_binary_vdf_object(data, 0)
+            container = root.get("shortcuts", root)
+            if isinstance(container, dict):
+                shortcuts: list[dict[str, Any]] = []
+                for value in container.values():
+                    if not isinstance(value, dict):
+                        continue
+                    name = str(value.get("appname") or value.get("name") or "").strip()
+                    exe = str(value.get("exe") or "").strip()
+                    if name:
+                        shortcuts.append(
+                            {"name": name, "exe": exe, "appid": value.get("appid")}
+                        )
+                return shortcuts
+        except Exception as error:
+            decky.logger.error(f"Failed parsing binary shortcuts.vdf {path}: {error}")
+
+        text = data.decode("utf-8", errors="ignore")
+        names = re.findall(r"appname\x00([^\x00]+)", text)
+        exes = re.findall(r"exe\x00([^\x00]+)", text)
+        return [
+            {
+                "name": name.strip(),
+                "exe": exes[index].strip() if index < len(exes) else "",
+            }
+            for index, name in enumerate(names)
+            if name.strip()
+        ]
+
+    def _parse_binary_vdf_object(
+        self, data: bytes, pos: int
+    ) -> tuple[dict[str, Any], int]:
+        result: dict[str, Any] = {}
+        while pos < len(data):
+            value_type = data[pos]
+            pos += 1
+            if value_type == 0x08:
+                break
+            key, pos = self._read_vdf_cstring(data, pos)
+            if value_type == 0x00:
+                child, pos = self._parse_binary_vdf_object(data, pos)
+                result[key] = child
+            elif value_type == 0x01:
+                value, pos = self._read_vdf_cstring(data, pos)
+                result[key] = value
+            elif value_type == 0x02:
+                if pos + 4 > len(data):
+                    break
+                result[key] = int.from_bytes(data[pos : pos + 4], "little", signed=True)
+                pos += 4
+            elif value_type == 0x07:
+                if pos + 8 > len(data):
+                    break
+                result[key] = int.from_bytes(data[pos : pos + 8], "little", signed=False)
+                pos += 8
+            else:
+                break
+        return result, pos
+
+    @staticmethod
+    def _read_vdf_cstring(data: bytes, pos: int) -> tuple[str, int]:
+        end = data.find(b"\x00", pos)
+        if end < 0:
+            return "", len(data)
+        return data[pos:end].decode("utf-8", errors="ignore"), end + 1
+
+    @staticmethod
+    def _shortcut_app_id(exe: str, name: str) -> int:
+        digest = zlib.crc32((exe + name).encode("utf-8", errors="ignore")) & 0xFFFFFFFF
+        return (digest | 0x80000000) & 0xFFFFFFFF
+
+    @staticmethod
+    def _clean_game_title(name: str) -> str:
+        return re.sub(r"\s+", " ", re.sub(r"[™®©]", "", name or "")).strip()
+
+    @staticmethod
+    def _clean_game_title_safe(name: str) -> str:
+        return re.sub(
+            r"\s+",
+            " ",
+            re.sub(r"[\u2122\u00ae\u00a9]", "", name or ""),
+        ).strip()
+
+    def _read_external_media_state(self) -> dict[str, Any]:
+        try:
+            request = urllib.request.Request(
+                NOW_PLAYING_SNAPSHOT_URL,
+                headers={"User-Agent": "ThemeDeck/2.5.4 (+Decky Loader)"},
+            )
+            with urllib.request.urlopen(request, timeout=0.6) as response:
+                payload = json.loads(response.read().decode("utf-8", errors="ignore"))
+        except Exception:
+            return {"active": False, "player": ""}
+
+        if not isinstance(payload, dict):
+            return {"active": False, "player": ""}
+
+        candidates: list[dict[str, Any]] = []
+        selected = payload.get("selected")
+        if isinstance(selected, dict):
+            candidates.append(selected)
+        players = payload.get("players")
+        if isinstance(players, list):
+            for player in players:
+                if isinstance(player, dict) and player not in candidates:
+                    candidates.append(player)
+
+        for player in candidates:
+            if self._external_media_player_is_playing(player):
+                name = str(player.get("name") or player.get("id") or "").strip()
+                return {"active": True, "player": name}
+        return {"active": False, "player": ""}
+
+    def _external_media_player_is_playing(self, player: dict[str, Any]) -> bool:
+        status = str(
+            player.get("status")
+            or player.get("playbackStatus")
+            or player.get("playback_status")
+            or ""
+        ).strip().lower()
+        is_playing = status == "playing" or player.get("isPlaying") is True
+        if not is_playing:
+            return False
+
+        searchable = " ".join(
+            str(player.get(key) or "")
+            for key in (
+                "id",
+                "name",
+                "app",
+                "appName",
+                "sourceAppUserModelId",
+                "title",
+                "artist",
+                "album",
+            )
+        ).lower()
+        if any(token in searchable for token in NOW_PLAYING_IGNORE_TOKENS):
+            return False
+        return True
+
+    def _read_windows_steam_path(self) -> Path | None:
+        if not IS_WINDOWS:
+            return None
+        try:
+            import winreg
+        except Exception:
+            return None
+
+        registry_locations = (
+            (winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam"),
+            (winreg.HKEY_LOCAL_MACHINE, r"Software\Valve\Steam"),
+            (winreg.HKEY_LOCAL_MACHINE, r"Software\WOW6432Node\Valve\Steam"),
+        )
+        for hive, key_path in registry_locations:
+            try:
+                with winreg.OpenKey(hive, key_path) as key:
+                    for value_name in ("SteamPath", "InstallPath"):
+                        try:
+                            value, _value_type = winreg.QueryValueEx(key, value_name)
+                        except OSError:
+                            continue
+                        if isinstance(value, str) and value.strip():
+                            candidate = Path(value.replace("/", "\\")).expanduser()
+                            if candidate.exists():
+                                return candidate
+            except OSError:
+                continue
+        return None
 
     def _resolve_store_app_names_chunk(self, app_ids: list[int]) -> dict[str, str]:
         if not app_ids:
@@ -1055,7 +1557,12 @@ class Plugin:
         return cleaned
 
     def _resolve_yt_dlp_invocation(self) -> dict[str, Any] | None:
-        if self._yt_venv_yt_dlp.exists() and os.access(self._yt_venv_yt_dlp, os.X_OK):
+        def executable_exists(path: Path) -> bool:
+            return path.exists() and path.is_file() and (
+                IS_WINDOWS or os.access(path, os.X_OK)
+            )
+
+        if not IS_WINDOWS and executable_exists(self._yt_venv_yt_dlp):
             return {
                 "command": [str(self._yt_venv_yt_dlp)],
                 "env": None,
@@ -1063,7 +1570,24 @@ class Plugin:
                 "path": str(self._yt_venv_yt_dlp),
             }
 
-        system_yt_dlp = shutil.which("yt-dlp")
+        if executable_exists(self._yt_dlp_path):
+            return {
+                "command": [str(self._yt_dlp_path)],
+                "env": None,
+                "source": "local",
+                "path": str(self._yt_dlp_path),
+            }
+
+        bundled_yt_dlp = Path(__file__).resolve().parent / self._yt_dlp_name
+        if executable_exists(bundled_yt_dlp):
+            return {
+                "command": [str(bundled_yt_dlp)],
+                "env": None,
+                "source": "bundled",
+                "path": str(bundled_yt_dlp),
+            }
+
+        system_yt_dlp = shutil.which(self._yt_dlp_name) or shutil.which("yt-dlp")
         if system_yt_dlp:
             return {
                 "command": [system_yt_dlp],
@@ -1073,7 +1597,7 @@ class Plugin:
             }
 
         user_yt_dlp = Path.home() / ".local" / "bin" / "yt-dlp"
-        if user_yt_dlp.exists() and os.access(user_yt_dlp, os.X_OK):
+        if not IS_WINDOWS and executable_exists(user_yt_dlp):
             return {
                 "command": [str(user_yt_dlp)],
                 "env": None,
@@ -1081,12 +1605,39 @@ class Plugin:
                 "path": str(user_yt_dlp),
             }
 
-        if self._yt_dlp_path.exists() and os.access(self._yt_dlp_path, os.X_OK):
+        return None
+
+    def _resolve_ffmpeg_invocation(self) -> dict[str, Any] | None:
+        def executable_exists(path: Path) -> bool:
+            return path.exists() and path.is_file() and (
+                IS_WINDOWS or os.access(path, os.X_OK)
+            )
+
+        candidates = [
+            self._plugin_dir / self._ffmpeg_name,
+            self._plugin_dir / "bin" / self._ffmpeg_name,
+            Path(__file__).resolve().parent / self._ffmpeg_name,
+            Path(__file__).resolve().parent / "bin" / self._ffmpeg_name,
+            self._bin_dir / self._ffmpeg_name,
+        ]
+        for candidate in candidates:
+            if executable_exists(candidate):
+                return {
+                    "command": [str(candidate)],
+                    "env": None,
+                    "source": "bundled"
+                    if self._is_path_within(candidate.resolve(), self._plugin_dir.resolve())
+                    else "local",
+                    "path": str(candidate),
+                }
+
+        system_ffmpeg = shutil.which(self._ffmpeg_name) or shutil.which("ffmpeg")
+        if system_ffmpeg:
             return {
-                "command": [str(self._yt_dlp_path)],
+                "command": [system_ffmpeg],
                 "env": None,
-                "source": "local",
-                "path": str(self._yt_dlp_path),
+                "source": "system",
+                "path": system_ffmpeg,
             }
 
         return None
@@ -1098,6 +1649,74 @@ class Plugin:
                 "yt-dlp is not available. Use the ThemeDeck install/update button."
             )
         return invocation
+
+    async def _process_audio_file(
+        self,
+        input_path: Path,
+        normalize_audio: bool = True,
+        upmix_audio: bool = True,
+    ) -> Path:
+        if not normalize_audio and not upmix_audio:
+            return input_path
+
+        invocation = self._resolve_ffmpeg_invocation()
+        if not invocation:
+            raise RuntimeError("FFmpeg is not available in the ThemeDeck package")
+
+        resolved_input = input_path.expanduser().resolve()
+        if not resolved_input.exists() or not resolved_input.is_file():
+            raise FileNotFoundError(f"Audio file not found: {resolved_input}")
+
+        output_path = resolved_input.with_suffix(".m4a")
+        temp_path = resolved_input.with_name(
+            f"{resolved_input.stem}.processing-{int(time.time() * 1000)}.m4a"
+        )
+        command = [
+            *invocation["command"],
+            "-hide_banner",
+            "-y",
+            "-i",
+            str(resolved_input),
+            "-vn",
+            "-sn",
+            "-dn",
+        ]
+        if normalize_audio:
+            command.extend(["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"])
+        audio_bitrate = "384k"
+        command.extend(
+            [
+                "-c:a",
+                "aac",
+                "-b:a",
+                audio_bitrate,
+                "-ar",
+                "48000",
+            ]
+        )
+        if upmix_audio:
+            command.extend(["-ac", "8"])
+        command.append(str(temp_path))
+        result = await self._run_command(command, timeout=900, env=invocation["env"])
+        if result.returncode != 0:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            raise RuntimeError(self._command_error(result, "Audio processing failed"))
+
+        if not temp_path.exists() or temp_path.stat().st_size <= 0:
+            raise RuntimeError("Audio processing finished but no output file was created")
+
+        if output_path.exists():
+            output_path.unlink()
+        temp_path.replace(output_path)
+        if output_path != resolved_input and resolved_input.exists():
+            try:
+                resolved_input.unlink()
+            except Exception as error:
+                decky.logger.error(f"Failed to remove pre-normalized file {resolved_input}: {error}")
+        return output_path
 
     async def _get_yt_dlp_version(self, invocation: dict[str, Any]) -> str | None:
         command = [*invocation["command"], "--version"]
@@ -1120,14 +1739,19 @@ class Plugin:
         run_env.pop("PYTHONPATH", None)
         if env:
             run_env.update(env)
+        run_kwargs: dict[str, Any] = {
+            "capture_output": True,
+            "text": True,
+            "check": False,
+            "timeout": timeout,
+            "env": run_env,
+        }
+        if IS_WINDOWS:
+            run_kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         result = await asyncio.to_thread(
             subprocess.run,
             command,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
-            env=run_env,
+            **run_kwargs,
         )
         if result.returncode != 0:
             decky.logger.error(
@@ -1336,6 +1960,8 @@ class Plugin:
         return f"{cleaned[:limit - 3]}..."
 
     async def _try_install_yt_dlp_with_pip(self) -> str | None:
+        if IS_WINDOWS:
+            return "pip fallback skipped on Windows; use bundled yt-dlp.exe"
         python3 = shutil.which("python3")
         if not python3:
             return "python3 not found"
@@ -1358,6 +1984,8 @@ class Plugin:
         return self._command_error(result, "pip install failed")
 
     async def _install_yt_dlp_in_venv(self) -> str | None:
+        if IS_WINDOWS:
+            return "venv install skipped on Windows; use bundled yt-dlp.exe"
         python3 = shutil.which("python3")
         if not python3:
             return "python3 not found"
