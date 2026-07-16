@@ -752,6 +752,12 @@ class Plugin:
         }
 
     async def validate_audio_path(self, path: str) -> dict[str, Any]:
+        result = await self._validate_audio_path_impl(path)
+        if isinstance(result, dict) and "valid" not in result:
+            result["valid"] = bool(result.get("ok"))
+        return result
+
+    async def _validate_audio_path_impl(self, path: str) -> dict[str, Any]:
         candidate = (path or "").strip()
         if not candidate:
             return {
