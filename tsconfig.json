@@ -14,7 +14,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react",
+    "jsxFactory": "window.SP_REACT.createElement",
+    "jsxFragmentFactory": "window.SP_REACT.Fragment"
   },
   "include": ["src"],
   "references": []

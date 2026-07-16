@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import html as html_lib
 import json
 import os
 import re
 import secrets
 import shutil
+import socket
 import ssl
+import struct
 import subprocess
 import tempfile
 import threading
@@ -70,6 +73,7 @@ class Plugin:
         self._yt_venv_python = self._yt_venv_bin / ("python.exe" if IS_WINDOWS else "python")
         self._yt_venv_yt_dlp = self._yt_venv_bin / self._yt_dlp_name
         self._downloads_dir = self._settings_dir / "downloads"
+        self._discover_download_jobs: dict[str, dict[str, Any]] = {}
         self._delete_downloaded_tracks_task: asyncio.Task[Any] | None = None
         self._delete_downloaded_tracks_job_id = 0
         self._delete_downloaded_tracks_progress = (
@@ -99,6 +103,77 @@ class Plugin:
 
     async def get_tracks(self) -> dict[str, dict[str, Any]]:
         return self._tracks
+
+    async def start_discover_download(
+        self,
+        target: str,
+        video_url: str,
+        normalize_audio: bool = False,
+        upmix_audio: bool = False,
+    ) -> dict[str, Any]:
+        job_id = secrets.token_hex(8)
+        self._discover_download_jobs[job_id] = {
+            "jobId": job_id,
+            "running": True,
+            "status": "starting",
+            "progress": 4,
+            "target": str(target or ""),
+            "filename": "",
+            "error": "",
+        }
+        asyncio.create_task(
+            self._run_discover_download_job(
+                job_id, target, video_url, normalize_audio, upmix_audio
+            )
+        )
+        return dict(self._discover_download_jobs[job_id])
+
+    async def get_discover_download_progress(self, job_id: str) -> dict[str, Any]:
+        job = self._discover_download_jobs.get(str(job_id or ""))
+        if not job:
+            return {
+                "jobId": str(job_id or ""),
+                "running": False,
+                "status": "missing",
+                "progress": 0,
+                "error": "Download job not found",
+            }
+        return dict(job)
+
+    async def _run_discover_download_job(
+        self,
+        job_id: str,
+        target: str,
+        video_url: str,
+        normalize_audio: bool,
+        upmix_audio: bool,
+    ) -> None:
+        job = self._discover_download_jobs[job_id]
+        try:
+            job.update(status="downloading", progress=18)
+            result = await self.download_discover_audio(
+                target, video_url, normalize_audio, upmix_audio
+            )
+            job.update(
+                running=False,
+                status="completed",
+                progress=100,
+                filename=str(result.get("filename") or ""),
+                result=result,
+            )
+        except Exception as error:
+            decky.logger.error(f"Discover download failed: {error}")
+            job.update(
+                running=False,
+                status="failed",
+                progress=100,
+                error=f"{type(error).__name__}: {error}",
+            )
+        finally:
+            if len(self._discover_download_jobs) > 24:
+                for old_id in list(self._discover_download_jobs)[:-16]:
+                    if not self._discover_download_jobs[old_id].get("running"):
+                        self._discover_download_jobs.pop(old_id, None)
 
     async def get_localconfig_app_ids(self) -> dict[str, Any]:
         return {
@@ -195,6 +270,9 @@ class Plugin:
                 ),
             }
             self._save_tracks()
+            self._delete_replaced_managed_audio(
+                str(previous.get("path") or ""), str(resolved)
+            )
             decky.logger.info(f"set_track stored app={app_id} path={resolved}")
             return self._tracks
         except Exception as error:
@@ -207,24 +285,9 @@ class Plugin:
         return await asyncio.to_thread(self._get_track_audio_url_sync, path)
 
     async def load_track_audio(self, path: str) -> dict[str, Any]:
-        resolved = Path(path).expanduser().resolve()
-        decky.logger.info(f"load_track_audio path={resolved}")
-        if not resolved.exists() or not resolved.is_file():
-            raise FileNotFoundError(f"Audio file not found: {resolved}")
-
-        try:
-            data = resolved.read_bytes()
-        except PermissionError as error:
-            raise PermissionError(f"Permission denied: {resolved}") from error
-
-        mime = self._mime_for_audio_path(resolved)
-
-        encoded = base64.b64encode(data).decode("ascii")
-        stats = resolved.stat()
-        decky.logger.info(
-            f"load_track_audio served bytes={len(data)} mtime={stats.st_mtime}"
+        raise RuntimeError(
+            "Legacy base64 audio transfer is disabled; use get_track_audio_url"
         )
-        return {"data": encoded, "mime": mime, "mtime": stats.st_mtime}
 
     def _mime_for_audio_path(self, path: Path) -> str:
         suffix = path.suffix.lower().lstrip(".")
@@ -249,6 +312,32 @@ class Plugin:
             except Exception:
                 continue
         return paths
+
+    def _delete_replaced_managed_audio(self, previous_path: str, new_path: str) -> None:
+        if not previous_path:
+            return
+        try:
+            previous = Path(previous_path).expanduser().resolve()
+            replacement = Path(new_path).expanduser().resolve()
+            downloads_root = self._downloads_dir.resolve()
+            if previous == replacement or not self._is_path_within(previous, downloads_root):
+                return
+            if str(previous) in self._known_audio_paths():
+                return
+            if previous.exists() and previous.is_file():
+                previous.unlink()
+                decky.logger.info(f"Deleted replaced managed track: {previous}")
+            parent = previous.parent
+            while parent != downloads_root and self._is_path_within(parent, downloads_root):
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
+        except Exception as error:
+            decky.logger.error(
+                f"Failed deleting replaced managed track {previous_path}: {error}"
+            )
 
     def _can_stream_audio_path(self, path: Path) -> bool:
         try:
@@ -488,6 +577,9 @@ class Plugin:
                 "loop": bool(previous.get("loop", True)),
             }
             self._save_tracks()
+            self._delete_replaced_managed_audio(
+                str(previous.get("path") or ""), str(resolved)
+            )
             return self._tracks[self._global_track_key]
         except Exception as error:
             decky.logger.error(f"set_global_track failed path={path}: {error}")
@@ -544,6 +636,9 @@ class Plugin:
                 "loop": bool(previous.get("loop", True)),
             }
             self._save_tracks()
+            self._delete_replaced_managed_audio(
+                str(previous.get("path") or ""), str(resolved)
+            )
             return self._tracks[self._store_track_key]
         except Exception as error:
             decky.logger.error(f"set_store_track failed path={path}: {error}")
@@ -796,7 +891,7 @@ class Plugin:
                 raise ValueError("Search query is required")
 
             yt_dlp = self._require_yt_dlp_invocation()
-            safe_limit = max(1, min(int(limit), 25))
+            safe_limit = max(1, min(int(limit), 80))
             command = [
                 *yt_dlp["command"],
                 "--no-warnings",
@@ -859,9 +954,7 @@ class Plugin:
             "--no-warnings",
             "--no-check-certificate",
             "--no-playlist",
-            "--get-url",
-            "-f",
-            "ba[ext=m4a]/bestaudio/best",
+            "--dump-single-json",
             normalized_url,
         ]
         result = await self._run_command(command, timeout=90, env=yt_dlp["env"])
@@ -869,17 +962,42 @@ class Plugin:
             raise RuntimeError(
                 self._command_error(result, "Failed to resolve preview stream")
             )
-        stream_url = ""
-        for raw_line in (result.stdout or "").splitlines():
-            line = raw_line.strip()
-            if not line:
+        try:
+            payload = json.loads(result.stdout or "{}")
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"yt-dlp returned invalid preview metadata: {error}") from error
+
+        candidates: list[tuple[int, float, str]] = []
+        for media_format in payload.get("formats") or []:
+            if not isinstance(media_format, dict):
                 continue
-            if line.startswith("http://") or line.startswith("https://"):
-                stream_url = line
+            url = str(media_format.get("url") or "").strip()
+            acodec = str(media_format.get("acodec") or "none").lower()
+            vcodec = str(media_format.get("vcodec") or "none").lower()
+            extension = str(media_format.get("ext") or "").lower()
+            if not url.startswith(("http://", "https://")) or acodec == "none":
+                continue
+            audio_only = vcodec in {"", "none"}
+            # Steam CEF handles AAC/M4A most consistently. Keep Opus/WebM and
+            # a muxed MP4 as fallbacks for videos without a usable AAC stream.
+            if extension in {"m4a", "mp4"} or acodec.startswith("mp4a"):
+                compatibility = 0 if audio_only else 2
+            elif extension == "webm" or "opus" in acodec:
+                compatibility = 1 if audio_only else 3
+            else:
+                compatibility = 4 if audio_only else 5
+            bitrate = float(media_format.get("abr") or media_format.get("tbr") or 0)
+            candidates.append((compatibility, -bitrate, url))
+
+        stream_urls: list[str] = []
+        for _, _, url in sorted(candidates):
+            if url not in stream_urls:
+                stream_urls.append(url)
+            if len(stream_urls) >= 5:
                 break
-        if not stream_url:
+        if not stream_urls:
             raise RuntimeError("yt-dlp did not return a playable preview stream URL")
-        return {"stream_url": stream_url}
+        return {"stream_url": stream_urls[0], "stream_urls": stream_urls}
 
     async def download_youtube_audio(
         self,
@@ -971,6 +1089,38 @@ class Plugin:
             "ffmpeg_processed": ffmpeg_processed,
             "ffmpeg_error": ffmpeg_error,
             "normalization_error": ffmpeg_error,
+        }
+
+    async def download_discover_audio(
+        self,
+        target: str,
+        video_url: str,
+        normalize_audio: bool = False,
+        upmix_audio: bool = False,
+    ) -> dict[str, Any]:
+        clean_target = str(target or "").strip().lower()
+        if clean_target not in {"ambient", "store"}:
+            raise ValueError("Discover target must be ambient or store")
+
+        temporary_app_id = 2147483001 if clean_target == "ambient" else 2147483002
+        result = await self.download_youtube_audio(
+            temporary_app_id,
+            video_url,
+            normalize_audio,
+            upmix_audio,
+        )
+        path = str(result.get("path") or "")
+        filename = str(result.get("filename") or Path(path).name or "track")
+        if clean_target == "ambient":
+            assigned = await self.set_global_track(path, filename)
+        else:
+            assigned = await self.set_store_track(path, filename)
+        self._tracks.pop(str(temporary_app_id), None)
+        self._save_tracks()
+        return {
+            **result,
+            "target": clean_target,
+            "assigned": assigned,
         }
 
     def _load_tracks(self) -> None:
@@ -1499,6 +1649,192 @@ class Plugin:
                 name = str(player.get("name") or player.get("id") or "").strip()
                 return {"active": True, "player": name}
         return {"active": False, "player": ""}
+
+    async def get_steam_media_state(self) -> dict[str, Any]:
+        return await asyncio.to_thread(self._steam_cdp_media_state_sync)
+
+    def _steam_cdp_media_state_sync(self) -> dict[str, Any]:
+        started = time.monotonic()
+        try:
+            request = urllib.request.Request(
+                "http://127.0.0.1:8080/json",
+                headers={"User-Agent": "ThemeDeck/3.0"},
+            )
+            with urllib.request.urlopen(request, timeout=0.55) as response:
+                targets = json.loads(response.read().decode("utf-8", errors="replace"))
+        except Exception as error:
+            return {
+                "active": False,
+                "player": "",
+                "error": f"{type(error).__name__}: {error}",
+                "durationMs": round((time.monotonic() - started) * 1000),
+            }
+
+        media_targets = [
+            target
+            for target in targets if isinstance(target, dict)
+            and str(target.get("type") or "").lower() in {"iframe", "page"}
+            and re.search(
+                r"(?:youtube\.com|youtube-nocookie\.com|youtu\.be|store\.steampowered\.com|steamcommunity\.com)",
+                str(target.get("url") or target.get("title") or ""),
+                flags=re.IGNORECASE,
+            )
+            and str(target.get("webSocketDebuggerUrl") or "").startswith("ws://")
+        ]
+
+        expression = """(() => {
+          const media = Array.from(document.querySelectorAll('video, audio'));
+          const audible = media.find((node) =>
+            !node.paused && !node.ended && !node.muted && Number(node.volume || 0) > 0.01 && node.readyState >= 2
+          );
+          if (!audible) return { active: false, found: media.length > 0, mediaCount: media.length };
+          return {
+            active: true,
+            found: true,
+            mediaCount: media.length,
+            tag: audible.tagName,
+            paused: Boolean(audible.paused),
+            ended: Boolean(audible.ended),
+            muted: Boolean(audible.muted),
+            volume: Number(audible.volume || 0),
+            readyState: Number(audible.readyState || 0),
+            currentTime: Number(audible.currentTime || 0)
+          };
+        })()"""
+
+        inspected: list[dict[str, Any]] = []
+        for target in media_targets[:8]:
+            try:
+                state = self._cdp_evaluate_sync(
+                    str(target.get("webSocketDebuggerUrl")), expression, timeout=0.48
+                )
+                if not isinstance(state, dict):
+                    continue
+                inspected.append(
+                    {
+                        "url": str(target.get("url") or "")[:500],
+                        **state,
+                    }
+                )
+                if state.get("active"):
+                    return {
+                        "active": True,
+                        "player": "Steam media",
+                        "targets": len(media_targets),
+                        "inspected": inspected,
+                        "durationMs": round((time.monotonic() - started) * 1000),
+                    }
+            except Exception as error:
+                inspected.append(
+                    {
+                        "url": str(target.get("url") or "")[:500],
+                        "active": False,
+                        "error": f"{type(error).__name__}: {error}",
+                    }
+                )
+        return {
+            "active": False,
+            "player": "",
+            "targets": len(media_targets),
+            "inspected": inspected,
+            "durationMs": round((time.monotonic() - started) * 1000),
+        }
+
+    @staticmethod
+    def _cdp_evaluate_sync(
+        websocket_url: str, expression: str, timeout: float = 0.5
+    ) -> Any:
+        parsed = urllib.parse.urlparse(websocket_url)
+        host = parsed.hostname or "127.0.0.1"
+        port = int(parsed.port or 80)
+        path = parsed.path or "/"
+        if parsed.query:
+            path += "?" + parsed.query
+        key = base64.b64encode(os.urandom(16)).decode("ascii")
+        connection = socket.create_connection((host, port), timeout=timeout)
+        connection.settimeout(timeout)
+
+        def receive_exact(length: int) -> bytes:
+            chunks = bytearray()
+            while len(chunks) < length:
+                chunk = connection.recv(length - len(chunks))
+                if not chunk:
+                    raise RuntimeError("CDP WebSocket closed")
+                chunks.extend(chunk)
+            return bytes(chunks)
+
+        try:
+            handshake = (
+                f"GET {path} HTTP/1.1\r\n"
+                f"Host: {host}:{port}\r\n"
+                "Upgrade: websocket\r\n"
+                "Connection: Upgrade\r\n"
+                f"Sec-WebSocket-Key: {key}\r\n"
+                "Sec-WebSocket-Version: 13\r\n\r\n"
+            ).encode("ascii")
+            connection.sendall(handshake)
+            response = bytearray()
+            while b"\r\n\r\n" not in response and len(response) < 16384:
+                response.extend(connection.recv(2048))
+            if not bytes(response).startswith(b"HTTP/1.1 101"):
+                raise RuntimeError("CDP WebSocket handshake failed")
+            expected_accept = base64.b64encode(
+                hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode("ascii")).digest()
+            ).decode("ascii")
+            if expected_accept.lower() not in bytes(response).decode("latin1", errors="ignore").lower():
+                raise RuntimeError("CDP WebSocket accept mismatch")
+
+            message = json.dumps(
+                {
+                    "id": 1,
+                    "method": "Runtime.evaluate",
+                    "params": {"expression": expression, "returnByValue": True},
+                },
+                separators=(",", ":"),
+            ).encode("utf-8")
+            mask = os.urandom(4)
+            length = len(message)
+            if length < 126:
+                header = bytes((0x81, 0x80 | length))
+            elif length <= 0xFFFF:
+                header = bytes((0x81, 0x80 | 126)) + struct.pack("!H", length)
+            else:
+                header = bytes((0x81, 0x80 | 127)) + struct.pack("!Q", length)
+            masked = bytes(value ^ mask[index % 4] for index, value in enumerate(message))
+            connection.sendall(header + mask + masked)
+
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline:
+                first, second = receive_exact(2)
+                opcode = first & 0x0F
+                payload_length = second & 0x7F
+                if payload_length == 126:
+                    payload_length = struct.unpack("!H", receive_exact(2))[0]
+                elif payload_length == 127:
+                    payload_length = struct.unpack("!Q", receive_exact(8))[0]
+                mask_key = receive_exact(4) if second & 0x80 else b""
+                payload = receive_exact(payload_length)
+                if mask_key:
+                    payload = bytes(
+                        value ^ mask_key[index % 4]
+                        for index, value in enumerate(payload)
+                    )
+                if opcode == 0x9:
+                    connection.sendall(bytes((0x8A, len(payload))) + payload)
+                    continue
+                if opcode != 0x1:
+                    continue
+                decoded = json.loads(payload.decode("utf-8", errors="replace"))
+                if decoded.get("id") != 1:
+                    continue
+                return (
+                    decoded.get("result", {})
+                    .get("result", {})
+                    .get("value")
+                )
+            raise TimeoutError("CDP evaluation timed out")
+        finally:
+            connection.close()
 
     def _external_media_player_is_playing(self, player: dict[str, Any]) -> bool:
         status = str(

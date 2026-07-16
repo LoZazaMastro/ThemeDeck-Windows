@@ -5,7 +5,7 @@
   "api_version": 1,
   "publish": {
     "tags": ["music", "theme", "library"],
-    "description": "Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp search, and automatic UI translations.",
+    "description": "Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }

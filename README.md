@@ -1,4 +1,4 @@
-# ThemeDeck Windows
+# ThemeDeck Windows 3.0.0
 
 ThemeDeck Windows is a Windows-friendly fork of [ThemeDeck](https://github.com/BrenticusMaximus/ThemeDeck) for Decky Loader.
 
@@ -18,7 +18,11 @@ It lets you add music to Steam game pages in Gaming Mode, with optional ambient 
 - Supports a separate Store-only track.
 - Stops ThemeDeck music when a game is launched or running.
 - Can auto-assign missing game tracks using YouTube search.
+- Lets you exclude selected games from automatic track assignment.
 - Keeps automatic YouTube assignments under 15 minutes per track.
+- Pauses its music while Now Playing is playing local or integrated Spotify
+  audio, or while an audible Steam Community, news, or Store video is playing.
+- Ignores muted TrailerHero playback.
 - Can clear downloaded tracks, including downloaded tracks that are no longer
   assigned anywhere.
 - Detects the Decky/Steam language and translates the UI automatically.
@@ -70,6 +74,12 @@ No. ThemeDeck only changes the volume of audio played by ThemeDeck itself.
 ### Does YouTube search cost anything?
 
 No. It uses `yt-dlp`. Availability depends on YouTube and `yt-dlp`, so updating `yt-dlp` from inside the plugin can help if search/download stops working.
+
+### What happens to a previously downloaded track?
+
+When ThemeDeck replaces an ambient or Store track downloaded through its search, the previous file is
+deleted only if ThemeDeck downloaded and manages it. A local file selected from
+your computer is never deleted.
 
 ### Can I still use local files?
 

@@ -35,6 +35,7 @@ import {
   toaster,
 } from "@decky/api";
 import {
+  CSSProperties,
   ReactElement,
   useCallback,
   useEffect,
@@ -43,9 +44,18 @@ import {
   useState,
 } from "react";
 import {
+  FaArrowLeft,
+  FaCheck,
+  FaChevronRight,
+  FaCompactDisc,
+  FaDownload,
+  FaFolder,
+  FaMinus,
   FaMusic,
   FaPause,
   FaPlay,
+  FaPlus,
+  FaRedo,
   FaTrash,
 } from "react-icons/fa";
 
@@ -163,6 +173,7 @@ type YouTubeDownloadResponse = {
 
 type YouTubePreviewResponse = {
   stream_url: string;
+  stream_urls?: string[];
 };
 
 type GlobalTrack = {
@@ -187,6 +198,22 @@ type YtDlpStatus = {
 type ExternalMediaState = {
   active: boolean;
   player?: string;
+  source?: string;
+};
+
+type DiscoverDownloadProgress = {
+  jobId: string;
+  running: boolean;
+  status: "starting" | "downloading" | "completed" | "failed" | "missing";
+  progress: number;
+  target?: "ambient" | "store";
+  filename?: string;
+  error?: string;
+};
+
+type NowPlayingSnapshot = {
+  selected?: { status?: string; name?: string; id?: string } | null;
+  players?: Array<{ status?: string; name?: string; id?: string }>;
 };
 
 type BulkAssignStatus = {
@@ -280,7 +307,6 @@ const listDirectory = callable<[path?: string], DirectoryListing>("list_director
 const getTrackAudioUrl = callable<[path: string], AudioPayload>(
   "get_track_audio_url"
 );
-const loadTrackAudio = callable<[path: string], AudioPayload>("load_track_audio");
 const searchYouTube = callable<
   [query: string, limit?: number],
   YouTubeSearchResponse
@@ -294,10 +320,51 @@ const downloadYouTubeAudio = callable<
   ],
   YouTubeDownloadResponse
 >("download_youtube_audio");
+const startDiscoverDownload = callable<
+  [target: "ambient" | "store", videoUrl: string, normalizeAudio?: boolean, upmixAudio?: boolean],
+  DiscoverDownloadProgress
+>("start_discover_download");
+const getDiscoverDownloadProgress = callable<
+  [jobId: string],
+  DiscoverDownloadProgress
+>("get_discover_download_progress");
 const getYouTubePreviewStream = callable<
   [videoUrl: string],
   YouTubePreviewResponse
 >("get_youtube_preview_stream");
+
+const playYouTubePreview = async (audio: HTMLAudioElement, response: YouTubePreviewResponse) => {
+  const candidates = Array.from(new Set([...(response.stream_urls || []), response.stream_url].filter(Boolean)));
+  let lastError: unknown = new Error("No preview stream URL returned");
+  for (const url of candidates) {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => finish(new Error("Preview stream timed out")), 6500);
+        const finish = (error?: Error) => {
+          window.clearTimeout(timeout);
+          audio.removeEventListener("canplay", ready);
+          audio.removeEventListener("error", failed);
+          if (error) reject(error);
+          else resolve();
+        };
+        const ready = () => finish();
+        const failed = () => finish(new Error("Unsupported preview stream"));
+        audio.addEventListener("canplay", ready, { once: true });
+        audio.addEventListener("error", failed, { once: true });
+        audio.src = url;
+        audio.load();
+      });
+      await audio.play();
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+};
 const getYtDlpStatus = callable<[], YtDlpStatus>("get_yt_dlp_status");
 const updateYtDlp = callable<[], YtDlpStatus>("update_yt_dlp");
 const getAudioNormalizationStatus = callable<[], AudioNormalizationStatus>(
@@ -306,9 +373,38 @@ const getAudioNormalizationStatus = callable<[], AudioNormalizationStatus>(
 const getExternalMediaState = callable<[], ExternalMediaState>(
   "get_external_media_state"
 );
+const getSteamMediaState = callable<[], ExternalMediaState>(
+  "get_steam_media_state"
+);
+const deleteUnusedTracks = callable<[], RawTrackMap>("delete_unused_tracks");
+const validateAudioPath = callable<[path: string], { valid: boolean; path?: string; filename?: string; error?: string }>(
+  "validate_audio_path"
+);
 
 const TRACKS_UPDATED_EVENT = "themedeck:tracks-updated";
 const AUDIO_EXTENSIONS = ["mp3", "aac", "flac", "ogg", "wav", "m4a", "webm"];
+const EXCLUDED_AUTO_ASSIGN_STORAGE_KEY = "themedeck:excludedAutoAssignAppIds";
+
+const trimPathEnd = (path: string) =>
+  String(path || "").replace(/[\\/]+$/, "") || "/";
+const isRootPath = (path: string) => {
+  const value = trimPathEnd(path);
+  return value === "/" || /^[A-Za-z]:$/.test(value);
+};
+const joinFsPath = (base: string, child: string) => {
+  const cleanBase = trimPathEnd(base);
+  if (cleanBase === "/") return `/${child}`;
+  const separator = cleanBase.includes("\\") || /^[A-Za-z]:/.test(cleanBase)
+    ? "\\"
+    : "/";
+  return `${cleanBase}${separator}${child}`;
+};
+const parentFsPath = (path: string) => {
+  const cleanPath = trimPathEnd(path);
+  if (isRootPath(cleanPath)) return cleanPath;
+  const parent = cleanPath.replace(/[\\/][^\\/]+$/, "");
+  return parent || "/";
+};
 const AUTO_PLAY_STORAGE_KEY = "themedeck:autoPlay";
 const AUTO_PLAY_EVENT = "themedeck:auto-play-changed";
 const GAME_TRACK_MASTER_VOLUME_STORAGE_KEY =
@@ -370,7 +466,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set<number>([
 ]);
 
 const EN_STRINGS = {
-  introVersion: "March 3, 2026 (v2.5.4)",
+  introVersion: "ThemeDeck 3.0.0",
   introAssign:
     "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
   autoPlayLabel: "Auto play on game page",
@@ -416,7 +512,7 @@ const EN_STRINGS = {
   ytdlpNotInstalled: "yt-dlp not installed",
   updateYtdlp: "Update yt-dlp",
   updating: "Updating...",
-  autoAssignTitle: "Auto-assign missing game tracks (yt-dlp)",
+  autoAssignTitle: "Assign missing tracks",
   autoAssignDesc: "",
   missingCount: "Games currently without music assigned: {count}",
   libraryCount: "Total library games detected: {count}",
@@ -427,6 +523,10 @@ const EN_STRINGS = {
   hideMissingGames: "Hide games without music",
   showAssignedGames: "Show games with music",
   hideAssignedGames: "Hide games with music",
+  chooseAutoAssignExclusions: "Exclude games from automatic assignment",
+  autoAssignExclusionsTitle: "Automatic assignment exclusions",
+  autoAssignExclusionsDesc: "Checked games will be skipped when assigning missing tracks.",
+  back: "Back",
   noGamesMissingMusic: "No games are missing music.",
   noGamesWithMusic: "No games have music assigned yet.",
   assignedNormalizedCaption: "orange tracks have normalized volume",
@@ -445,6 +545,7 @@ const EN_STRINGS = {
   pause: "Pause",
   done: "Done",
   removeMusic: "Remove music",
+  removeTrack: "Remove track",
   volume: "Volume",
   startSkip: "Start skip",
   loopTrack: "Loop track",
@@ -466,7 +567,8 @@ const EN_STRINGS = {
   downloadAssign: "Download & Assign",
   downloading: "Downloading...",
   noResults: "No results yet. Search for a game soundtrack above.",
-  browseLocalTitle: "Or, browse local files to assign from system storage",
+  browseLocalTitle: "Choose a local file",
+  chooseAudioFile: "Choose audio file",
   up: "Up",
   go: "Go",
   globalTrackTitle: "ThemeDeck ambient track",
@@ -592,7 +694,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp non installato",
     updateYtdlp: "Aggiorna yt-dlp",
     updating: "Aggiornamento...",
-    autoAssignTitle: "Assegna automaticamente tracce mancanti (yt-dlp)",
+    autoAssignTitle: "Assegna tracce mancanti",
     autoAssignDesc:
       "",
     missingCount: "Giochi senza musica assegnata: {count}",
@@ -604,6 +706,10 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     hideMissingGames: "Nascondi giochi senza musica",
     showAssignedGames: "Mostra giochi con musica",
     hideAssignedGames: "Nascondi giochi con musica",
+    chooseAutoAssignExclusions: "Escludi giochi dall'assegnazione automatica",
+    autoAssignExclusionsTitle: "Esclusioni assegnazione automatica",
+    autoAssignExclusionsDesc: "I giochi selezionati verranno ignorati durante l'assegnazione delle tracce mancanti.",
+    back: "Indietro",
     noGamesMissingMusic: "Nessun gioco senza musica.",
     noGamesWithMusic: "Nessun gioco con musica assegnata.",
     assignedNormalizedCaption: "in arancione i brani con volume normalizzato",
@@ -622,6 +728,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     pause: "Pausa",
     done: "Fine",
     removeMusic: "Rimuovi musica",
+    removeTrack: "Rimuovi brano",
     volume: "Volume",
     startSkip: "Salta inizio",
     loopTrack: "Ripeti traccia",
@@ -643,7 +750,8 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     downloadAssign: "Scarica e assegna",
     downloading: "Download...",
     noResults: "Nessun risultato. Cerca una colonna sonora qui sopra.",
-    browseLocalTitle: "Oppure sfoglia i file locali nello spazio di archiviazione",
+    browseLocalTitle: "Scegli un file locale",
+    chooseAudioFile: "Scegli file audio",
     up: "Su",
     go: "Vai",
     globalTrackTitle: "Traccia ambientale ThemeDeck",
@@ -754,7 +862,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp non installé",
     updateYtdlp: "Mettre à jour yt-dlp",
     updating: "Mise à jour...",
-    autoAssignTitle: "Assigner automatiquement les pistes manquantes (yt-dlp)",
+    autoAssignTitle: "Assigner les pistes manquantes",
     autoAssignDesc:
       "",
     missingCount: "Jeux sans musique assignée : {count}",
@@ -855,7 +963,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp no instalado",
     updateYtdlp: "Actualizar yt-dlp",
     updating: "Actualizando...",
-    autoAssignTitle: "Asignar automáticamente pistas faltantes (yt-dlp)",
+    autoAssignTitle: "Asignar pistas faltantes",
     autoAssignDesc:
       "",
     missingCount: "Juegos sin música asignada: {count}",
@@ -956,7 +1064,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp não instalado",
     updateYtdlp: "Atualizar yt-dlp",
     updating: "A atualizar...",
-    autoAssignTitle: "Atribuir automaticamente faixas em falta (yt-dlp)",
+    autoAssignTitle: "Atribuir faixas em falta",
     autoAssignDesc:
       "",
     missingCount: "Jogos sem música atribuída: {count}",
@@ -1057,7 +1165,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp não instalado",
     updateYtdlp: "Atualizar yt-dlp",
     updating: "Atualizando...",
-    autoAssignTitle: "Atribuir automaticamente faixas ausentes (yt-dlp)",
+    autoAssignTitle: "Atribuir faixas ausentes",
     autoAssignDesc:
       "",
     missingCount: "Jogos sem música atribuída: {count}",
@@ -1158,7 +1266,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp nicht installiert",
     updateYtdlp: "yt-dlp aktualisieren",
     updating: "Aktualisiere...",
-    autoAssignTitle: "Fehlende Spieltitel automatisch zuweisen (yt-dlp)",
+    autoAssignTitle: "Fehlende Titel zuweisen",
     autoAssignDesc:
       "",
     missingCount: "Spiele ohne zugewiesene Musik: {count}",
@@ -1259,7 +1367,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp niet geïnstalleerd",
     updateYtdlp: "yt-dlp bijwerken",
     updating: "Bijwerken...",
-    autoAssignTitle: "Ontbrekende speltracks automatisch toewijzen (yt-dlp)",
+    autoAssignTitle: "Ontbrekende tracks toewijzen",
     autoAssignDesc:
       "",
     missingCount: "Spellen zonder toegewezen muziek: {count}",
@@ -1360,7 +1468,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp не встановлено",
     updateYtdlp: "Оновити yt-dlp",
     updating: "Оновлення...",
-    autoAssignTitle: "Автоматично призначити відсутні треки ігор (yt-dlp)",
+    autoAssignTitle: "Призначити відсутні треки",
     autoAssignDesc:
       "",
     missingCount: "Ігри без призначеної музики: {count}",
@@ -1457,7 +1565,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "未安装 yt-dlp",
     updateYtdlp: "更新 yt-dlp",
     updating: "正在更新...",
-    autoAssignTitle: "自动分配缺失的游戏曲目 (yt-dlp)",
+    autoAssignTitle: "分配缺失曲目",
     autoAssignDesc: "",
     missingCount: "尚未分配音乐的游戏：{count}",
     libraryCount: "库中检测到的游戏：{count}",
@@ -1554,7 +1662,7 @@ const TRANSLATIONS: Record<string, Record<I18nKey, string>> = {
     ytdlpNotInstalled: "yt-dlp が未インストール",
     updateYtdlp: "yt-dlp を更新",
     updating: "更新中...",
-    autoAssignTitle: "不足しているゲームトラックを自動割り当て (yt-dlp)",
+    autoAssignTitle: "不足しているトラックを割り当て",
     autoAssignDesc:
       "",
     missingCount: "音楽未設定のゲーム：{count}",
@@ -1648,6 +1756,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
   Record<string, Partial<Record<I18nKey, string>>>
 > = {
   it: {
+    introVersion: "ThemeDeck 3.0.0",
     autoPlayDesc: "",
     gameMusicVolumeDesc: "",
     stopMusicAfterPlayDesc: "",
@@ -1693,6 +1802,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
   },
   fr: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
+    autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
+    autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
+    back: "Retour",
+    removeTrack: "Supprimer la piste",
+    browseLocalTitle: "Choisir un fichier local",
+    chooseAudioFile: "Choisir un fichier audio",
     normalizeAudioNotice:
       "Le traitement FFmpeg peut allonger le telechargement. Ces options s'appliquent aussi aux telechargements manuels depuis Choisir une piste ThemeDeck.",
     upmixAudioLabel: "Upmix audio telecharge en 7.1",
@@ -1737,6 +1854,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
   },
   es: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
+    autoAssignExclusionsTitle: "Exclusiones de asignación automática",
+    autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
+    back: "Atrás",
+    removeTrack: "Eliminar pista",
+    browseLocalTitle: "Elegir un archivo local",
+    chooseAudioFile: "Elegir archivo de audio",
     normalizeAudioNotice:
       "El procesamiento de FFmpeg puede hacer que las descargas tarden más. Estas opciones también se aplican a las descargas manuales desde Elegir música ThemeDeck.",
     upmixAudioLabel: "Upmix de audio descargado a 7.1",
@@ -1781,6 +1906,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
   },
   pt: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
+    autoAssignExclusionsTitle: "Exclusões da atribuição automática",
+    autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
+    back: "Voltar",
+    removeTrack: "Remover faixa",
+    browseLocalTitle: "Escolher um ficheiro local",
+    chooseAudioFile: "Escolher ficheiro de áudio",
     normalizeAudioNotice:
       "O processamento FFmpeg pode tornar os downloads mais demorados. Estas opções também se aplicam aos downloads manuais em Escolher música ThemeDeck.",
     upmixAudioLabel: "Upmix do áudio descarregado para 7.1",
@@ -1825,6 +1958,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   "pt-br": {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
+    autoAssignExclusionsTitle: "Exclusões da atribuição automática",
+    autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
+    back: "Voltar",
+    removeTrack: "Remover faixa",
+    browseLocalTitle: "Escolher um arquivo local",
+    chooseAudioFile: "Escolher arquivo de áudio",
     normalizeAudioNotice:
       "O processamento FFmpeg pode deixar os downloads mais demorados. Estas opções também valem para downloads manuais em Escolher música ThemeDeck.",
     upmixAudioLabel: "Upmix do áudio baixado para 7.1",
@@ -1869,6 +2010,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   de: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
+    autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
+    autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
+    back: "Zurück",
+    removeTrack: "Spur entfernen",
+    browseLocalTitle: "Lokale Datei auswählen",
+    chooseAudioFile: "Audiodatei auswählen",
     normalizeAudioNotice:
       "FFmpeg-Verarbeitung kann Downloads verlängern. Diese Optionen gelten auch für manuelle Downloads über ThemeDeck-Musik auswählen.",
     upmixAudioLabel: "Heruntergeladene Audiospur auf 7.1 upmixen",
@@ -1913,6 +2062,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
   },
   nl: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
+    autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
+    autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
+    back: "Terug",
+    removeTrack: "Track verwijderen",
+    browseLocalTitle: "Lokaal bestand kiezen",
+    chooseAudioFile: "Audiobestand kiezen",
     normalizeAudioNotice:
       "FFmpeg-verwerking kan downloads langer laten duren. Deze opties gelden ook voor handmatige downloads via ThemeDeck-muziek kiezen.",
     upmixAudioLabel: "Gedownloade audio naar 7.1 upmixen",
@@ -1957,6 +2114,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
   },
   uk: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
+    autoAssignExclusionsTitle: "Виключення автоматичного призначення",
+    autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
+    back: "Назад",
+    removeTrack: "Видалити трек",
+    browseLocalTitle: "Вибрати локальний файл",
+    chooseAudioFile: "Вибрати аудіофайл",
     normalizeAudioNotice:
       "Обробка FFmpeg може збільшити час завантаження. Ці параметри також застосовуються до ручних завантажень через вибір музики ThemeDeck.",
     upmixAudioLabel: "Upmix завантаженого аудіо до 7.1",
@@ -2001,6 +2166,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
   },
   zh: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "从自动分配中排除游戏",
+    autoAssignExclusionsTitle: "自动分配排除项",
+    autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
+    back: "返回",
+    removeTrack: "移除曲目",
+    browseLocalTitle: "选择本地文件",
+    chooseAudioFile: "选择音频文件",
     normalizeAudioNotice:
       "FFmpeg 处理可能会让下载耗时更久。这些选项也适用于通过选择 ThemeDeck 音乐进行的手动下载。",
     upmixAudioLabel: "将下载音频 upmix 到 7.1",
@@ -2045,6 +2218,14 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "环境曲目中断行为",
   },
   ja: {
+    introVersion: "ThemeDeck 3.0.0",
+    chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
+    autoAssignExclusionsTitle: "自動割り当ての除外設定",
+    autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
+    back: "戻る",
+    removeTrack: "トラックを削除",
+    browseLocalTitle: "ローカルファイルを選択",
+    chooseAudioFile: "音声ファイルを選択",
     normalizeAudioNotice:
       "FFmpeg 処理により、ダウンロードに時間がかかる場合があります。これらのオプションは ThemeDeck 音楽を選択からの手動ダウンロードにも適用されます。",
     upmixAudioLabel: "ダウンロード音声を 7.1 にアップミックス",
@@ -2149,6 +2330,132 @@ const t = (key: I18nKey, values?: Record<string, string | number>) => {
   }
   return normalizeTerminology(text);
 };
+
+type SelectedTrackPanelTrack = Pick<
+  GlobalTrack,
+  "path" | "filename" | "volume" | "startOffset" | "loop"
+>;
+
+const formatAssignedTrackName = (filename: string) =>
+  String(filename || "")
+    .replace(/\.[A-Za-z0-9]{2,5}$/, "")
+    .replace(/\s*\[[A-Za-z0-9_-]{6,}\]$/, "")
+    .replace(/_+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const TrackSettingStepper = ({
+  label,
+  value,
+  suffix,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  suffix: string;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void | Promise<void>;
+}) => {
+  const update = (next: number) => {
+    const bounded = Math.min(max, Math.max(min, next));
+    if (bounded !== value) void onChange(bounded);
+  };
+  return (
+    <Focusable className="tdCompactSetting" flow-children="horizontal">
+      <div className="tdCompactSettingLabel">{label}</div>
+      <Focusable className="tdStepperRow" flow-children="horizontal">
+        <FocusableButton className="DialogButton tdStepperButton" title={`${label} -`} disabled={value <= min} onClick={() => update(value - step)}><FaMinus /></FocusableButton>
+        <div className="tdStepperValue">{value}{suffix}</div>
+        <FocusableButton className="DialogButton tdStepperButton" title={`${label} +`} disabled={value >= max} onClick={() => update(value + step)}><FaPlus /></FocusableButton>
+      </Focusable>
+    </Focusable>
+  );
+};
+
+const SelectedTrackPanel = ({
+  track,
+  loading,
+  emptyText,
+  isPlaying,
+  onPreview,
+  onRemove,
+  onVolumeChange,
+  onStartChange,
+  onLoopChange,
+}: {
+  track: SelectedTrackPanelTrack | null;
+  loading: boolean;
+  emptyText: string;
+  isPlaying: boolean;
+  onPreview: () => void;
+  onRemove: () => void | Promise<void>;
+  onVolumeChange: (value: number) => void | Promise<void>;
+  onStartChange: (value: number) => void | Promise<void>;
+  onLoopChange: (value: boolean) => void | Promise<void>;
+}) => (
+  <>
+    <div className="tdSelectedEyebrow">{t("selected")}</div>
+    {loading ? (
+      <span className="tdMiniSpinner" style={{ marginTop: 16 }} />
+    ) : track ? (
+      <>
+        <div className="tdSelectedTrackRow">
+          <div className="tdSelectedTrackGlyph"><FaMusic /></div>
+          <div className="tdSelectedTrackMeta">
+            <div className="tdSelectedTrackName" title={track.filename}>{formatAssignedTrackName(track.filename) || track.filename}</div>
+            <div className="tdSelectedTrackPath" title={track.path}>{track.path}</div>
+          </div>
+          <Focusable className="tdSelectedTrackActions" flow-children="horizontal">
+            <FocusableButton className="DialogButton tdSelectedAction" title={isPlaying ? t("pause") : t("play")} onClick={onPreview}>{isPlaying ? <FaPause /> : <FaPlay />}</FocusableButton>
+            <FocusableButton className="DialogButton tdSelectedAction" title={t("removeTrack")} onClick={() => void onRemove()}><FaTrash /></FocusableButton>
+          </Focusable>
+        </div>
+        <Focusable className="tdTrackControlStrip" flow-children="horizontal">
+          <TrackSettingStepper label={t("volume")} value={Math.round(track.volume * 100)} suffix="%" min={0} max={100} step={5} onChange={onVolumeChange} />
+          <TrackSettingStepper label={t("startSkip")} value={Math.round(track.startOffset)} suffix="s" min={0} max={30} step={1} onChange={onStartChange} />
+          <Focusable className="tdCompactSetting" flow-children="horizontal">
+            <div className="tdCompactSettingLabel">{t("loopTrack")}</div>
+            <FocusableButton className={`DialogButton tdRepeatButton${track.loop ? " is-active" : ""}`} title={t("loopTrack")} aria-pressed={track.loop} onClick={() => void onLoopChange(!track.loop)}><FaRedo /><span className="tdRepeatStateDot" /></FocusableButton>
+          </Focusable>
+        </Focusable>
+      </>
+    ) : (
+      <div className="tdSelectedEmpty"><FaMusic /><span>{emptyText}</span></div>
+    )}
+  </>
+);
+
+const SELECTED_TRACK_PANEL_CSS = `
+  .tdSelectedEyebrow{font-size:13px;opacity:.58;text-transform:uppercase;font-weight:700}
+  .tdSelectedTrackRow{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:13px;align-items:center;margin-top:10px}
+  .tdSelectedTrackGlyph{width:50px;height:50px;display:grid;place-items:center;border-radius:6px;background:rgba(255,255,255,.075);color:rgba(255,255,255,.86);font-size:20px}
+  .tdSelectedTrackMeta{min-width:0}
+  .tdSelectedTrackName{font-size:19px;line-height:1.2;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tdSelectedTrackPath{margin-top:5px;font-size:12px;opacity:.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tdSelectedTrackActions{display:flex;gap:8px}
+  .tdSelectedAction.DialogButton,.tdStepperButton.DialogButton{width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important;padding:0!important;display:grid!important;place-items:center!important;border-radius:6px!important}
+  .tdTrackControlStrip{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(150px,.72fr);margin-top:18px;padding-top:15px;border-top:1px solid rgba(255,255,255,.09)}
+  .tdCompactSetting{display:grid;grid-template-rows:auto 42px;gap:8px;padding:0 16px;border-left:1px solid rgba(255,255,255,.08)}
+  .tdCompactSetting:first-child{padding-left:0;border-left:0}
+  .tdCompactSetting:last-child{padding-right:0}
+  .tdCompactSettingLabel{font-size:12px;font-weight:650;opacity:.58;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tdStepperRow{display:grid;grid-template-columns:42px minmax(58px,1fr) 42px;gap:8px;align-items:center}
+  .tdStepperButton.DialogButton{background:rgba(255,255,255,.075)!important;color:#fff!important}
+  .tdStepperButton.DialogButton:disabled{opacity:.32!important}
+  .tdStepperValue{font-size:17px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+  .tdRepeatButton.DialogButton{width:100%!important;height:42px!important;min-height:42px!important;padding:0 13px!important;display:grid!important;grid-template-columns:18px minmax(0,1fr) 9px!important;gap:10px!important;align-items:center!important;color:#fff!important;background:rgba(255,255,255,.075)!important;border:1px solid transparent!important}
+  .tdRepeatButton.DialogButton.is-active{background:rgba(240,180,41,.14)!important;border-color:rgba(240,180,41,.68)!important;color:#f6c64e!important}
+  .tdRepeatStateDot{justify-self:end;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25)}
+  .tdRepeatButton.is-active .tdRepeatStateDot{background:#f0b429;box-shadow:0 0 0 3px rgba(240,180,41,.14)}
+  .tdSelectedAction:focus,.tdSelectedAction.gpfocus,.tdStepperButton:focus,.tdStepperButton.gpfocus,.tdRepeatButton:focus,.tdRepeatButton.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
+  .tdSelectedEmpty{display:flex;align-items:center;gap:10px;margin-top:16px;min-height:50px;color:rgba(255,255,255,.58)}
+  @media(max-width:1050px){.tdTrackControlStrip{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tdCompactSetting:last-child{grid-column:1/-1;margin-top:14px;padding:14px 0 0;border-left:0;border-top:1px solid rgba(255,255,255,.08)}}
+`;
 
 type AudioCacheEntry = {
   url: string;
@@ -2513,30 +2820,6 @@ const clearAudioCache = (
   audioCache.clear();
 };
 
-const decodePayloadToObjectUrl = (payload: AudioPayload): string => {
-  let base64 = payload.data ?? "";
-  let mime = payload.mime;
-
-  if (base64.startsWith("data:")) {
-    const match = base64.match(/^data:([^;]+);base64,(.+)$/);
-    if (match) {
-      mime = mime ?? match[1];
-      base64 = match[2];
-    }
-  }
-
-  const binary = window.atob(base64);
-  const buffer = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    buffer[index] = binary.charCodeAt(index);
-  }
-
-  const blob = new Blob([buffer.buffer], {
-    type: mime || "audio/mpeg",
-  });
-  return URL.createObjectURL(blob);
-};
-
 const verifyStreamAudioUrl = async (url: string) => {
   try {
     const response = await fetch(url, {
@@ -2558,37 +2841,22 @@ const resolveAudioUrl = async (track: GameTrack) => {
     return cached.url;
   }
 
-  try {
-    const streamPayload = await getTrackAudioUrl(track.path);
-    if (streamPayload?.url && (await verifyStreamAudioUrl(streamPayload.url))) {
-      audioCache.set(track.path, {
-        url: streamPayload.url,
-        mtime: streamPayload.mtime ?? 0,
-        lastUsedAt: Date.now(),
-        pinned: isPinnedAudioCachePath(track.path),
-        revocable: false,
-      });
-      pruneAudioCache();
-      return streamPayload.url;
-    }
-  } catch (error) {
-    console.warn("[ThemeDeck] falling back to base64 audio payload", error);
+  const streamPayload = await getTrackAudioUrl(track.path);
+  if (!streamPayload?.url) {
+    throw new Error("ThemeDeck audio stream URL is unavailable");
   }
-
-  const payload = await loadTrackAudio(track.path);
-  if (!payload?.data) {
-    throw new Error("No audio data returned");
+  if (!(await verifyStreamAudioUrl(streamPayload.url))) {
+    throw new Error("ThemeDeck audio stream did not pass its health check");
   }
-  const url = decodePayloadToObjectUrl(payload);
   audioCache.set(track.path, {
-    url,
-    mtime: payload.mtime ?? 0,
+    url: streamPayload.url,
+    mtime: streamPayload.mtime ?? 0,
     lastUsedAt: Date.now(),
     pinned: isPinnedAudioCachePath(track.path),
-    revocable: true,
+    revocable: false,
   });
   pruneAudioCache();
-  return url;
+  return streamPayload.url;
 };
 
 const clearGlobalAmbientResumeSnapshot = () => {
@@ -3836,18 +4104,21 @@ const insertThemeDeckMenu = (children: any, appId: number) => {
       return;
     }
     dismissActiveContextMenu();
-    Navigation.Navigate(`/themedeck/${latestAppId}`);
-    window.setTimeout(dismissActiveContextMenu, 0);
+    window.setTimeout(() => {
+      dismissActiveContextMenu();
+      navigateToThemeDeckEditor(`/themedeck/${latestAppId}`);
+      window.setTimeout(dismissActiveContextMenu, 0);
+      window.setTimeout(dismissActiveContextMenu, 120);
+      window.setTimeout(dismissActiveContextMenu, 300);
+    }, 40);
   };
 
   const menuItem = (
     <MenuItem
       key="themedeck-change-music"
-      bInteractableItem
-      onClick={openThemeDeck}
       onSelected={openThemeDeck}
     >
-      Choose ThemeDeck music...
+      ThemeDeck
     </MenuItem>
   );
 
@@ -4352,10 +4623,17 @@ const getStoreRouteCandidates = (): string[] => {
 const looksLikeStoreSignal = (value: unknown): boolean => {
   if (typeof value !== "string") return false;
   const text = value.toLowerCase();
+  if (
+    text.includes("/settings") ||
+    text.includes("#/settings") ||
+    text.includes("steamsettings") ||
+    text.includes("settings?")
+  ) {
+    return false;
+  }
   return (
     text.includes("/store") ||
     text.includes("#/store") ||
-    text.includes("tab=store") ||
     text.includes("storehome") ||
     text.includes("store.steampowered.com") ||
     text.includes("store%2esteampowered%2ecom") ||
@@ -4548,6 +4826,9 @@ const detectStoreFromTabs = async (): Promise<boolean> => {
         const hash = String(window.location?.hash || "").toLowerCase();
         const search = String(window.location?.search || "").toLowerCase();
         const full = href + " " + path + " " + hash + " " + search;
+        if (full.includes("/settings") || full.includes("#/settings") || full.includes("steamsettings")) {
+          return false;
+        }
         if (full.includes("store.steampowered.com") || full.includes("/store") || full.includes("#/store")) {
           return true;
         }
@@ -4574,6 +4855,139 @@ const detectStoreFromTabs = async (): Promise<boolean> => {
           result && typeof result === "object" && "result" in result
             ? (result as { result?: unknown }).result
             : result;
+        return value === true || value === "true";
+      } catch {
+        return false;
+      }
+    })
+  );
+  return results.some(Boolean);
+};
+
+let nowPlayingPluginApi: any | null | undefined;
+
+const getNowPlayingPluginApi = () => {
+  if (nowPlayingPluginApi) return nowPlayingPluginApi;
+  try {
+    const connection =
+      window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
+    nowPlayingPluginApi = connection?.connect?.(2, "Now Playing") ?? null;
+  } catch {
+    try {
+      const connection =
+        window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
+      nowPlayingPluginApi = connection?.connect?.(1, "Now Playing") ?? null;
+    } catch {
+      nowPlayingPluginApi = null;
+    }
+  }
+  return nowPlayingPluginApi;
+};
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T | null> =>
+  Promise.race([
+    promise,
+    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), timeoutMs)),
+  ]);
+
+const readNowPlayingState = async (): Promise<ExternalMediaState | null> => {
+  const api = getNowPlayingPluginApi();
+  if (!api?.call) return null;
+  try {
+    const snapshot = await withTimeout<NowPlayingSnapshot>(
+      Promise.resolve(api.call("get_snapshot")),
+      1100
+    );
+    if (!snapshot) return null;
+    const candidates = [
+      snapshot.selected,
+      ...(Array.isArray(snapshot.players) ? snapshot.players : []),
+    ].filter(Boolean) as Array<{ status?: string; name?: string; id?: string }>;
+    const playing = candidates.find(
+      (player) => String(player.status || "").toLowerCase() === "playing"
+    );
+    return {
+      active: Boolean(playing),
+      player: String(playing?.name || playing?.id || ""),
+      source: "now-playing",
+    };
+  } catch (error) {
+    console.debug("[ThemeDeck] Now Playing direct snapshot unavailable", error);
+    return null;
+  }
+};
+
+const audibleMediaProbeCode = `
+  (() => {
+    try {
+      if (!window.__themedeckYouTubeProbeInstalled) {
+        window.__themedeckYouTubeProbeInstalled = true;
+        window.__themedeckYouTubePlaying = false;
+        window.addEventListener('message', (event) => {
+          try {
+            const trailerHeroFrame = Array.from(document.querySelectorAll('iframe.trailerhero-video')).some((frame) => frame.contentWindow === event.source);
+            if (trailerHeroFrame) return;
+            const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            const info = payload && payload.info;
+            const state = info && (info.playerState ?? info.player_state);
+            if (state === 1) window.__themedeckYouTubePlaying = true;
+            if (state === 0 || state === 2 || state === -1) window.__themedeckYouTubePlaying = false;
+          } catch {}
+        });
+      }
+      const nativePlaying = Array.from(document.querySelectorAll('video, audio')).some((node) => {
+        const media = node;
+        if (media.classList?.contains('trailerhero-video') || media.closest?.('.trailerhero-host')) return false;
+        const style = window.getComputedStyle(media);
+        const visible = style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0;
+        return visible && !media.paused && !media.ended && !media.muted && Number(media.volume || 0) > 0.01 && media.readyState >= 2;
+      });
+      const youtubeFrames = Array.from(document.querySelectorAll('iframe')).filter((frame) => {
+        if (frame.classList?.contains('trailerhero-video') || frame.closest?.('.trailerhero-host')) return false;
+        return /(?:youtube\.com|youtube-nocookie\.com|youtu\.be)/i.test(String(frame.src || ''));
+      });
+      if (youtubeFrames.length === 0) window.__themedeckYouTubePlaying = false;
+      return nativePlaying || (youtubeFrames.length > 0 && window.__themedeckYouTubePlaying === true);
+    } catch {
+      return false;
+    }
+  })();
+`;
+
+const detectAudibleSteamMedia = async (): Promise<boolean> => {
+  try {
+    const localMedia = Array.from(document.querySelectorAll<HTMLMediaElement>("video, audio"));
+    if (
+      localMedia.some((media) => {
+        if (media.classList.contains("trailerhero-video") || media.closest(".trailerhero-host")) {
+          return false;
+        }
+        const style = window.getComputedStyle(media);
+        return (
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity || "1") > 0 &&
+          !media.paused &&
+          !media.ended &&
+          !media.muted &&
+          media.volume > 0.01 &&
+          media.readyState >= 2
+        );
+      })
+    ) {
+      return true;
+    }
+  } catch {
+    // Continue with Steam tab probes.
+  }
+
+  const results = await Promise.all(
+    SP_TAB_CANDIDATES.map(async (tab) => {
+      try {
+        const result = await withTimeout(executeInTab(tab, true, audibleMediaProbeCode), 650);
+        const value = result && typeof result === "object" && "result" in result
+          ? (result as { result?: unknown }).result
+          : result;
         return value === true || value === "true";
       } catch {
         return false;
@@ -4617,8 +5031,18 @@ const refreshExternalMediaState = async () => {
   }
   externalMediaProbeInFlight = true;
   try {
-    const state = await getExternalMediaState();
-    setExternalMediaActive(!!state?.active);
+    const [nowPlayingState, steamMediaActive, steamCdpState] = await Promise.all([
+      readNowPlayingState(),
+      detectAudibleSteamMedia(),
+      getSteamMediaState().catch(() => ({ active: false, player: "" })),
+    ]);
+    if (steamMediaActive || steamCdpState?.active || nowPlayingState?.active) {
+      setExternalMediaActive(true);
+      return;
+    }
+    // Compatibility with Now Playing 1.x and other Windows media sessions.
+    const legacyState = await getExternalMediaState();
+    setExternalMediaActive(Boolean(legacyState?.active));
   } catch (error) {
     console.error("[ThemeDeck] external media probe failed", error);
     setExternalMediaActive(false);
@@ -5259,6 +5683,28 @@ const usePlaybackStateValue = () => {
   return state;
 };
 
+const readExcludedAutoAssignAppIds = (): Set<number> => {
+  try {
+    const raw = window.localStorage?.getItem(EXCLUDED_AUTO_ASSIGN_STORAGE_KEY);
+    const values = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(values)) return new Set();
+    return new Set(
+      values
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0)
+    );
+  } catch {
+    return new Set();
+  }
+};
+
+const persistExcludedAutoAssignAppIds = (values: Set<number>) => {
+  window.localStorage?.setItem(
+    EXCLUDED_AUTO_ASSIGN_STORAGE_KEY,
+    JSON.stringify(Array.from(values).sort((a, b) => a - b))
+  );
+};
+
 const useBooleanPreference = (
   readFn: () => boolean,
   persistFn: (value: boolean) => void,
@@ -5430,6 +5876,116 @@ const useLaunchStopModeSetting = (): [
 };
 
 
+const AutoAssignExclusionsModal = ({
+  games,
+  initial,
+  closeModal,
+  onChange,
+}: {
+  games: GameOption[];
+  initial: Set<number>;
+  closeModal?: () => void;
+  onChange: (values: Set<number>) => void;
+}) => {
+  const [selected, setSelected] = useState<Set<number>>(() => new Set(initial));
+
+  const toggle = (appId: number) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(appId)) next.delete(appId);
+      else next.add(appId);
+      persistExcludedAutoAssignAppIds(next);
+      onChange(next);
+      return next;
+    });
+  };
+
+  return (
+    <ModalRoot closeModal={closeModal}>
+      <div
+        className="tdExclusionModal"
+        style={{
+          width: "min(600px, calc(100vw - 48px))",
+          maxWidth: "100%",
+          height: "min(620px, calc(100vh - 96px))",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.55rem",
+          overflow: "hidden",
+        }}
+      >
+        <style>{`
+          .tdExclusionModal * { box-sizing: border-box; min-width: 0; letter-spacing: 0; }
+          .tdExclusionList { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.22) transparent; }
+          .tdExclusionList::-webkit-scrollbar { width: 5px; }
+          .tdExclusionList::-webkit-scrollbar-track { background: transparent; }
+          .tdExclusionList::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 999px; }
+          .tdExclusionList::-webkit-scrollbar-button { display:none; width:0; height:0; }
+          .tdExclusionRow.DialogButton {
+            width: 100% !important;
+            min-height: 42px !important;
+            height: 42px !important;
+            padding: 0 10px !important;
+            margin: 0 !important;
+            border-radius: 5px !important;
+            display: grid !important;
+            grid-template-columns: 24px minmax(0, 1fr) !important;
+            align-items: center !important;
+            text-align: left !important;
+            font-size: 14px !important;
+            color: #fff !important;
+            background: rgba(255,255,255,.065) !important;
+            border: 1px solid rgba(255,255,255,.07) !important;
+          }
+          .tdExclusionRow:focus, .tdExclusionRow.gpfocus { color: #171717 !important; background: #f0b429 !important; border-color: #ffe09a !important; box-shadow: 0 0 0 2px rgba(255,255,255,.9) !important; }
+          .tdExclusionCheck { width:18px; height:18px; border-radius:4px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.34); background:rgba(0,0,0,.22); color:#fff; }
+          .tdExclusionCheck[data-checked="true"] { border-color:#f0b429; background:#f0b429; color:#171717; }
+          .tdExclusionRow:focus .tdExclusionCheck,.tdExclusionRow.gpfocus .tdExclusionCheck { border-color:#171717; background:#171717; color:#f0b429; }
+        `}</style>
+        <div style={{ fontSize: 20, fontWeight: 700 }}>
+          {t("autoAssignExclusionsTitle")}
+        </div>
+        <div style={{ opacity: 0.72, fontSize: 13, lineHeight: 1.35 }}>
+          {t("autoAssignExclusionsDesc")}
+        </div>
+        <div
+          className="tdExclusionList"
+          style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: "3px 9px 3px 3px" }}
+        >
+          <Focusable flow-children="vertical" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 6, width: "100%" }}>
+            {games.map((game) => {
+              const checked = selected.has(game.appid);
+              return (
+                <FocusableButton
+                  key={game.appid}
+                  className="DialogButton tdExclusionRow"
+                  role="checkbox"
+                  aria-checked={checked}
+                  onClick={() => toggle(game.appid)}
+                >
+                  <span className="tdExclusionCheck" data-checked={checked ? "true" : "false"}>
+                    {checked ? <FaCheck /> : null}
+                  </span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {game.name}
+                  </span>
+                </FocusableButton>
+              );
+            })}
+          </Focusable>
+        </div>
+        <FocusableButton
+          className="DialogButton"
+          onClick={closeModal}
+          style={{ alignSelf: "stretch", width: "100%", minWidth: 0, height: 40, minHeight: 40 }}
+        >
+          {t("close")}
+        </FocusableButton>
+      </div>
+    </ModalRoot>
+  );
+};
+
 const Content = () => {
   const {
     tracks,
@@ -5477,6 +6033,9 @@ const Content = () => {
   const bulkAssignRunIdRef = useRef(0);
   const [showMissingGames, setShowMissingGames] = useState(false);
   const [showAssignedGames, setShowAssignedGames] = useState(false);
+  const [excludedAutoAssignAppIds, setExcludedAutoAssignAppIds] = useState<Set<number>>(
+    () => readExcludedAutoAssignAppIds()
+  );
   const [resolvedMissingNames, setResolvedMissingNames] = useState<Record<number, string>>(
     {}
   );
@@ -6064,6 +6623,21 @@ const Content = () => {
     }));
   }, [bulkAssign.running]);
 
+  const handleOpenAutoAssignExclusions = useCallback(() => {
+    let modal: ReturnType<typeof showModal> | null = null;
+    const closeModal = () => modal?.Close();
+    modal = showModal(
+      <AutoAssignExclusionsModal
+        games={libraryGames}
+        initial={excludedAutoAssignAppIds}
+        closeModal={closeModal}
+        onChange={setExcludedAutoAssignAppIds}
+      />,
+      undefined,
+      { strTitle: t("autoAssignExclusionsTitle") }
+    );
+  }, [excludedAutoAssignAppIds, libraryGames]);
+
   const handleAutoAssignMissingTracks = useCallback(async () => {
     if (bulkAssign.running || ytDlpBusy) {
       return;
@@ -6090,7 +6664,10 @@ const Content = () => {
       // Keep using current in-memory tracks if refresh fails.
     }
 
-    const allMissingGames = libraryGames.filter((game) => !latestTracks[game.appid]);
+    const allMissingGames = libraryGames.filter(
+      (game) =>
+        !latestTracks[game.appid] && !excludedAutoAssignAppIds.has(game.appid)
+    );
     if (!allMissingGames.length) {
       toaster.toast({
         title: "ThemeDeck",
@@ -6402,6 +6979,7 @@ const Content = () => {
     bulkAssign.running,
     getGameName,
     libraryGames,
+    excludedAutoAssignAppIds,
     tracks,
     ytDlpBusy,
     ytDlpStatus.installed,
@@ -6640,10 +7218,133 @@ const Content = () => {
     focusFirstInteractiveElement(topFocusRef.current);
   }, []);
 
+  const qamIconButton: CSSProperties = { width: 38, minWidth: 38, height: 38, minHeight: 38, padding: 0, display: "grid", placeItems: "center" };
+  const qamChoice = (active: boolean): CSSProperties => ({
+    width: "100%",
+    minHeight: 36,
+    display: "grid",
+    gridTemplateColumns: "12px minmax(0,1fr)",
+    alignItems: "center",
+    gap: 9,
+    padding: "0 10px",
+    textAlign: "left",
+    border: active ? "1px solid rgba(240,180,41,.72)" : "1px solid rgba(255,255,255,.075)",
+    background: active ? "rgba(240,180,41,.11)" : "rgba(255,255,255,.035)",
+  });
+  const renderQamTrack = (kind: "ambient" | "store") => {
+    const currentTrack = kind === "ambient" ? globalTrack : storeTrack;
+    const playingId = kind === "ambient" ? GLOBAL_AMBIENT_APP_ID : STORE_TRACK_APP_ID;
+    const chooseLabel = kind === "ambient" ? t("chooseGlobal") : t("chooseStore");
+    const emptyLabel = kind === "ambient" ? t("noGlobalTrackSelected") : t("noStoreOnlyTrackSelected");
+    const title = kind === "ambient" ? t("globalAmbientPanelTitle") : t("storeOnlyPanelTitle");
+    const preview = kind === "ambient" ? handleGlobalPreviewToggle : handleStorePreviewToggle;
+    const remove = kind === "ambient" ? handleRemoveGlobalTrack : handleRemoveStoreTrack;
+    const volume = kind === "ambient" ? handleGlobalVolumeChange : handleStoreVolumeChange;
+    const offset = kind === "ambient" ? handleGlobalStartOffsetChange : handleStoreStartOffsetChange;
+    const loop = kind === "ambient" ? handleGlobalLoopChange : handleStoreLoopChange;
+    return (
+      <section className="tdQamCard">
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 10, alignItems: "start" }}>
+          <div style={{ minWidth: 0 }}>
+            <h2>{title}</h2>
+            <div className="tdQamMeta">{currentTrack?.filename || emptyLabel}</div>
+          </div>
+          <Focusable flow-children="horizontal" style={{ display: "flex", gap: 7 }}>
+            {currentTrack ? <FocusableButton className="DialogButton tdQamIconButton" title={playback.appId === playingId && playback.status === "playing" ? t("pausePreview") : t("previewTrack")} onClick={preview} style={qamIconButton}>{playback.appId === playingId && playback.status === "playing" ? <FaPause /> : <FaPlay />}</FocusableButton> : null}
+            {currentTrack ? <FocusableButton className="DialogButton tdQamIconButton" title={t("removeTrack")} onClick={remove} style={qamIconButton}><FaTrash /></FocusableButton> : null}
+            <FocusableButton className="DialogButton tdQamIconButton" title={chooseLabel} onClick={() => navigateToThemeDeckEditor(kind === "ambient" ? "/themedeck/global" : "/themedeck/store")} style={qamIconButton}><FaChevronRight /></FocusableButton>
+          </Focusable>
+        </div>
+        {currentTrack ? (
+          <div className="tdQamTrackControls">
+            <SliderField value={Math.round(currentTrack.volume * 100)} label={t("volume")} min={0} max={100} step={5} valueSuffix="%" showValue onChange={volume} />
+            <SliderField value={Math.round(currentTrack.startOffset)} label={t("startSkip")} min={0} max={30} step={1} valueSuffix="s" showValue onChange={offset} />
+            <ToggleField checked={currentTrack.loop} label={t("loopTrack")} description={t("loopTrackDesc")} onChange={loop} />
+          </div>
+        ) : null}
+      </section>
+    );
+  };
+
+  return (
+    <ScrollPanel>
+      <Focusable className="tdQamRedesign" flow-children="vertical" style={{ width: "100%", padding: "2px 12px 26px 4px", overflowX: "hidden" }}>
+        <style>{`
+          .tdQamRedesign,.tdQamRedesign *{box-sizing:border-box;min-width:0;letter-spacing:0}
+          .tdQamRedesign .DialogButton{width:100%;min-height:36px!important;border-radius:5px!important;padding:0 10px!important;font-size:15px!important}
+          .tdQamRedesign .DialogButton:hover,.tdQamRedesign .DialogButton:focus,.tdQamRedesign .DialogButton.gpfocus{background:rgba(240,180,41,.16)!important;color:#fff!important;border-color:rgba(240,180,41,.92)!important;box-shadow:0 0 0 2px rgba(240,180,41,.22)!important}
+          .tdQamRedesign .DialogButton:hover *,.tdQamRedesign .DialogButton:focus *,.tdQamRedesign .DialogButton.gpfocus *{color:inherit!important}
+          .tdQamRedesign .DialogButton:hover svg,.tdQamRedesign .DialogButton:focus svg,.tdQamRedesign .DialogButton.gpfocus svg{color:#fff!important;fill:currentColor!important}
+          .tdQamRedesign .tdQamIconButton{width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;padding:0!important}
+          .tdQamRedesign .tdQamIconButton:focus,.tdQamRedesign .tdQamIconButton.gpfocus{background:rgba(240,180,41,.16)!important;color:#fff!important;border-color:rgba(240,180,41,.92)!important;box-shadow:0 0 0 2px rgba(240,180,41,.22)!important}
+          .tdQamRedesign .tdQamIconButton:focus svg,.tdQamRedesign .tdQamIconButton.gpfocus svg{color:#fff!important;fill:currentColor!important}
+          .tdQamCard{width:100%;margin:0 0 9px;padding:13px 12px;border:1px solid rgba(255,255,255,.085);border-radius:6px;background:rgba(255,255,255,.035);overflow:hidden}
+          .tdQamCard h2{margin:0;font-size:16px;line-height:1.2;font-weight:700}
+          .tdQamMeta{margin-top:4px;font-size:12px;line-height:1.3;opacity:.56;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+          .tdQamSectionLabel{margin:14px 4px 7px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.48}
+          .tdQamTrackControls{display:grid;gap:7px;margin-top:11px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07)}
+          .tdQamList{max-height:190px;overflow-y:auto;margin-top:8px;padding:7px 9px;border-radius:5px;background:rgba(0,0,0,.16);font-size:.73rem;line-height:1.42}
+          .tdQamRedesign [class*="PanelSectionRow"]{width:100%!important;max-width:100%!important}
+        `}</style>
+        <div ref={topFocusRef} tabIndex={-1} style={{ position: "absolute", width: 0, height: 0, outline: "none" }} />
+
+        <div className="tdQamSectionLabel">ThemeDeck</div>
+        <section className="tdQamCard">
+          <ToggleField checked={autoPlay} label={t("autoPlayLabel")} description={t("autoPlayDesc")} onChange={setAutoPlay} />
+          <div style={{ marginTop: 8 }}><SliderField value={Math.round(gameTrackMasterVolume * 100)} label={t("gameMusicVolumeLabel")} min={0} max={100} step={5} valueSuffix="%" showValue onChange={(value) => setGameTrackMasterVolume(clamp(value / 100))} /></div>
+          <div style={{ marginTop: 10, fontSize: ".76rem", fontWeight: 700 }}>{t("stopMusicAfterPlay")}</div>
+          <Focusable flow-children="vertical" style={{ display: "grid", gap: 5, marginTop: 6 }}>
+            {([{ value: "launch_start", label: t("launchStart") }, { value: "game_started", label: t("launchFinish") }] as Array<{ value: LaunchStopMode; label: string }>).map((option) => <FocusableButton key={option.value} className="DialogButton" role="radio" aria-checked={launchStopMode === option.value} onClick={() => setLaunchStopMode(option.value)} style={qamChoice(launchStopMode === option.value)}><span style={{ width: 8, height: 8, borderRadius: 8, background: launchStopMode === option.value ? "#f0b429" : "rgba(255,255,255,.24)" }} /><span>{option.label}</span></FocusableButton>)}
+          </Focusable>
+          <div style={{ display: "grid", gap: 7, marginTop: 10, paddingTop: 9, borderTop: "1px solid rgba(255,255,255,.07)" }}>
+            <ToggleField checked={globalAmbientEnabled} label={t("enableGlobalLabel")} description={t("enableGlobalDesc")} onChange={(value) => { setGlobalAmbientEnabled(value); scheduleAutoPlaybackFromContext(); }} />
+            <ToggleField checked={storeTrackEnabled} label={t("enableStoreLabel")} description={t("enableStoreDesc")} onChange={(value) => { setStoreTrackEnabled(value); scheduleAutoPlaybackFromContext(); }} />
+            <ToggleField checked={ambientDisableStore} label={t("disableGlobalStoreLabel")} description={t("disableGlobalStoreDesc")} onChange={(value) => { setAmbientDisableStore(value); scheduleAutoPlaybackFromContext(); }} />
+          </div>
+          <div style={{ marginTop: 10, fontSize: ".76rem", fontWeight: 700 }}>{t("globalInterruptionLabel")}</div>
+          <Focusable flow-children="vertical" style={{ display: "grid", gap: 5, marginTop: 6 }}>
+            {([{ value: "stop", label: t("interruptStop") }, { value: "pause", label: t("interruptPause") }, { value: "mute", label: t("interruptMute") }] as Array<{ value: AmbientInterruptionMode; label: string }>).map((option) => <FocusableButton key={option.value} className="DialogButton" role="radio" aria-checked={ambientInterruptionMode === option.value} onClick={() => setAmbientInterruptionMode(option.value)} style={qamChoice(ambientInterruptionMode === option.value)}><span style={{ width: 8, height: 8, borderRadius: 8, background: ambientInterruptionMode === option.value ? "#f0b429" : "rgba(255,255,255,.24)" }} /><span>{option.label}</span></FocusableButton>)}
+          </Focusable>
+        </section>
+
+        <div className="tdQamSectionLabel">{t("globalAmbientPanelTitle")}</div>
+        {renderQamTrack("ambient")}
+        {renderQamTrack("store")}
+
+        <div className="tdQamSectionLabel">{t("autoAssignTitle")}</div>
+        <section className="tdQamCard">
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 9, alignItems: "baseline" }}><h2>{t("autoAssignTitle")}</h2><strong style={{ fontSize: ".78rem" }}>{unassignedLibraryGameCount}</strong></div>
+          <div className="tdQamMeta">{t("libraryCount", { count: libraryGames.length })}</div>
+          <Focusable flow-children="vertical" style={{ display: "grid", gap: 6, marginTop: 10 }}>
+            <FocusableButton className="DialogButton" onClick={handleAutoAssignMissingTracks} disabled={bulkAssign.running || ytDlpBusy || !ytDlpStatus.installed}>{bulkAssign.running ? t("running") : t("autoAssignMissing")}</FocusableButton>
+            {bulkAssign.running ? <FocusableButton className="DialogButton" onClick={handleStopBulkAssign}>{t("stopButton")}</FocusableButton> : null}
+            <FocusableButton className="DialogButton" onClick={() => setShowMissingGames((value) => !value)}>{showMissingGames ? t("hideMissingGames") : t("showMissingGames")}</FocusableButton>
+            {showMissingGames ? <div className="tdQamList">{missingGamesList.length ? missingGamesList.map((game) => <div key={game.appid}>{game.name}</div>) : t("noGamesMissingMusic")}</div> : null}
+            <FocusableButton className="DialogButton" onClick={() => setShowAssignedGames((value) => !value)}>{showAssignedGames ? t("hideAssignedGames") : t("showAssignedGames")}</FocusableButton>
+            {showAssignedGames ? <div className="tdQamList">{assignedGamesList.length ? assignedGamesList.map((game) => <div key={game.appid} style={{ color: game.normalized ? "#f0b429" : "inherit" }}>{game.name}</div>) : t("noGamesWithMusic")}</div> : null}
+            <FocusableButton className="DialogButton" onClick={handleOpenAutoAssignExclusions} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 14px", alignItems: "center", textAlign: "left" }}><span>{t("chooseAutoAssignExclusions")}</span><FaChevronRight size={12} /></FocusableButton>
+          </Focusable>
+          {(bulkAssign.running || bulkAssign.message) ? <div style={{ marginTop: 9, fontSize: ".71rem", opacity: .62 }}>{bulkAssign.message || `${bulkAssign.completed}/${bulkAssign.total}`}</div> : null}
+        </section>
+
+        <div className="tdQamSectionLabel">Audio</div>
+        <section className="tdQamCard">
+          <ToggleField checked={normalizeDownloadedAudio} label={t("normalizeAudioLabel")} description={t("normalizeAudioDesc")} onChange={setNormalizeDownloadedAudio} />
+          <div style={{ marginTop: 7 }}><ToggleField checked={upmixDownloadedAudio} label={t("upmixAudioLabel")} description={t("upmixAudioDesc")} onChange={setUpmixDownloadedAudio} /></div>
+          <div className="tdQamMeta" style={{ color: audioNormalizationStatus.available ? "inherit" : "#ff9e9e" }}>{audioNormalizationStatus.available ? t("normalizationAvailable") : t("normalizationUnavailable")}</div>
+          <Focusable flow-children="vertical" style={{ display: "grid", gap: 6, marginTop: 10 }}>
+            <FocusableButton className="DialogButton" disabled={ytDlpBusy} onClick={handleUpdateYtDlp}>{ytDlpBusy ? t("updating") : t("updateYtdlp")}</FocusableButton>
+            <FocusableButton className="DialogButton" onClick={handleDeleteDownloadedTracks}>{t("deleteDownloadedTracks")}</FocusableButton>
+          </Focusable>
+        </section>
+      </Focusable>
+    </ScrollPanel>
+  );
+
   return (
     <ScrollPanel>
       <div
-        className="themedeck-main"
+        className="themedeck-main tdQam"
         style={{
           paddingBottom: "1.5rem",
           paddingRight: "0.85rem",
@@ -6689,13 +7390,30 @@ const Content = () => {
           overflow-wrap: anywhere !important;
           word-break: break-word !important;
         }
+        .themedeck-main .themedeck-card {
+          width: calc(100% - 0.35rem);
+          margin: 0 0 0.55rem;
+          padding: 0.35rem 0.45rem 0.45rem;
+          border-radius: 6px;
+          border: 1px solid rgba(255,255,255,0.09);
+          background: rgba(255,255,255,0.045);
+          overflow: hidden;
+        }
+        .tdQam .DialogButton {
+          min-height: 32px !important;
+          padding: 0 10px !important;
+          border-radius: 5px !important;
+          font-size: .86rem !important;
+          line-height: 1.15 !important;
+        }
+        .tdQam [class*="PanelSection"] { padding-left: 0 !important; padding-right: 0 !important; }
       `}</style>
       <div
         ref={topFocusRef}
         tabIndex={-1}
         style={{ position: "absolute", width: 0, height: 0, outline: "none" }}
       />
-      <div>
+      <section className="themedeck-card">
         <PanelSection>
           <PanelSectionRow>
             <ToggleField
@@ -7004,7 +7722,8 @@ const Content = () => {
             </div>
           </PanelSectionRow>
         </PanelSection>
-      </div>
+      </section>
+      <section className="themedeck-card">
       <PanelSection title={t("autoAssignTitle")}>
         <PanelSectionRow>
           <div style={{ width: "100%" }}>
@@ -7280,12 +7999,32 @@ const Content = () => {
             ) : null}
           </div>
         </PanelSectionRow>
+        <PanelSectionRow>
+          <FocusableButton
+            className="DialogButton themedeck-fit themedeck-wrap"
+            onClick={handleOpenAutoAssignExclusions}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.55rem",
+              textAlign: "left",
+              fontSize: "0.92rem",
+              paddingRight: "0.65rem",
+              paddingLeft: "0.65rem",
+            }}
+          >
+            <span>{t("chooseAutoAssignExclusions")}</span>
+            <FaChevronRight size={13} style={{ marginLeft: "auto" }} />
+          </FocusableButton>
+        </PanelSectionRow>
       </PanelSection>
+      </section>
+      <section className="themedeck-card">
       <PanelSection title={t("globalAmbientPanelTitle")}>
         <PanelSectionRow>
           <FocusableButton
             className="DialogButton themedeck-fit themedeck-wrap"
-            onClick={() => Navigation.Navigate("/themedeck/global")}
+            onClick={() => navigateToThemeDeckEditor("/themedeck/global")}
             style={{
               textAlign: "left",
               fontSize: "0.92rem",
@@ -7394,11 +8133,13 @@ const Content = () => {
           </PanelSectionRow>
         )}
       </PanelSection>
+      </section>
+      <section className="themedeck-card">
       <PanelSection title={t("storeOnlyPanelTitle")}>
         <PanelSectionRow>
           <FocusableButton
             className="DialogButton themedeck-fit themedeck-wrap"
-            onClick={() => Navigation.Navigate("/themedeck/store")}
+            onClick={() => navigateToThemeDeckEditor("/themedeck/store")}
             style={{
               textAlign: "left",
               fontSize: "0.92rem",
@@ -7507,24 +8248,208 @@ const Content = () => {
           </PanelSectionRow>
         )}
       </PanelSection>
+      </section>
       </div>
     </ScrollPanel>
   );
 };
 
+const filePickerJoin = (base: string, child: string) => {
+  const separator = base.includes("\\") ? "\\" : "/";
+  return `${base.replace(/[\\/]+$/, "")}${separator}${child}`;
+};
+
+const filePickerParent = (path: string) => {
+  const clean = path.replace(/[\\/]+$/, "");
+  if (/^[A-Za-z]:$/.test(clean)) return `${clean}\\`;
+  const index = Math.max(clean.lastIndexOf("\\"), clean.lastIndexOf("/"));
+  if (index < 0) return path;
+  const parent = clean.slice(0, index);
+  return /^[A-Za-z]:$/.test(parent) ? `${parent}\\` : parent || "/";
+};
+
+const THEMEDECK_EDITOR_ACTIVE_CLASS = "tdThemeDeckEditorActive";
+const THEMEDECK_EDITOR_STYLE_ID = "td-themedeck-editor-chrome-style";
+const THEMEDECK_EDITOR_CHROME_SELECTORS = [
+  "#header",
+  '[class*="BasicFooter"]',
+  '[class*="FooterLegend"]',
+  '[class*="QuickAccessFooter"]',
+  '[class*="GamepadFooter"]',
+  '[class*="GamepadHeader"]',
+  '[class*="HeaderStatus"]',
+  '[class*="StatusIcons"]',
+  '[class*="TopBar"]',
+];
+
+const themeDeckEditorDocuments = (): Document[] => {
+  const documents: Document[] = [];
+  const addDocument = (candidate: Document | null | undefined) => {
+    try {
+      if (candidate?.documentElement && !documents.includes(candidate)) {
+        documents.push(candidate);
+      }
+    } catch {}
+  };
+  const addWindowDocument = (candidate: any) => {
+    if (!candidate) return;
+    try { addDocument(candidate.document); } catch {}
+    try { addDocument(candidate.window?.document); } catch {}
+    try { addDocument(candidate.m_Window?.document); } catch {}
+    try { addDocument(candidate.m_popup?.document); } catch {}
+    try { addDocument(candidate.BrowserWindow?.document); } catch {}
+    try { addDocument(candidate.GetWindow?.()?.document); } catch {}
+  };
+
+  addDocument(document);
+  try { addDocument(window.top?.document); } catch {}
+  try { addDocument(window.parent?.document); } catch {}
+  try { addDocument(window.opener?.document); } catch {}
+
+  const store = (Router as any)?.WindowStore;
+  addWindowDocument(store?.GamepadUIMainWindowInstance);
+  if (Array.isArray(store?.SteamUIWindows)) {
+    store.SteamUIWindows.forEach(addWindowDocument);
+  }
+  return documents;
+};
+
+const markThemeDeckEditorChrome = () => {
+  themeDeckEditorDocuments().forEach((targetDocument) => {
+    try {
+      targetDocument.documentElement.classList.add(THEMEDECK_EDITOR_ACTIVE_CLASS);
+      targetDocument.body?.classList.add(THEMEDECK_EDITOR_ACTIVE_CLASS);
+      let style = targetDocument.getElementById(THEMEDECK_EDITOR_STYLE_ID) as HTMLStyleElement | null;
+      if (!style) {
+        style = targetDocument.createElement("style");
+        style.id = THEMEDECK_EDITOR_STYLE_ID;
+        const htmlSelectors = THEMEDECK_EDITOR_CHROME_SELECTORS.map(
+          (selector) => `html.${THEMEDECK_EDITOR_ACTIVE_CLASS} ${selector}`
+        );
+        const bodySelectors = THEMEDECK_EDITOR_CHROME_SELECTORS.map(
+          (selector) => `body.${THEMEDECK_EDITOR_ACTIVE_CLASS} ${selector}`
+        );
+        style.textContent = `${[...htmlSelectors, ...bodySelectors].join(",")}{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:none!important;animation:none!important}`;
+        targetDocument.head?.appendChild(style);
+      }
+    } catch {}
+  });
+};
+
+const useThemeDeckEditorChromeSuppression = () => {
+  useEffect(() => {
+    markThemeDeckEditorChrome();
+    const followUps = [40, 120, 300, 700, 1200, 2000].map((delay) =>
+      window.setTimeout(markThemeDeckEditorChrome, delay)
+    );
+    const steady = window.setInterval(markThemeDeckEditorChrome, 1800);
+    return () => {
+      window.clearInterval(steady);
+      followUps.forEach((timer) => window.clearTimeout(timer));
+      themeDeckEditorDocuments().forEach((targetDocument) => {
+        try {
+          targetDocument.documentElement.classList.remove(THEMEDECK_EDITOR_ACTIVE_CLASS);
+          targetDocument.body?.classList.remove(THEMEDECK_EDITOR_ACTIVE_CLASS);
+        } catch {}
+      });
+    };
+  }, []);
+};
+
+const navigateToThemeDeckEditor = (path: string) => {
+  markThemeDeckEditorChrome();
+  Navigation.Navigate(path);
+};
+
+const ThemeDeckFilePickerModal = ({
+  initialPath,
+  closeModal,
+  onSelect,
+}: {
+  initialPath: string;
+  closeModal?: () => void;
+  onSelect: (path: string) => Promise<void>;
+}) => {
+  const [listing, setListing] = useState<DirectoryListing>({ path: initialPath, dirs: [], files: [] });
+  const [manualPath, setManualPath] = useState(initialPath);
+  const [selectedPath, setSelectedPath] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async (path: string) => {
+    setLoading(true);
+    setSelectedPath("");
+    try {
+      const next = await listDirectory(path);
+      setListing(next);
+      setManualPath(next.path);
+    } catch (error) {
+      toaster.toast({ title: "ThemeDeck", body: getErrorMessage(error, t("unknownError")) });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(initialPath); }, [initialPath, load]);
+  const audioFiles = listing.files.filter((file) => AUDIO_EXTENSIONS.some((extension) => file.toLocaleLowerCase().endsWith(`.${extension}`)));
+
+  const confirm = async () => {
+    if (!selectedPath || saving) return;
+    setSaving(true);
+    try {
+      const validation: any = await validateAudioPath(selectedPath);
+      if (!(validation?.valid ?? validation?.ok)) throw new Error(validation?.error || validation?.message || "Unsupported audio file");
+      await onSelect(String(validation?.path || selectedPath));
+      closeModal?.();
+    } catch (error) {
+      toaster.toast({ title: "ThemeDeck", body: t("unableAddFile", { error: getErrorMessage(error, t("unknownError")) }) });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <ModalRoot closeModal={closeModal}>
+      <Focusable className="tdFilePicker" flow-children="vertical" style={{ position: "fixed", left: "50%", top: "50%", transform: "translate(-50%,-50%)", zIndex: 10000, width: "min(820px,calc(100vw - 72px))", height: "min(620px,calc(100vh - 72px))", display: "grid", gridTemplateRows: "auto minmax(0,1fr) auto", gap: 12, padding: 18, borderRadius: 8, border: "1px solid rgba(255,255,255,.16)", background: "rgba(16,17,18,.98)", boxShadow: "0 28px 90px rgba(0,0,0,.72)", overflow: "hidden" }}>
+        <style>{`
+          .tdFilePicker,.tdFilePicker *{box-sizing:border-box;min-width:0;letter-spacing:0}
+          .tdFilePicker .DialogButton{color:#fff!important;border-radius:5px!important;font-size:14px!important}
+          .tdFilePicker .DialogButton:focus,.tdFilePicker .DialogButton.gpfocus{background:#f0b429!important;color:#171717!important;box-shadow:0 0 0 2px rgba(255,255,255,.9)!important}
+          .tdFilePickerList{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.3) transparent}
+          .tdFilePickerList::-webkit-scrollbar{width:8px}.tdFilePickerList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border:2px solid transparent;background-clip:padding-box;border-radius:999px}
+          .tdFilePickerSpinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;animation:tdFilePickerSpin .8s linear infinite}
+          @keyframes tdFilePickerSpin{to{transform:rotate(360deg)}}
+          .tdFilePickerEntry{width:100%!important;height:42px!important;min-height:42px!important;padding:0 12px!important;display:grid!important;grid-template-columns:24px minmax(0,1fr)!important;gap:9px!important;align-items:center!important;text-align:left!important;background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.06)!important}
+          .tdFilePickerEntry[data-selected="true"]{border-color:#f0b429!important;background:rgba(240,180,41,.14)!important}
+        `}</style>
+        <div style={{ display: "grid", gridTemplateColumns: "42px minmax(0,1fr) 76px", gap: 8, alignItems: "center" }}>
+          <FocusableButton className="DialogButton" title={t("up")} onClick={() => void load(filePickerParent(listing.path))} style={{ width: 42, minWidth: 42, height: 42, minHeight: 42, padding: 0, display: "grid", placeItems: "center" }}><FaArrowLeft /></FocusableButton>
+          <TextField value={manualPath} onChange={(event) => setManualPath(event.target.value)} style={{ width: "100%", minWidth: 0 }} />
+          <FocusableButton className="DialogButton" onClick={() => void load(manualPath)} style={{ width: 76, minWidth: 76, height: 42, minHeight: 42, padding: "0 8px", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>{t("go")}</FocusableButton>
+        </div>
+        <Focusable className="tdFilePickerList" flow-children="vertical" style={{ minHeight: 0, overflowY: "auto", overflowX: "hidden", display: "grid", alignContent: "start", gap: 6, padding: "2px 6px 2px 2px" }}>
+          {loading ? <div style={{ height: 54, display: "grid", placeItems: "center" }}><span className="tdFilePickerSpinner" /></div> : null}
+          {!loading && listing.dirs.map((directory) => (
+            <FocusableButton key={`dir-${directory}`} className="DialogButton tdFilePickerEntry" onClick={() => void load(filePickerJoin(listing.path, directory))}><FaFolder /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{directory}</span></FocusableButton>
+          ))}
+          {!loading && audioFiles.map((file) => {
+            const path = filePickerJoin(listing.path, file);
+            return <FocusableButton key={`file-${file}`} className="DialogButton tdFilePickerEntry" data-selected={selectedPath === path ? "true" : "false"} onClick={() => setSelectedPath(path)}><FaMusic /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file}</span></FocusableButton>;
+          })}
+        </Focusable>
+        <FocusableButton className="DialogButton" disabled={!selectedPath || saving} onClick={() => void confirm()} style={{ width: "100%", minWidth: 0, height: 46, minHeight: 46, background: selectedPath ? "#f0b429" : "rgba(255,255,255,.08)", color: selectedPath ? "#171717" : "rgba(255,255,255,.48)", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}><FaCheck />{saving ? t("loading") : t("chooseAudioFile")}</FocusableButton>
+      </Focusable>
+    </ModalRoot>
+  );
+};
+
 const ChangeTheme = () => {
+  useThemeDeckEditorChromeSuppression();
   const params = useParams<{ appid?: string }>();
   const appId = Number(params?.appid);
   const [track, setTrack] = useState<GameTrack | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentDir, setCurrentDir] = useState("/home/deck");
-  const [browser, setBrowser] = useState<DirectoryListing>({
-    path: "/home/deck",
-    dirs: [],
-    files: [],
-  });
-  const [browserLoading, setBrowserLoading] = useState(true);
-  const [manualPath, setManualPath] = useState("/home/deck");
+  const pickerStartPath = "C:\\";
   const [ytDlpStatus, setYtDlpStatus] = useState<YtDlpStatus>({
     installed: false,
   });
@@ -7537,7 +8462,6 @@ const ChangeTheme = () => {
   const [routePathname, setRoutePathname] = useState<string>(
     window.location.pathname || ""
   );
-  const [selectedYouTubeId, setSelectedYouTubeId] = useState<string | null>(null);
   const topFocusRef = useRef<HTMLDivElement | null>(null);
   const assignedVideoId = useMemo(() => {
     if (!track?.filename) return "";
@@ -7601,17 +8525,6 @@ const ChangeTheme = () => {
     };
   }, [appId, routePathname]);
 
-  useEffect(() => {
-    if (!youtubeResults.length) {
-      setSelectedYouTubeId(null);
-      return;
-    }
-    const currentlySelected = youtubeResults.find((item) => item.id === selectedYouTubeId);
-    if (!currentlySelected) {
-      setSelectedYouTubeId(youtubeResults[0].id);
-    }
-  }, [youtubeResults, selectedYouTubeId]);
-
   const refreshYtDlpStatus = useCallback(
     async (silent = false) => {
       try {
@@ -7634,28 +8547,6 @@ const ChangeTheme = () => {
     refreshYtDlpStatus(true);
   }, [refreshYtDlpStatus]);
 
-  const refreshDirectory = useCallback(
-    async (nextDir?: string) => {
-      if (!appId) return;
-      setBrowserLoading(true);
-      try {
-        const listing = await listDirectory(nextDir || currentDir);
-        setBrowser(listing);
-        setCurrentDir(listing.path);
-        setManualPath(listing.path);
-      } catch (error) {
-        console.error("[ThemeDeck] list directory failed", error);
-      } finally {
-        setBrowserLoading(false);
-      }
-    },
-    [appId, currentDir]
-  );
-
-  useEffect(() => {
-    refreshDirectory("/home/deck");
-  }, []);
-
   useEffect(() => {
     focusFirstInteractiveElement(topFocusRef.current);
   }, [appId]);
@@ -7675,7 +8566,7 @@ const ChangeTheme = () => {
   const saveFromPath = async (fullPath: string) => {
     if (!appId) return;
     try {
-      const filename = fullPath.split("/").pop() || "track";
+      const filename = fullPath.split(/[\\/]/).pop() || "track";
       await assignTrack(appId, fullPath, filename);
       window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
       await loadTrack();
@@ -7703,6 +8594,16 @@ const ChangeTheme = () => {
         body: t("unableAddFile", { error: `${fullPath}: ${message}` }),
       });
     }
+  };
+
+  const handleChooseAudioFile = async () => {
+    let modal: ReturnType<typeof showModal> | null = null;
+    const closeModal = () => modal?.Close();
+    modal = showModal(
+      <ThemeDeckFilePickerModal initialPath={pickerStartPath} closeModal={closeModal} onSelect={saveFromPath} />,
+      undefined,
+      { strTitle: t("browseLocalTitle") },
+    );
   };
 
   const handleYouTubeSearch = async () => {
@@ -7757,10 +8658,6 @@ const ChangeTheme = () => {
     setPreviewLoadingVideoId(result.id);
     try {
       const response = await getYouTubePreviewStream(result.webpage_url);
-      const streamUrl = (response?.stream_url || "").trim();
-      if (!streamUrl) {
-        throw new Error("No preview stream URL returned");
-      }
       let preview = previewAudioRef.current;
       if (!preview) {
         preview = new Audio();
@@ -7770,13 +8667,8 @@ const ChangeTheme = () => {
       preview.onended = () => {
         setPreviewingVideoId(null);
       };
-      preview.onerror = () => {
-        setPreviewingVideoId(null);
-      };
-      preview.pause();
       preview.currentTime = 0;
-      preview.src = streamUrl;
-      await preview.play();
+      await playYouTubePreview(preview, response);
       setPreviewingVideoId(result.id);
     } catch (error) {
       const message = getErrorMessage(error, "Preview failed");
@@ -7833,34 +8725,6 @@ const ChangeTheme = () => {
       refreshYtDlpStatus(true);
     }
   };
-
-  const selectedYouTubeResult = useMemo(
-    () => youtubeResults.find((item) => item.id === selectedYouTubeId) ?? null,
-    [youtubeResults, selectedYouTubeId]
-  );
-
-  const joinPath = (base: string, child: string) =>
-    base === "/" ? `/${child}` : `${base.replace(/\/$/, "")}/${child}`;
-
-  const goUp = () => {
-    if (currentDir === "/") return;
-    const parent = currentDir.replace(/\/[^/]+$/, "") || "/";
-    refreshDirectory(parent);
-  };
-
-  const handleDirClick = (dir: string) => {
-    refreshDirectory(joinPath(currentDir, dir));
-  };
-
-  const handleFileClick = (file: string) => {
-    saveFromPath(joinPath(currentDir, file));
-  };
-
-  const handleManualGo = () => {
-    if (!manualPath) return;
-    refreshDirectory(manualPath);
-  };
-
 
   const handleRemove = async () => {
     if (!appId) return;
@@ -7945,6 +8809,18 @@ const ChangeTheme = () => {
     playTrack(track, "manual");
   };
 
+  const routeCardStyle: CSSProperties = {
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+    borderRadius: "8px",
+    border: "1px solid rgba(255,255,255,0.11)",
+    background: "rgba(255,255,255,0.055)",
+    padding: "0.75rem 0.8rem",
+    marginBottom: "0.8rem",
+    overflow: "hidden",
+  };
+
   if (!appId) {
     return (
       <ScrollPanel>
@@ -7956,6 +8832,112 @@ const ChangeTheme = () => {
       </ScrollPanel>
     );
   }
+
+  const gameName = getDisplayName(appId);
+  const compactIconButton: CSSProperties = {
+    width: 42,
+    minWidth: 42,
+    height: 42,
+    minHeight: 42,
+    padding: 0,
+    display: "grid",
+    placeItems: "center",
+  };
+
+  return (
+    <ScrollPanel>
+      <Focusable className="tdGameEditor" flow-children="vertical" style={{ position: "fixed", inset: 0, zIndex: 10, width: "100%", minHeight: "100vh", overflowY: "auto", overflowX: "hidden", padding: "30px max(36px,calc((100vw - 1460px)/2)) 110px", color: "#fff", background: "#080909" }}>
+        <style>{`
+          .tdGameEditor,.tdGameEditor *{box-sizing:border-box;letter-spacing:0}
+          .tdGameEditor{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px)}
+          .tdGameEditor .DialogButton{border-radius:6px!important;min-height:42px!important}
+          .tdGameEditor .tdGameIconButton:focus,.tdGameEditor .tdGameIconButton.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
+          .tdGameEditor .tdGameIconButton:focus svg,.tdGameEditor .tdGameIconButton.gpfocus svg{color:#151515!important;fill:currentColor!important}
+          .tdGameEditorCard{width:100%;margin-top:16px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
+          .tdGameTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch}
+          .tdGameTopRow .tdGameEditorCard{height:100%}
+          .tdGameSearchRow{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:10px;margin-top:14px;align-items:stretch}
+          .tdGameSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:44px!important;min-height:44px!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+          .tdMiniSpinner{display:inline-block;width:17px;height:17px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:tdMiniSpin .8s linear infinite}
+          @keyframes tdMiniSpin{to{transform:rotate(360deg)}}
+          .tdGameEditorResult{display:grid;grid-template-columns:112px minmax(0,1fr) 42px 42px;gap:10px;align-items:center;min-height:72px;padding:7px;border-bottom:1px solid rgba(255,255,255,.075)}
+          .tdGameEditorResult:last-child{border-bottom:0}
+          ${SELECTED_TRACK_PANEL_CSS}
+          @media(max-width:900px){.tdGameTopRow{grid-template-columns:minmax(0,1fr)}}
+        `}</style>
+        <div ref={topFocusRef} tabIndex={-1} style={{ position: "absolute", width: 0, height: 0, outline: "none" }} />
+        <header style={{ display: "grid", gridTemplateColumns: "42px minmax(0,1fr)", gap: 14, alignItems: "center" }}>
+          <FocusableButton className="DialogButton tdGameIconButton" title={t("back")} onClick={() => Navigation.NavigateBack()} style={compactIconButton}><FaArrowLeft /></FocusableButton>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, opacity: .56, textTransform: "uppercase", fontWeight: 700 }}>ThemeDeck</div>
+            <h1 style={{ margin: "4px 0 0", fontSize: 31, lineHeight: 1.08, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gameName}</h1>
+          </div>
+        </header>
+
+        <Focusable className="tdGameTopRow" flow-children="horizontal">
+          <Focusable className="tdGameEditorCard" flow-children="vertical">
+            <SelectedTrackPanel
+              track={track}
+              loading={loading}
+              emptyText={t("noMusicSelected")}
+              isPlaying={playback.appId === appId && playback.status === "playing"}
+              onPreview={handleTrackPreviewToggle}
+              onRemove={handleRemove}
+              onVolumeChange={handleTrackVolumeChange}
+              onStartChange={handleTrackStartOffsetChange}
+              onLoopChange={handleTrackLoopChange}
+            />
+          </Focusable>
+
+          <Focusable className="tdGameEditorCard" flow-children="vertical" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 19 }}>{t("browseLocalTitle")}</h2>
+              <div style={{ marginTop: 5, fontSize: 13, opacity: .55 }}>{t("chooseAudioFile")}</div>
+            </div>
+            <FocusableButton className="DialogButton" title={t("chooseAudioFile")} onClick={() => void handleChooseAudioFile()} style={{ width: "100%", minWidth: 0, height: 44, minHeight: 44, marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}><FaFolder /><span>{t("chooseAudioFile")}</span></FocusableButton>
+          </Focusable>
+        </Focusable>
+
+        <section className="tdGameEditorCard">
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 14 }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 21 }}>{t("youtubeSearchTitle")}</h2>
+              <div style={{ marginTop: 4, fontSize: 13, opacity: .58 }}>{t("searchYoutubeDesc")}</div>
+            </div>
+            <div style={{ fontSize: 12, opacity: ytDlpStatus.installed ? .52 : 1, color: ytDlpStatus.installed ? "inherit" : "#ff9e9e" }}>{ytDlpStatus.installed ? `yt-dlp ${ytDlpStatus.version || ""}`.trim() : t("ytdlpNotInstalled")}</div>
+          </div>
+          {!ytDlpStatus.installed ? (
+            <FocusableButton className="DialogButton" disabled={ytDlpBusy} onClick={async () => {
+              setYtDlpBusy(true);
+              try { setYtDlpStatus(await updateYtDlp()); } catch (error) { toaster.toast({ title: "ThemeDeck", body: getErrorMessage(error, t("unknownUpdateError")) }); }
+              finally { setYtDlpBusy(false); void refreshYtDlpStatus(true); }
+            }} style={{ marginTop: 12 }}>{ytDlpBusy ? t("installing") : t("installYtdlp")}</FocusableButton>
+          ) : null}
+          <Focusable className="tdGameSearchRow" flow-children="horizontal">
+            <TextField value={youtubeQuery} onChange={(event) => setYoutubeQuery(event.target.value)} style={{ width: "100%", minWidth: 0 }} />
+            <FocusableButton className="DialogButton" title={youtubeLoading ? t("searching") : t("search")} onClick={handleYouTubeSearch} disabled={youtubeLoading || ytDlpBusy}>{youtubeLoading ? <span className="tdMiniSpinner" /> : t("search")}</FocusableButton>
+          </Focusable>
+          {youtubeError ? <div style={{ marginTop: 10, color: "#ffb6b6", fontSize: 13 }}>{youtubeError}</div> : null}
+          <Focusable flow-children="vertical" style={{ marginTop: youtubeResults.length ? 14 : 0 }}>
+              {youtubeResults.map((result) => {
+                const assigned = Boolean(assignedVideoId && assignedVideoId === result.id);
+                return (
+                  <Focusable key={result.id} className="tdGameEditorResult" flow-children="horizontal" style={{ background: assigned ? "rgba(80,190,90,.09)" : "transparent" }}>
+                    <img src={`https://i.ytimg.com/vi/${encodeURIComponent(result.id)}/hqdefault.jpg`} alt="" style={{ width: 112, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 4 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 650, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{result.title}</div>
+                      <div style={{ marginTop: 3, fontSize: 12, opacity: .55, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[result.uploader || "YouTube", formatDuration(result.duration)].filter(Boolean).join(" · ")}</div>
+                    </div>
+                    <FocusableButton className="DialogButton tdGameIconButton" title={previewingVideoId === result.id ? t("stopPreview") : t("playPreview")} onClick={() => void handleYouTubePreview(result)} disabled={previewLoadingVideoId !== null || downloadingVideoId !== null} style={compactIconButton}>{previewLoadingVideoId === result.id ? <Spinner /> : previewingVideoId === result.id ? <FaPause /> : <FaPlay />}</FocusableButton>
+                    <FocusableButton className="DialogButton tdGameIconButton" title={t("downloadAssign")} onClick={() => void handleYouTubeDownload(result)} disabled={downloadingVideoId !== null} style={compactIconButton}>{downloadingVideoId === result.id ? <Spinner /> : <FaDownload />}</FocusableButton>
+                  </Focusable>
+                );
+              })}
+          </Focusable>
+        </section>
+      </Focusable>
+    </ScrollPanel>
+  );
 
   return (
     <ScrollPanel>
@@ -7973,6 +8955,7 @@ const ChangeTheme = () => {
         tabIndex={-1}
         style={{ position: "absolute", width: 0, height: 0, outline: "none" }}
       />
+      <section style={routeCardStyle}>
       <PanelSection title={t("themeDeckFor", { game: getDisplayName(appId) })}>
         <PanelSectionRow>
           {loading ? (
@@ -8013,7 +8996,7 @@ const ChangeTheme = () => {
                 onClick={handleRemove}
                 style={{ minWidth: "8.5rem", whiteSpace: "nowrap" }}
               >
-                {t("removeMusic")}
+                {t("removeTrack")}
               </FocusableButton>
             ) : null}
             <FocusableButton
@@ -8064,7 +9047,9 @@ const ChangeTheme = () => {
           </PanelSectionRow>
         ) : null}
       </PanelSection>
+      </section>
 
+      <section style={routeCardStyle}>
       <PanelSection title={t("youtubeSearchTitle")}>
         <PanelSectionRow>
           <div
@@ -8176,54 +9161,12 @@ const ChangeTheme = () => {
                 gap: "0.5rem",
               }}
             >
-              {!!selectedYouTubeResult && youtubeResults.length > 1 ? (
-                <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
-                  <FocusableButton
-                    className="DialogButton"
-                    onClick={() => {
-                      const index = youtubeResults.findIndex((item) => item.id === selectedYouTubeResult.id);
-                      const next = index <= 0 ? youtubeResults[youtubeResults.length - 1] : youtubeResults[index - 1];
-                      setSelectedYouTubeId(next.id);
-                    }}
-                    style={{ minWidth: "6rem", whiteSpace: "nowrap" }}
-                  >
-                    {t("prev")}
-                  </FocusableButton>
-                  <FocusableButton
-                    className="DialogButton"
-                    onClick={() => {
-                      const index = youtubeResults.findIndex((item) => item.id === selectedYouTubeResult.id);
-                      const next = index >= youtubeResults.length - 1 ? youtubeResults[0] : youtubeResults[index + 1];
-                      setSelectedYouTubeId(next.id);
-                    }}
-                    style={{ minWidth: "6rem", whiteSpace: "nowrap" }}
-                  >
-                    {t("next")}
-                  </FocusableButton>
-                  <FocusableButton
-                    className="DialogButton"
-                    onClick={() => handleYouTubePreview(selectedYouTubeResult)}
-                    disabled={previewLoadingVideoId !== null || downloadingVideoId !== null}
-                    style={{ minWidth: "8rem", whiteSpace: "nowrap" }}
-                  >
-                    {previewingVideoId === selectedYouTubeResult.id ? t("stopPreview") : t("playPreview")}
-                  </FocusableButton>
-                  <FocusableButton
-                    className="DialogButton"
-                    onClick={() => handleYouTubeDownload(selectedYouTubeResult)}
-                    disabled={downloadingVideoId !== null}
-                    style={{ minWidth: "11rem", whiteSpace: "nowrap" }}
-                  >
-                    {downloadingVideoId === selectedYouTubeResult.id ? t("downloading") : t("downloadAssign")}
-                  </FocusableButton>
-                </div>
-              ) : null}
               <div
                 style={{
                   width: "100%",
-                  display: "grid",
-                  gap: "0.5rem",
-                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 7,
                 }}
               >
               {youtubeResults.map((result) => {
@@ -8233,100 +9176,62 @@ const ChangeTheme = () => {
                 )}/hqdefault.jpg`;
                 const isCurrentlyAssigned =
                   !!assignedVideoId && assignedVideoId === result.id;
-                const isSelected = selectedYouTubeId === result.id;
                 return (
                   <Focusable
                     key={result.id}
-                    flow-children="column"
-                    onActivate={() => setSelectedYouTubeId(result.id)}
+                    flow-children="horizontal"
                     style={{
-                      borderRadius: "0.4rem",
-                      padding: "0.6rem",
+                      borderRadius: 6,
+                      padding: 7,
                       background: isCurrentlyAssigned
-                        ? "rgba(80, 190, 90, 0.22)"
+                        ? "rgba(80,190,90,.16)"
                         : "rgba(255,255,255,0.05)",
                       border: isCurrentlyAssigned
-                        ? "1px solid rgba(120, 230, 130, 0.75)"
-                        : isSelected
-                        ? "1px solid rgba(120, 180, 255, 0.85)"
-                        : "1px solid transparent",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.35rem",
+                        ? "1px solid rgba(120,230,130,.55)"
+                        : "1px solid rgba(255,255,255,.06)",
+                      display: "grid",
+                      gridTemplateColumns: "132px minmax(0,1fr) 40px 40px",
+                      alignItems: "center",
+                      gap: 10,
+                      minHeight: 82,
                     }}
                   >
-                    {isSelected ? (
-                      <div style={{ fontSize: "0.72rem", opacity: 0.9 }}>{t("selected")}</div>
-                    ) : null}
-                    <div
-                      onClick={() => setSelectedYouTubeId(result.id)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <img
-                        src={thumbnailUrl}
-                        alt={result.title}
-                        style={{
-                          width: "100%",
-                          aspectRatio: "16 / 9",
-                          objectFit: "cover",
-                          borderRadius: "0.35rem",
-                          background: "rgba(0,0,0,0.25)",
-                        }}
-                      />
-                    </div>
-                    {isCurrentlyAssigned ? (
-                      <div
-                        style={{
-                          display: "inline-block",
-                          width: "fit-content",
-                          padding: "0.15rem 0.4rem",
-                          borderRadius: "0.3rem",
-                          background: "rgba(120, 230, 130, 0.2)",
-                          color: "#b9fbc1",
-                          fontWeight: 700,
-                          fontSize: "0.75rem",
-                        }}
-                      >
-                        {t("currentAssigned")}
+                    <img
+                      src={thumbnailUrl}
+                      alt=""
+                      style={{ width: 132, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 4, background: "#111" }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 650, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {result.title}
                       </div>
-                    ) : null}
-                    <div style={{ fontWeight: 600 }}>{result.title}</div>
-                    <div style={{ opacity: 0.8, fontSize: "0.85rem" }}>
-                      {[result.uploader || "", duration].filter(Boolean).join("  |  ") ||
-                        "YouTube"}
+                      <div style={{ opacity: .66, fontSize: ".78rem", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {[result.uploader || "YouTube", duration].filter(Boolean).join("  |  ")}
+                      </div>
+                      {isCurrentlyAssigned ? (
+                        <div style={{ color: "#b9fbc1", fontSize: ".72rem", marginTop: 4 }}>
+                          <FaCheck style={{ marginRight: 5 }} />{t("currentAssigned")}
+                        </div>
+                      ) : null}
                     </div>
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <FocusableButton
-                        className="DialogButton"
-                        onClick={() => {
-                          setSelectedYouTubeId(result.id);
-                          handleYouTubePreview(result);
-                        }}
-                        disabled={
-                          previewLoadingVideoId !== null || downloadingVideoId !== null
-                        }
-                        style={{ minWidth: "8rem", whiteSpace: "nowrap" }}
-                      >
-                        {previewLoadingVideoId === result.id
-                          ? t("loading")
-                          : previewingVideoId === result.id
-                          ? t("stopPreview")
-                          : t("playPreview")}
-                      </FocusableButton>
-                      <FocusableButton
-                        className="DialogButton"
-                        onClick={() => {
-                          setSelectedYouTubeId(result.id);
-                          handleYouTubeDownload(result);
-                        }}
-                        disabled={downloadingVideoId !== null}
-                        style={{ minWidth: "11rem", whiteSpace: "nowrap" }}
-                      >
-                        {downloadingVideoId === result.id
-                          ? t("downloading")
-                          : t("downloadAssign")}
-                      </FocusableButton>
-                    </div>
+                    <FocusableButton
+                      className="DialogButton"
+                      title={previewingVideoId === result.id ? t("stopPreview") : t("playPreview")}
+                      onClick={() => handleYouTubePreview(result)}
+                      disabled={previewLoadingVideoId !== null || downloadingVideoId !== null}
+                      style={{ width: 40, minWidth: 40, height: 40, minHeight: 40, padding: 0 }}
+                    >
+                      {previewLoadingVideoId === result.id ? <Spinner /> : previewingVideoId === result.id ? <FaPause /> : <FaPlay />}
+                    </FocusableButton>
+                    <FocusableButton
+                      className="DialogButton"
+                      title={t("downloadAssign")}
+                      onClick={() => handleYouTubeDownload(result)}
+                      disabled={downloadingVideoId !== null}
+                      style={{ width: 40, minWidth: 40, height: 40, minHeight: 40, padding: 0 }}
+                    >
+                      {downloadingVideoId === result.id ? <Spinner /> : <FaDownload />}
+                    </FocusableButton>
                   </Focusable>
                 );
               })}
@@ -8340,91 +9245,22 @@ const ChangeTheme = () => {
           )}
         </PanelSectionRow>
       </PanelSection>
+      </section>
 
+      <section style={routeCardStyle}>
       <PanelSection title={t("browseLocalTitle")}>
         <PanelSectionRow>
-          <div
-            style={{
-              display: "flex",
-              width: "100%",
-              gap: "0.5rem",
-              alignItems: "center",
-            }}
+          <FocusableButton
+            className="DialogButton"
+            onClick={handleChooseAudioFile}
+            style={{ width: "100%", minHeight: 42, display: "flex", alignItems: "center", gap: "0.55rem", justifyContent: "flex-start" }}
           >
-            <FocusableButton className="DialogButton" onClick={goUp}>
-              {t("up")}
-            </FocusableButton>
-            <div style={{ flexGrow: 1, fontFamily: "monospace" }}>
-              {currentDir}
-            </div>
-          </div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              width: "100%",
-              gap: "0.5rem",
-              alignItems: "center",
-            }}
-          >
-            <TextField
-              value={manualPath}
-              onChange={(e) => setManualPath(e.target.value)}
-              style={{ width: "100%", minWidth: "20rem" }}
-            />
-            <FocusableButton className="DialogButton" onClick={handleManualGo}>
-              {t("go")}
-            </FocusableButton>
-          </div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          {browserLoading ? (
-            <Spinner />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.35rem",
-                paddingRight: "0.25rem",
-              }}
-            >
-              {browser.dirs.map((dir) => (
-                <FocusableButton
-                  key={`dir-${dir}`}
-                  className="DialogButton"
-                  onClick={() => handleDirClick(dir)}
-                  style={{ justifyContent: "flex-start" }}
-                >
-                  📁 {dir}
-                </FocusableButton>
-              ))}
-              {browser.files
-                .filter((file) =>
-                  AUDIO_EXTENSIONS.some((ext) =>
-                    file.toLowerCase().endsWith(`.${ext}`)
-                  )
-                )
-                .map((file) => (
-                  <FocusableButton
-                    key={`file-${file}`}
-                    className="DialogButton"
-                    onClick={() => handleFileClick(file)}
-                    style={{ justifyContent: "flex-start" }}
-                  >
-                    🎵 {file}
-                  </FocusableButton>
-                ))}
-              {!browser.dirs.length && !browser.files.length && (
-                <div style={{ opacity: 0.6 }}>Folder is empty.</div>
-              )}
-            </div>
-          )}
+            <FaMusic />
+            <span>{t("chooseAudioFile")}</span>
+          </FocusableButton>
         </PanelSectionRow>
       </PanelSection>
+      </section>
       </div>
     </ScrollPanel>
   );
@@ -8960,6 +9796,242 @@ const ChangeStoreTheme = () => {
   );
 };
 
+const ScopedThemeEditor = ({ target }: { target: "ambient" | "store" }) => {
+  useThemeDeckEditorChromeSuppression();
+  const [track, setTrack] = useState<GlobalTrack | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<YouTubeSearchResult[]>([]);
+  const [error, setError] = useState("");
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isAmbient = target === "ambient";
+  const scopedPlayback = usePlaybackStateValue();
+
+  const loadTrack = useCallback(async () => {
+    setLoading(true);
+    try {
+      const value = isAmbient ? await fetchGlobalTrack() : await fetchStoreTrack();
+      setTrack(normalizeGlobalTrack(value));
+    } finally {
+      setLoading(false);
+    }
+  }, [isAmbient]);
+
+  useEffect(() => { void loadTrack(); }, [loadTrack]);
+  useEffect(() => () => {
+    const audio = audioRef.current;
+    if (audio) { audio.pause(); audio.src = ""; }
+  }, []);
+
+  const saveFromPath = async (path: string) => {
+    const validation = await validateAudioPath(path);
+    if (!validation?.valid) throw new Error(validation?.error || "Unsupported audio file");
+    const resolved = validation.path || path;
+    const filename = resolved.split(/[\\/]/).pop() || "track";
+    if (isAmbient) await assignGlobalTrack(resolved, filename);
+    else await assignStoreTrack(resolved, filename);
+    window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
+    await loadTrack();
+    toaster.toast({ title: "ThemeDeck", body: isAmbient ? t("savedGlobal") : t("savedStore") });
+  };
+
+  const chooseLocal = () => {
+    let modal: ReturnType<typeof showModal> | null = null;
+    const closeModal = () => modal?.Close();
+    modal = showModal(
+      <ThemeDeckFilePickerModal initialPath="C:\\" closeModal={closeModal} onSelect={saveFromPath} />,
+      undefined,
+      { strTitle: t("browseLocalTitle") },
+    );
+  };
+
+  const runSearch = async () => {
+    const clean = query.trim();
+    if (!clean) return;
+    setSearching(true);
+    setError("");
+    try {
+      const response = await searchYouTube(clean, 20);
+      setResults(response?.results || []);
+    } catch (searchError) {
+      setError(getErrorMessage(searchError, t("unknownError")));
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const togglePreview = async (result: YouTubeSearchResult) => {
+    const audio = audioRef.current;
+    if (previewingId === result.id && audio) {
+      audio.pause();
+      setPreviewingId(null);
+      return;
+    }
+    try {
+      const stream = await getYouTubePreviewStream(result.webpage_url);
+      const nextAudio = audio || new Audio();
+      audioRef.current = nextAudio;
+      nextAudio.onended = () => setPreviewingId(null);
+      await playYouTubePreview(nextAudio, stream);
+      setPreviewingId(result.id);
+    } catch (previewError) {
+      toaster.toast({ title: "ThemeDeck", body: getErrorMessage(previewError, t("unknownError")) });
+    }
+  };
+
+  const download = async (result: YouTubeSearchResult) => {
+    if (downloadingId) return;
+    setDownloadingId(result.id);
+    setDownloadProgress(4);
+    try {
+      const started = await startDiscoverDownload(target, result.webpage_url, readAudioNormalizationSetting(), readAudioUpmixSetting());
+      let current = started;
+      while (current.running) {
+        setDownloadProgress((value) => Math.min(92, Math.max(value + 1, Number(current.progress || 0))));
+        await new Promise((resolve) => window.setTimeout(resolve, 300));
+        current = await getDiscoverDownloadProgress(started.jobId);
+      }
+      if (current.status !== "completed") throw new Error(current.error || t("unknownError"));
+      setDownloadProgress(100);
+      window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
+      await loadTrack();
+      toaster.toast({ title: "ThemeDeck", body: isAmbient ? t("savedGlobal") : t("savedStore") });
+    } catch (downloadError) {
+      toaster.toast({ title: "ThemeDeck", body: getErrorMessage(downloadError, t("unknownError")) });
+    } finally {
+      window.setTimeout(() => {
+        setDownloadingId(null);
+        setDownloadProgress(0);
+      }, 450);
+    }
+  };
+
+  const remove = async () => {
+    if (isAmbient) await deleteGlobalTrack();
+    else await deleteStoreTrack();
+    setTrack(null);
+    window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
+  };
+
+  const updateVolume = async (value: number) => {
+    if (!track) return;
+    const normalized = clamp(value / 100);
+    setTrack({ ...track, volume: normalized });
+    const updated = isAmbient ? await updateGlobalVolume(normalized) : await updateStoreVolume(normalized);
+    setTrack(normalizeGlobalTrack(updated));
+  };
+
+  const updateStart = async (value: number) => {
+    if (!track) return;
+    const normalized = clamp(value, 0, 30);
+    setTrack({ ...track, startOffset: normalized });
+    const updated = isAmbient ? await updateGlobalStartOffset(normalized) : await updateStoreStartOffset(normalized);
+    setTrack(normalizeGlobalTrack(updated));
+  };
+
+  const updateLoop = async (value: boolean) => {
+    if (!track) return;
+    setTrack({ ...track, loop: value });
+    const updated = isAmbient ? await updateGlobalLoop(value) : await updateStoreLoop(value);
+    setTrack(normalizeGlobalTrack(updated));
+  };
+
+  const previewTrack = () => {
+    if (!track) return;
+    const appId = isAmbient ? GLOBAL_AMBIENT_APP_ID : STORE_TRACK_APP_ID;
+    if (playbackState.appId === appId && playbackState.status === "playing") stopPlayback(true);
+    else playTrack({ appId, ...track }, "manual");
+  };
+
+  return (
+    <ScrollPanel>
+      <Focusable className="tdScopedEditor" flow-children="vertical" style={{ position: "fixed", inset: 0, zIndex: 10, minHeight: "100vh", padding: "30px max(36px,calc((100vw - 1460px)/2)) 110px", boxSizing: "border-box", overflowY: "auto", overflowX: "hidden", color: "#fff", background: "#080909" }}>
+        <style>{`
+          .tdScopedEditor *{box-sizing:border-box;letter-spacing:0;min-width:0}
+          .tdScopedEditor .DialogButton{color:#fff!important;border-radius:6px!important;min-height:42px!important}
+          .tdScopedHeader{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:center}
+          .tdScopedCard{width:100%;height:100%;margin-top:16px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
+          .tdScopedTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch}
+          .tdScopedSearchRow{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:10px;margin-top:14px;align-items:stretch}
+          .tdScopedSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:44px!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+          .tdScopedEditor .tdScopeResult{display:grid;grid-template-columns:132px minmax(0,1fr) 40px 40px;align-items:center;gap:10px;min-height:82px;padding:7px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.045);border-radius:6px}
+          .tdScopedEditor .tdScopeIcon{width:40px!important;min-width:40px!important;height:40px!important;min-height:40px!important;padding:0!important;display:grid!important;place-items:center!important}
+          .tdScopedEditor .tdScopeIcon:focus,.tdScopedEditor .tdScopeIcon.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
+          .tdScopedEditor .tdScopeIcon:focus svg,.tdScopedEditor .tdScopeIcon.gpfocus svg{color:#151515!important;fill:currentColor!important}
+          .tdMiniSpinner{display:inline-block;width:17px;height:17px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:tdMiniSpin .8s linear infinite}
+          @keyframes tdMiniSpin{to{transform:rotate(360deg)}}
+          ${SELECTED_TRACK_PANEL_CSS}
+          @media(max-width:900px){.tdScopedTopRow{grid-template-columns:minmax(0,1fr)}}
+        `}</style>
+        <header className="tdScopedHeader">
+          <FocusableButton className="DialogButton tdScopeIcon" title={t("back")} onClick={() => Navigation.NavigateBack()}><FaArrowLeft /></FocusableButton>
+          <div>
+            <div style={{ fontSize: 13, opacity: .56, textTransform: "uppercase", fontWeight: 700 }}>ThemeDeck</div>
+            <h1 style={{ margin: "4px 0 0", fontSize: 31, lineHeight: 1.08 }}>{isAmbient ? t("globalTrackTitle") : t("storeTrackTitle")}</h1>
+          </div>
+        </header>
+
+        <Focusable className="tdScopedTopRow" flow-children="horizontal">
+          <Focusable className="tdScopedCard" flow-children="vertical">
+            <SelectedTrackPanel
+              track={track}
+              loading={loading}
+              emptyText={isAmbient ? t("noGlobalTrack") : t("noStoreTrack")}
+              isPlaying={scopedPlayback.appId === (isAmbient ? GLOBAL_AMBIENT_APP_ID : STORE_TRACK_APP_ID) && scopedPlayback.status === "playing"}
+              onPreview={previewTrack}
+              onRemove={remove}
+              onVolumeChange={updateVolume}
+              onStartChange={updateStart}
+              onLoopChange={updateLoop}
+            />
+          </Focusable>
+
+          <Focusable className="tdScopedCard" flow-children="vertical" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 19 }}>{t("browseLocalTitle")}</h2>
+              <div style={{ marginTop: 5, fontSize: 13, opacity: .55 }}>{t("chooseAudioFile")}</div>
+            </div>
+            <FocusableButton className="DialogButton" style={{ width: "100%", minWidth: 0, height: 44, marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} onClick={() => void chooseLocal()}><FaFolder />{t("chooseAudioFile")}</FocusableButton>
+          </Focusable>
+        </Focusable>
+
+          <section className="tdScopedCard">
+            <h2 style={{ margin: 0, fontSize: 20 }}>{t("youtubeSearchTitle")}</h2>
+            <Focusable className="tdScopedSearchRow" flow-children="horizontal">
+              <TextField value={query} onChange={(event) => setQuery(event.target.value)} style={{ width: "100%", minWidth: 0 }} />
+              <FocusableButton className="DialogButton" title={searching ? t("searching") : t("search")} onClick={() => void runSearch()} disabled={searching}>{searching ? <span className="tdMiniSpinner" /> : t("search")}</FocusableButton>
+            </Focusable>
+            {error ? <div style={{ color: "#ffb7b7", fontSize: 13, marginTop: 7 }}>{error}</div> : null}
+            {downloadingId ? (
+              <div style={{ height: 7, marginTop: 9, borderRadius: 4, overflow: "hidden", background: "rgba(255,255,255,.15)" }}><div style={{ width: `${downloadProgress}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" }} /></div>
+            ) : null}
+            <Focusable flow-children="vertical" style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: results.length ? 10 : 0 }}>
+              {results.map((result) => (
+                <Focusable key={result.id} className="tdScopeResult" flow-children="horizontal">
+                  <img src={`https://i.ytimg.com/vi/${encodeURIComponent(result.id)}/hqdefault.jpg`} alt="" style={{ width: 132, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 4 }} />
+                  <div>
+                    <div style={{ fontWeight: 650, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{result.title}</div>
+                    <div style={{ opacity: .62, fontSize: 12, marginTop: 4 }}>{[result.uploader || "YouTube", formatDuration(result.duration)].filter(Boolean).join(" · ")}</div>
+                  </div>
+                  <FocusableButton className="DialogButton tdScopeIcon" title={previewingId === result.id ? t("stopPreview") : t("playPreview")} onClick={() => void togglePreview(result)}>{previewingId === result.id ? <FaPause /> : <FaPlay />}</FocusableButton>
+                  <FocusableButton className="DialogButton tdScopeIcon" title={t("downloadAssign")} disabled={Boolean(downloadingId)} onClick={() => void download(result)}>{downloadingId === result.id ? <Spinner /> : <FaDownload />}</FocusableButton>
+                </Focusable>
+              ))}
+            </Focusable>
+          </section>
+      </Focusable>
+    </ScrollPanel>
+  );
+};
+
+
+
+
+
 export default definePlugin(() => {
   startLocationWatcher();
   startSteamAppWatchers();
@@ -8970,12 +10042,12 @@ export default definePlugin(() => {
   const contextMenuUnpatch = patchContextMenuFocus();
   routerHook.addRoute(
     "/themedeck/global",
-    () => <ChangeGlobalTheme />,
+    () => <ScopedThemeEditor target="ambient" />,
     { exact: true }
   );
   routerHook.addRoute(
     "/themedeck/store",
-    () => <ChangeStoreTheme />,
+    () => <ScopedThemeEditor target="store" />,
     { exact: true }
   );
   routerHook.addRoute(
@@ -8987,9 +10059,15 @@ export default definePlugin(() => {
   return {
     name: "ThemeDeck",
     titleView: (
-      <div className={staticClasses.Title}>ThemeDeck</div>
+      <div
+        className={staticClasses.Title}
+        style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.45rem", width: "100%", marginLeft: "auto", paddingRight: 8 }}
+      >
+        <FaCompactDisc size={19} />
+        <span>ThemeDeck</span>
+      </div>
     ),
-    icon: <FaMusic />,
+    icon: <FaCompactDisc />,
     content: <Content />,
     onDismount() {
       stopLocationWatcher();

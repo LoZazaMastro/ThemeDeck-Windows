@@ -2,7 +2,7 @@
 // @ts-ignore
 
 // Prevents it from being duplicated in output.
-const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp search, and automatic UI translations.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"}};
+const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"}};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 // Initialize
@@ -24,7 +24,6 @@ if (api._version != API_VERSION) {
 const callable = api.callable;
 const routerHook = api.routerHook;
 const toaster = api.toaster;
-const openFilePicker = api.openFilePicker;
 const executeInTab = api.executeInTab;
 const definePlugin = (fn) => {
     return (...args) => {
@@ -91,14 +90,30 @@ function IconBase(props) {
 }
 
 // THIS FILE IS AUTO GENERATED
-function FaMusic (props) {
-  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M470.38 1.51L150.41 96A32 32 0 0 0 128 126.51v261.41A139 139 0 0 0 96 384c-53 0-96 28.66-96 64s43 64 96 64 96-28.66 96-64V214.32l256-75v184.61a138.4 138.4 0 0 0-32-3.93c-53 0-96 28.66-96 64s43 64 96 64 96-28.65 96-64V32a32 32 0 0 0-41.62-30.49z"},"child":[]}]})(props);
+function FaArrowLeft (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"},"child":[]}]})(props);
+}function FaCheck (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"},"child":[]}]})(props);
+}function FaChevronRight (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 320 512"},"child":[{"tag":"path","attr":{"d":"M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z"},"child":[]}]})(props);
+}function FaCompactDisc (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 496 512"},"child":[{"tag":"path","attr":{"d":"M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zM88 256H56c0-105.9 86.1-192 192-192v32c-88.2 0-160 71.8-160 160zm160 96c-53 0-96-43-96-96s43-96 96-96 96 43 96 96-43 96-96 96zm0-128c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32z"},"child":[]}]})(props);
+}function FaDownload (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"},"child":[]}]})(props);
 }function FaFolder (props) {
-  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M464 128H272l-64-64H48C21.5 64 0 85.5 0 112v288c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48V176c0-26.5-21.5-48-48-48z"},"child":[]}]})(props);
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M464 128H272l-64-64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V176c0-26.51-21.49-48-48-48z"},"child":[]}]})(props);
+}function FaMinus (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M416 208H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h384c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z"},"child":[]}]})(props);
+}function FaMusic (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M470.38 1.51L150.41 96A32 32 0 0 0 128 126.51v261.41A139 139 0 0 0 96 384c-53 0-96 28.66-96 64s43 64 96 64 96-28.66 96-64V214.32l256-75v184.61a138.4 138.4 0 0 0-32-3.93c-53 0-96 28.66-96 64s43 64 96 64 96-28.65 96-64V32a32 32 0 0 0-41.62-30.49z"},"child":[]}]})(props);
 }function FaPause (props) {
   return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z"},"child":[]}]})(props);
 }function FaPlay (props) {
   return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z"},"child":[]}]})(props);
+}function FaPlus (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M416 208H272V64c0-17.67-14.33-32-32-32h-32c-17.67 0-32 14.33-32 32v144H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h144v144c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32V304h144c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z"},"child":[]}]})(props);
+}function FaRedo (props) {
+  return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M500.33 0h-47.41a12 12 0 0 0-12 12.57l4 82.76A247.42 247.42 0 0 0 256 8C119.34 8 7.9 119.53 8 256.19 8.1 393.07 119.1 504 256 504a247.1 247.1 0 0 0 166.18-63.91 12 12 0 0 0 .48-17.43l-34-34a12 12 0 0 0-16.38-.55A176 176 0 1 1 402.1 157.8l-101.53-4.87a12 12 0 0 0-12.57 12v47.41a12 12 0 0 0 12 12h200.33a12 12 0 0 0 12-12V12a12 12 0 0 0-12-12z"},"child":[]}]})(props);
 }function FaTrash (props) {
   return GenIcon({"tag":"svg","attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M432 32H312l-9.4-18.7A24 24 0 0 0 281.1 0H166.8a23.72 23.72 0 0 0-21.4 13.3L136 32H16A16 16 0 0 0 0 48v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16zM53.2 467a48 48 0 0 0 47.9 45h245.8a48 48 0 0 0 47.9-45L416 128H32z"},"child":[]}]})(props);
 }
@@ -140,7 +155,6 @@ const deleteTrack = callable("remove_track");
 const deleteGlobalTrack = callable("remove_global_track");
 const deleteStoreTrack = callable("remove_store_track");
 const startDeleteDownloadedTracks = callable("start_delete_downloaded_tracks");
-const deleteUnusedTracks = callable("delete_unused_tracks");
 const getDeleteDownloadedTracksProgress = callable("get_delete_downloaded_tracks_progress");
 const updateTrackVolume = callable("set_volume");
 const updateGlobalVolume = callable("set_global_volume");
@@ -152,39 +166,57 @@ const updateGlobalLoop = callable("set_global_loop");
 const updateStoreStartOffset = callable("set_store_start_offset");
 const updateStoreLoop = callable("set_store_loop");
 const listDirectory = callable("list_directory");
-const validateAudioPath = callable("validate_audio_path");
 const getTrackAudioUrl = callable("get_track_audio_url");
-const loadTrackAudio = callable("load_track_audio");
 const searchYouTube = callable("search_youtube");
 const downloadYouTubeAudio = callable("download_youtube_audio");
+const startDiscoverDownload = callable("start_discover_download");
+const getDiscoverDownloadProgress = callable("get_discover_download_progress");
 const getYouTubePreviewStream = callable("get_youtube_preview_stream");
+const playYouTubePreview = async (audio, response) => {
+    const candidates = Array.from(new Set([...(response.stream_urls || []), response.stream_url].filter(Boolean)));
+    let lastError = new Error("No preview stream URL returned");
+    for (const url of candidates) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+        try {
+            await new Promise((resolve, reject) => {
+                const timeout = window.setTimeout(() => finish(new Error("Preview stream timed out")), 6500);
+                const finish = (error) => {
+                    window.clearTimeout(timeout);
+                    audio.removeEventListener("canplay", ready);
+                    audio.removeEventListener("error", failed);
+                    if (error)
+                        reject(error);
+                    else
+                        resolve();
+                };
+                const ready = () => finish();
+                const failed = () => finish(new Error("Unsupported preview stream"));
+                audio.addEventListener("canplay", ready, { once: true });
+                audio.addEventListener("error", failed, { once: true });
+                audio.src = url;
+                audio.load();
+            });
+            await audio.play();
+            return;
+        }
+        catch (error) {
+            lastError = error;
+        }
+    }
+    throw lastError;
+};
 const getYtDlpStatus = callable("get_yt_dlp_status");
 const updateYtDlp = callable("update_yt_dlp");
 const getAudioNormalizationStatus = callable("get_audio_normalization_status");
 const getExternalMediaState = callable("get_external_media_state");
+const getSteamMediaState = callable("get_steam_media_state");
+callable("delete_unused_tracks");
+const validateAudioPath = callable("validate_audio_path");
 const TRACKS_UPDATED_EVENT = "themedeck:tracks-updated";
 const AUDIO_EXTENSIONS = ["mp3", "aac", "flac", "ogg", "wav", "m4a", "webm"];
-const trimPathEnd = (path) => String(path || "").replace(/[\\/]+$/, "") || "/";
-const isRootPath = (path) => {
-    const value = trimPathEnd(path);
-    return value === "/" || /^[A-Za-z]:$/.test(value);
-};
-const joinFsPath = (base, child) => {
-    const cleanBase = trimPathEnd(base);
-    if (cleanBase === "/")
-        return `/${child}`;
-    const separator = cleanBase.includes("\\") || /^[A-Za-z]:/.test(cleanBase) ? "\\" : "/";
-    return `${cleanBase}${separator}${child}`;
-};
-const parentFsPath = (path) => {
-    const cleanPath = trimPathEnd(path);
-    if (isRootPath(cleanPath))
-        return cleanPath;
-    const parent = cleanPath.replace(/[\\/][^\\/]+$/, "");
-    if (parent)
-        return parent;
-    return /^[A-Za-z]:/.test(cleanPath) ? cleanPath.slice(0, 2) : "/";
-};
+const EXCLUDED_AUTO_ASSIGN_STORAGE_KEY = "themedeck:excludedAutoAssignAppIds";
 const AUTO_PLAY_STORAGE_KEY = "themedeck:autoPlay";
 const AUTO_PLAY_EVENT = "themedeck:auto-play-changed";
 const GAME_TRACK_MASTER_VOLUME_STORAGE_KEY = "themedeck:gameTrackMasterVolume";
@@ -241,7 +273,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set([
     228980, // Steamworks Common Redistributables
 ]);
 const EN_STRINGS = {
-    introVersion: "March 3, 2026 (v2.5.4)",
+    introVersion: "ThemeDeck 3.0.0",
     introAssign: "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
     autoPlayLabel: "Auto play on game page",
     autoPlayDesc: "",
@@ -249,7 +281,7 @@ const EN_STRINGS = {
     normalizeAudioDesc: "Uses FFmpeg loudness normalization after YouTube downloads when FFmpeg is available.",
     upmixAudioLabel: "Upmix downloaded audio to 7.1",
     upmixAudioDesc: "Uses FFmpeg to convert downloaded tracks to 7.1 channels when FFmpeg is available.",
-    normalizeAudioNotice: "",
+    normalizeAudioNotice: "FFmpeg processing can make downloads take longer. These options also apply to manual downloads from Choose ThemeDeck music.",
     normalizationAvailable: "FFmpeg detected.",
     normalizationUnavailable: "FFmpeg not detected. Downloads will still work, but audio processing will be skipped.",
     normalizationSkipped: "Downloaded track saved, but FFmpeg processing was skipped: {error}",
@@ -282,7 +314,7 @@ const EN_STRINGS = {
     ytdlpNotInstalled: "yt-dlp not installed",
     updateYtdlp: "Update yt-dlp",
     updating: "Updating...",
-    autoAssignTitle: "Auto-assign missing game tracks (yt-dlp)",
+    autoAssignTitle: "Assign missing tracks",
     autoAssignDesc: "",
     missingCount: "Games currently without music assigned: {count}",
     libraryCount: "Total library games detected: {count}",
@@ -293,6 +325,10 @@ const EN_STRINGS = {
     hideMissingGames: "Hide games without music",
     showAssignedGames: "Show games with music",
     hideAssignedGames: "Hide games with music",
+    chooseAutoAssignExclusions: "Exclude games from automatic assignment",
+    autoAssignExclusionsTitle: "Automatic assignment exclusions",
+    autoAssignExclusionsDesc: "Checked games will be skipped when assigning missing tracks.",
+    back: "Back",
     noGamesMissingMusic: "No games are missing music.",
     noGamesWithMusic: "No games have music assigned yet.",
     assignedNormalizedCaption: "orange tracks have normalized volume",
@@ -305,17 +341,18 @@ const EN_STRINGS = {
     noStoreOnlyTrackSelected: "No Store track selected.",
     removeStoreOnly: "Remove Store music",
     invalidGameId: "Invalid game id.",
-    themeDeckFor: "ThemeDeck",
+    themeDeckFor: "ThemeDeck for {game}",
     noMusicSelected: "No music selected yet.",
     play: "Play",
     pause: "Pause",
     done: "Done",
     removeMusic: "Remove music",
+    removeTrack: "Remove track",
     volume: "Volume",
     startSkip: "Start skip",
     loopTrack: "Loop track",
     loopTrackDesc: "",
-    youtubeSearchTitle: "YouTube search",
+    youtubeSearchTitle: "YouTube search (yt-dlp)",
     searchYoutubeDesc: "Search YouTube for game music, download audio locally, and assign it to this game.",
     installYtdlp: "Install yt-dlp",
     installing: "Installing...",
@@ -328,11 +365,11 @@ const EN_STRINGS = {
     playPreview: "Play Preview",
     stopPreview: "Stop Preview",
     loading: "Loading...",
-    downloadAssign: "Download",
+    downloadAssign: "Download & Assign",
     downloading: "Downloading...",
     noResults: "No results yet. Search for a game soundtrack above.",
-    browseLocalTitle: "Or choose a song from your computer",
-    chooseAudioFile: "Choose an audio file",
+    browseLocalTitle: "Choose a local file",
+    chooseAudioFile: "Choose audio file",
     up: "Up",
     go: "Go",
     globalTrackTitle: "ThemeDeck ambient track",
@@ -366,11 +403,6 @@ const EN_STRINGS = {
     failedLoadTracks: "Failed to load saved tracks",
     deleteDownloadedTracks: "Delete downloaded tracks",
     deleteDownloadedTracksDesc: "",
-    deleteUnusedTracks: "Delete unused tracks",
-    deleteUnusedTracksTitle: "Delete unused tracks",
-    confirmDeleteUnusedTracks: "Remove downloaded tracks that are not assigned to any game? This cannot be undone.",
-    deleteUnusedTracksDone: "Removed {count} unused tracks.",
-    deleteUnusedTracksFailed: "Could not delete unused tracks.",
     deleteDownloadedTracksTitle: "Delete downloaded audio files?",
     confirmDeleteDownloadedTracks: "Delete all audio files downloaded by ThemeDeck? Files selected from your personal folders and assigned to games are not subject to deletion.",
     yes: "Yes",
@@ -416,7 +448,7 @@ const TRANSLATIONS = {
         normalizeAudioDesc: "Usa la normalizzazione loudness di FFmpeg dopo i download da YouTube, quando FFmpeg è disponibile.",
         upmixAudioLabel: "Upmix audio scaricato a 7.1",
         upmixAudioDesc: "Usa FFmpeg per convertire le tracce scaricate in 7.1 canali, quando FFmpeg è disponibile.",
-        normalizeAudioNotice: "",
+        normalizeAudioNotice: "L'elaborazione FFmpeg può allungare i download. Queste opzioni valgono anche per i download manuali da Scegli musica ThemeDeck.",
         normalizationAvailable: "FFmpeg rilevato.",
         normalizationUnavailable: "FFmpeg non rilevato. I download funzionano comunque, ma l'elaborazione audio verrà saltata.",
         normalizationSkipped: "Traccia scaricata salvata, ma elaborazione FFmpeg saltata: {error}",
@@ -443,7 +475,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp non installato",
         updateYtdlp: "Aggiorna yt-dlp",
         updating: "Aggiornamento...",
-        autoAssignTitle: "Assegna automaticamente tracce mancanti (yt-dlp)",
+        autoAssignTitle: "Assegna tracce mancanti",
         autoAssignDesc: "",
         missingCount: "Giochi senza musica assegnata: {count}",
         libraryCount: "Giochi rilevati nella libreria: {count}",
@@ -454,6 +486,10 @@ const TRANSLATIONS = {
         hideMissingGames: "Nascondi giochi senza musica",
         showAssignedGames: "Mostra giochi con musica",
         hideAssignedGames: "Nascondi giochi con musica",
+        chooseAutoAssignExclusions: "Escludi giochi dall'assegnazione automatica",
+        autoAssignExclusionsTitle: "Esclusioni assegnazione automatica",
+        autoAssignExclusionsDesc: "I giochi selezionati verranno ignorati durante l'assegnazione delle tracce mancanti.",
+        back: "Indietro",
         noGamesMissingMusic: "Nessun gioco senza musica.",
         noGamesWithMusic: "Nessun gioco con musica assegnata.",
         assignedNormalizedCaption: "in arancione i brani con volume normalizzato",
@@ -466,17 +502,18 @@ const TRANSLATIONS = {
         noStoreOnlyTrackSelected: "Nessuna traccia Store selezionata.",
         removeStoreOnly: "Rimuovi musica Store",
         invalidGameId: "ID gioco non valido.",
-        themeDeckFor: "ThemeDeck",
+        themeDeckFor: "ThemeDeck per {game}",
         noMusicSelected: "Nessuna musica selezionata.",
         play: "Riproduci",
         pause: "Pausa",
         done: "Fine",
         removeMusic: "Rimuovi musica",
+        removeTrack: "Rimuovi brano",
         volume: "Volume",
         startSkip: "Salta inizio",
         loopTrack: "Ripeti traccia",
         loopTrackDesc: "",
-        youtubeSearchTitle: "Ricerca YouTube",
+        youtubeSearchTitle: "Ricerca YouTube (yt-dlp)",
         searchYoutubeDesc: "Cerca musica del gioco su YouTube, scarica l'audio in locale e assegnalo al gioco.",
         installYtdlp: "Installa yt-dlp",
         installing: "Installazione...",
@@ -489,11 +526,11 @@ const TRANSLATIONS = {
         playPreview: "Anteprima",
         stopPreview: "Ferma anteprima",
         loading: "Caricamento...",
-        downloadAssign: "Scarica",
+        downloadAssign: "Scarica e assegna",
         downloading: "Download...",
         noResults: "Nessun risultato. Cerca una colonna sonora qui sopra.",
-        browseLocalTitle: "Oppure scegli un brano dal tuo computer",
-        chooseAudioFile: "Scegli un file audio",
+        browseLocalTitle: "Scegli un file locale",
+        chooseAudioFile: "Scegli file audio",
         up: "Su",
         go: "Vai",
         globalTrackTitle: "Traccia ambientale ThemeDeck",
@@ -527,11 +564,6 @@ const TRANSLATIONS = {
         failedLoadTracks: "Impossibile caricare le tracce salvate",
         deleteDownloadedTracks: "Cancella tracce scaricate",
         deleteDownloadedTracksDesc: "",
-        deleteUnusedTracks: "Cancella tracce inutilizzate",
-        deleteUnusedTracksTitle: "Cancella tracce inutilizzate",
-        confirmDeleteUnusedTracks: "Rimuovere le tracce scaricate non assegnate a nessun gioco? L'operazione \u00e8 irreversibile.",
-        deleteUnusedTracksDone: "Rimosse {count} tracce inutilizzate.",
-        deleteUnusedTracksFailed: "Impossibile cancellare le tracce inutilizzate.",
         deleteDownloadedTracksTitle: "Eliminare i file audio scaricati?",
         confirmDeleteDownloadedTracks: "Cancellare tutti i file audio scaricati da ThemeDeck? I file selezionati dalle tue cartelle personali assegnati ai giochi non sono soggetti a eliminazione.",
         yes: "Sì",
@@ -596,7 +628,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp non installé",
         updateYtdlp: "Mettre à jour yt-dlp",
         updating: "Mise à jour...",
-        autoAssignTitle: "Assigner automatiquement les pistes manquantes (yt-dlp)",
+        autoAssignTitle: "Assigner les pistes manquantes",
         autoAssignDesc: "",
         missingCount: "Jeux sans musique assignée : {count}",
         libraryCount: "Jeux détectés dans la bibliothèque : {count}",
@@ -685,7 +717,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp no instalado",
         updateYtdlp: "Actualizar yt-dlp",
         updating: "Actualizando...",
-        autoAssignTitle: "Asignar automáticamente pistas faltantes (yt-dlp)",
+        autoAssignTitle: "Asignar pistas faltantes",
         autoAssignDesc: "",
         missingCount: "Juegos sin música asignada: {count}",
         libraryCount: "Juegos detectados en la biblioteca: {count}",
@@ -774,7 +806,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp não instalado",
         updateYtdlp: "Atualizar yt-dlp",
         updating: "A atualizar...",
-        autoAssignTitle: "Atribuir automaticamente faixas em falta (yt-dlp)",
+        autoAssignTitle: "Atribuir faixas em falta",
         autoAssignDesc: "",
         missingCount: "Jogos sem música atribuída: {count}",
         libraryCount: "Jogos detetados na biblioteca: {count}",
@@ -863,7 +895,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp não instalado",
         updateYtdlp: "Atualizar yt-dlp",
         updating: "Atualizando...",
-        autoAssignTitle: "Atribuir automaticamente faixas ausentes (yt-dlp)",
+        autoAssignTitle: "Atribuir faixas ausentes",
         autoAssignDesc: "",
         missingCount: "Jogos sem música atribuída: {count}",
         libraryCount: "Jogos detectados na biblioteca: {count}",
@@ -952,7 +984,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp nicht installiert",
         updateYtdlp: "yt-dlp aktualisieren",
         updating: "Aktualisiere...",
-        autoAssignTitle: "Fehlende Spieltitel automatisch zuweisen (yt-dlp)",
+        autoAssignTitle: "Fehlende Titel zuweisen",
         autoAssignDesc: "",
         missingCount: "Spiele ohne zugewiesene Musik: {count}",
         libraryCount: "Erkannte Spiele in der Bibliothek: {count}",
@@ -1041,7 +1073,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp niet geïnstalleerd",
         updateYtdlp: "yt-dlp bijwerken",
         updating: "Bijwerken...",
-        autoAssignTitle: "Ontbrekende speltracks automatisch toewijzen (yt-dlp)",
+        autoAssignTitle: "Ontbrekende tracks toewijzen",
         autoAssignDesc: "",
         missingCount: "Spellen zonder toegewezen muziek: {count}",
         libraryCount: "Gedetecteerde spellen in bibliotheek: {count}",
@@ -1130,7 +1162,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp не встановлено",
         updateYtdlp: "Оновити yt-dlp",
         updating: "Оновлення...",
-        autoAssignTitle: "Автоматично призначити відсутні треки ігор (yt-dlp)",
+        autoAssignTitle: "Призначити відсутні треки",
         autoAssignDesc: "",
         missingCount: "Ігри без призначеної музики: {count}",
         libraryCount: "Виявлено ігор у бібліотеці: {count}",
@@ -1219,7 +1251,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "未安装 yt-dlp",
         updateYtdlp: "更新 yt-dlp",
         updating: "正在更新...",
-        autoAssignTitle: "自动分配缺失的游戏曲目 (yt-dlp)",
+        autoAssignTitle: "分配缺失曲目",
         autoAssignDesc: "",
         missingCount: "尚未分配音乐的游戏：{count}",
         libraryCount: "库中检测到的游戏：{count}",
@@ -1308,7 +1340,7 @@ const TRANSLATIONS = {
         ytdlpNotInstalled: "yt-dlp が未インストール",
         updateYtdlp: "yt-dlp を更新",
         updating: "更新中...",
-        autoAssignTitle: "不足しているゲームトラックを自動割り当て (yt-dlp)",
+        autoAssignTitle: "不足しているトラックを割り当て",
         autoAssignDesc: "",
         missingCount: "音楽未設定のゲーム：{count}",
         libraryCount: "ライブラリで検出されたゲーム：{count}",
@@ -1392,6 +1424,7 @@ const getDetectedLocale = () => {
 const ACTIVE_LOCALE = getDetectedLocale();
 const LOCALIZED_UI_OVERRIDES = {
     it: {
+        introVersion: "ThemeDeck 3.0.0",
         autoPlayDesc: "",
         gameMusicVolumeDesc: "",
         stopMusicAfterPlayDesc: "",
@@ -1436,6 +1469,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
     },
     fr: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
+        autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
+        autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
+        back: "Retour",
+        removeTrack: "Supprimer la piste",
+        browseLocalTitle: "Choisir un fichier local",
+        chooseAudioFile: "Choisir un fichier audio",
         normalizeAudioNotice: "Le traitement FFmpeg peut allonger le telechargement. Ces options s'appliquent aussi aux telechargements manuels depuis Choisir une piste ThemeDeck.",
         upmixAudioLabel: "Upmix audio telecharge en 7.1",
         upmixAudioDesc: "Utilise FFmpeg pour convertir les pistes telechargees en 7.1 canaux quand FFmpeg est disponible.",
@@ -1477,6 +1518,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
     },
     es: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
+        autoAssignExclusionsTitle: "Exclusiones de asignación automática",
+        autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
+        back: "Atrás",
+        removeTrack: "Eliminar pista",
+        browseLocalTitle: "Elegir un archivo local",
+        chooseAudioFile: "Elegir archivo de audio",
         normalizeAudioNotice: "El procesamiento de FFmpeg puede hacer que las descargas tarden más. Estas opciones también se aplican a las descargas manuales desde Elegir música ThemeDeck.",
         upmixAudioLabel: "Upmix de audio descargado a 7.1",
         upmixAudioDesc: "Usa FFmpeg para convertir las pistas descargadas a 7.1 canales cuando FFmpeg está disponible.",
@@ -1518,6 +1567,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
     },
     pt: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
+        autoAssignExclusionsTitle: "Exclusões da atribuição automática",
+        autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
+        back: "Voltar",
+        removeTrack: "Remover faixa",
+        browseLocalTitle: "Escolher um ficheiro local",
+        chooseAudioFile: "Escolher ficheiro de áudio",
         normalizeAudioNotice: "O processamento FFmpeg pode tornar os downloads mais demorados. Estas opções também se aplicam aos downloads manuais em Escolher música ThemeDeck.",
         upmixAudioLabel: "Upmix do áudio descarregado para 7.1",
         upmixAudioDesc: "Usa FFmpeg para converter faixas descarregadas para 7.1 canais quando FFmpeg está disponível.",
@@ -1559,6 +1616,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     "pt-br": {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
+        autoAssignExclusionsTitle: "Exclusões da atribuição automática",
+        autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
+        back: "Voltar",
+        removeTrack: "Remover faixa",
+        browseLocalTitle: "Escolher um arquivo local",
+        chooseAudioFile: "Escolher arquivo de áudio",
         normalizeAudioNotice: "O processamento FFmpeg pode deixar os downloads mais demorados. Estas opções também valem para downloads manuais em Escolher música ThemeDeck.",
         upmixAudioLabel: "Upmix do áudio baixado para 7.1",
         upmixAudioDesc: "Usa FFmpeg para converter faixas baixadas para 7.1 canais quando FFmpeg está disponível.",
@@ -1600,6 +1665,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     de: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
+        autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
+        autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
+        back: "Zurück",
+        removeTrack: "Spur entfernen",
+        browseLocalTitle: "Lokale Datei auswählen",
+        chooseAudioFile: "Audiodatei auswählen",
         normalizeAudioNotice: "FFmpeg-Verarbeitung kann Downloads verlängern. Diese Optionen gelten auch für manuelle Downloads über ThemeDeck-Musik auswählen.",
         upmixAudioLabel: "Heruntergeladene Audiospur auf 7.1 upmixen",
         upmixAudioDesc: "Verwendet FFmpeg, um heruntergeladene Spuren auf 7.1 Kanäle zu konvertieren, wenn FFmpeg verfügbar ist.",
@@ -1641,6 +1714,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
     },
     nl: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
+        autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
+        autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
+        back: "Terug",
+        removeTrack: "Track verwijderen",
+        browseLocalTitle: "Lokaal bestand kiezen",
+        chooseAudioFile: "Audiobestand kiezen",
         normalizeAudioNotice: "FFmpeg-verwerking kan downloads langer laten duren. Deze opties gelden ook voor handmatige downloads via ThemeDeck-muziek kiezen.",
         upmixAudioLabel: "Gedownloade audio naar 7.1 upmixen",
         upmixAudioDesc: "Gebruikt FFmpeg om gedownloade tracks naar 7.1 kanalen te converteren wanneer FFmpeg beschikbaar is.",
@@ -1682,6 +1763,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
     },
     uk: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
+        autoAssignExclusionsTitle: "Виключення автоматичного призначення",
+        autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
+        back: "Назад",
+        removeTrack: "Видалити трек",
+        browseLocalTitle: "Вибрати локальний файл",
+        chooseAudioFile: "Вибрати аудіофайл",
         normalizeAudioNotice: "Обробка FFmpeg може збільшити час завантаження. Ці параметри також застосовуються до ручних завантажень через вибір музики ThemeDeck.",
         upmixAudioLabel: "Upmix завантаженого аудіо до 7.1",
         upmixAudioDesc: "Використовує FFmpeg для перетворення завантажених треків у 7.1 каналів, якщо FFmpeg доступний.",
@@ -1723,6 +1812,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
     },
     zh: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "从自动分配中排除游戏",
+        autoAssignExclusionsTitle: "自动分配排除项",
+        autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
+        back: "返回",
+        removeTrack: "移除曲目",
+        browseLocalTitle: "选择本地文件",
+        chooseAudioFile: "选择音频文件",
         normalizeAudioNotice: "FFmpeg 处理可能会让下载耗时更久。这些选项也适用于通过选择 ThemeDeck 音乐进行的手动下载。",
         upmixAudioLabel: "将下载音频 upmix 到 7.1",
         upmixAudioDesc: "FFmpeg 可用时，使用 FFmpeg 将下载的曲目转换为 7.1 声道。",
@@ -1764,6 +1861,14 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "环境曲目中断行为",
     },
     ja: {
+        introVersion: "ThemeDeck 3.0.0",
+        chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
+        autoAssignExclusionsTitle: "自動割り当ての除外設定",
+        autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
+        back: "戻る",
+        removeTrack: "トラックを削除",
+        browseLocalTitle: "ローカルファイルを選択",
+        chooseAudioFile: "音声ファイルを選択",
         normalizeAudioNotice: "FFmpeg 処理により、ダウンロードに時間がかかる場合があります。これらのオプションは ThemeDeck 音楽を選択からの手動ダウンロードにも適用されます。",
         upmixAudioLabel: "ダウンロード音声を 7.1 にアップミックス",
         upmixAudioDesc: "FFmpeg が利用可能な場合、ダウンロードしたトラックを 7.1 チャンネルに変換します。",
@@ -1860,6 +1965,78 @@ const t = (key, values) => {
     }
     return normalizeTerminology(text);
 };
+const formatAssignedTrackName = (filename) => String(filename || "")
+    .replace(/\.[A-Za-z0-9]{2,5}$/, "")
+    .replace(/\s*\[[A-Za-z0-9_-]{6,}\]$/, "")
+    .replace(/_+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const TrackSettingStepper = ({ label, value, suffix, min, max, step, onChange, }) => {
+    const update = (next) => {
+        const bounded = Math.min(max, Math.max(min, next));
+        if (bounded !== value)
+            void onChange(bounded);
+    };
+    return (window.SP_REACT.createElement(DFL.Focusable, { className: "tdCompactSetting", "flow-children": "horizontal" },
+        window.SP_REACT.createElement("div", { className: "tdCompactSettingLabel" }, label),
+        window.SP_REACT.createElement(DFL.Focusable, { className: "tdStepperRow", "flow-children": "horizontal" },
+            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdStepperButton", title: `${label} -`, disabled: value <= min, onClick: () => update(value - step) },
+                window.SP_REACT.createElement(FaMinus, null)),
+            window.SP_REACT.createElement("div", { className: "tdStepperValue" },
+                value,
+                suffix),
+            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdStepperButton", title: `${label} +`, disabled: value >= max, onClick: () => update(value + step) },
+                window.SP_REACT.createElement(FaPlus, null)))));
+};
+const SelectedTrackPanel = ({ track, loading, emptyText, isPlaying, onPreview, onRemove, onVolumeChange, onStartChange, onLoopChange, }) => (window.SP_REACT.createElement(window.SP_REACT.Fragment, null,
+    window.SP_REACT.createElement("div", { className: "tdSelectedEyebrow" }, t("selected")),
+    loading ? (window.SP_REACT.createElement("span", { className: "tdMiniSpinner", style: { marginTop: 16 } })) : track ? (window.SP_REACT.createElement(window.SP_REACT.Fragment, null,
+        window.SP_REACT.createElement("div", { className: "tdSelectedTrackRow" },
+            window.SP_REACT.createElement("div", { className: "tdSelectedTrackGlyph" },
+                window.SP_REACT.createElement(FaMusic, null)),
+            window.SP_REACT.createElement("div", { className: "tdSelectedTrackMeta" },
+                window.SP_REACT.createElement("div", { className: "tdSelectedTrackName", title: track.filename }, formatAssignedTrackName(track.filename) || track.filename),
+                window.SP_REACT.createElement("div", { className: "tdSelectedTrackPath", title: track.path }, track.path)),
+            window.SP_REACT.createElement(DFL.Focusable, { className: "tdSelectedTrackActions", "flow-children": "horizontal" },
+                window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdSelectedAction", title: isPlaying ? t("pause") : t("play"), onClick: onPreview }, isPlaying ? window.SP_REACT.createElement(FaPause, null) : window.SP_REACT.createElement(FaPlay, null)),
+                window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdSelectedAction", title: t("removeTrack"), onClick: () => void onRemove() },
+                    window.SP_REACT.createElement(FaTrash, null)))),
+        window.SP_REACT.createElement(DFL.Focusable, { className: "tdTrackControlStrip", "flow-children": "horizontal" },
+            window.SP_REACT.createElement(TrackSettingStepper, { label: t("volume"), value: Math.round(track.volume * 100), suffix: "%", min: 0, max: 100, step: 5, onChange: onVolumeChange }),
+            window.SP_REACT.createElement(TrackSettingStepper, { label: t("startSkip"), value: Math.round(track.startOffset), suffix: "s", min: 0, max: 30, step: 1, onChange: onStartChange }),
+            window.SP_REACT.createElement(DFL.Focusable, { className: "tdCompactSetting", "flow-children": "horizontal" },
+                window.SP_REACT.createElement("div", { className: "tdCompactSettingLabel" }, t("loopTrack")),
+                window.SP_REACT.createElement(FocusableButton, { className: `DialogButton tdRepeatButton${track.loop ? " is-active" : ""}`, title: t("loopTrack"), "aria-pressed": track.loop, onClick: () => void onLoopChange(!track.loop) },
+                    window.SP_REACT.createElement(FaRedo, null),
+                    window.SP_REACT.createElement("span", { className: "tdRepeatStateDot" })))))) : (window.SP_REACT.createElement("div", { className: "tdSelectedEmpty" },
+        window.SP_REACT.createElement(FaMusic, null),
+        window.SP_REACT.createElement("span", null, emptyText)))));
+const SELECTED_TRACK_PANEL_CSS = `
+  .tdSelectedEyebrow{font-size:13px;opacity:.58;text-transform:uppercase;font-weight:700}
+  .tdSelectedTrackRow{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:13px;align-items:center;margin-top:10px}
+  .tdSelectedTrackGlyph{width:50px;height:50px;display:grid;place-items:center;border-radius:6px;background:rgba(255,255,255,.075);color:rgba(255,255,255,.86);font-size:20px}
+  .tdSelectedTrackMeta{min-width:0}
+  .tdSelectedTrackName{font-size:19px;line-height:1.2;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tdSelectedTrackPath{margin-top:5px;font-size:12px;opacity:.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tdSelectedTrackActions{display:flex;gap:8px}
+  .tdSelectedAction.DialogButton,.tdStepperButton.DialogButton{width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important;padding:0!important;display:grid!important;place-items:center!important;border-radius:6px!important}
+  .tdTrackControlStrip{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(150px,.72fr);margin-top:18px;padding-top:15px;border-top:1px solid rgba(255,255,255,.09)}
+  .tdCompactSetting{display:grid;grid-template-rows:auto 42px;gap:8px;padding:0 16px;border-left:1px solid rgba(255,255,255,.08)}
+  .tdCompactSetting:first-child{padding-left:0;border-left:0}
+  .tdCompactSetting:last-child{padding-right:0}
+  .tdCompactSettingLabel{font-size:12px;font-weight:650;opacity:.58;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tdStepperRow{display:grid;grid-template-columns:42px minmax(58px,1fr) 42px;gap:8px;align-items:center}
+  .tdStepperButton.DialogButton{background:rgba(255,255,255,.075)!important;color:#fff!important}
+  .tdStepperButton.DialogButton:disabled{opacity:.32!important}
+  .tdStepperValue{font-size:17px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+  .tdRepeatButton.DialogButton{width:100%!important;height:42px!important;min-height:42px!important;padding:0 13px!important;display:grid!important;grid-template-columns:18px minmax(0,1fr) 9px!important;gap:10px!important;align-items:center!important;color:#fff!important;background:rgba(255,255,255,.075)!important;border:1px solid transparent!important}
+  .tdRepeatButton.DialogButton.is-active{background:rgba(240,180,41,.14)!important;border-color:rgba(240,180,41,.68)!important;color:#f6c64e!important}
+  .tdRepeatStateDot{justify-self:end;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25)}
+  .tdRepeatButton.is-active .tdRepeatStateDot{background:#f0b429;box-shadow:0 0 0 3px rgba(240,180,41,.14)}
+  .tdSelectedAction:focus,.tdSelectedAction.gpfocus,.tdStepperButton:focus,.tdStepperButton.gpfocus,.tdRepeatButton:focus,.tdRepeatButton.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
+  .tdSelectedEmpty{display:flex;align-items:center;gap:10px;margin-top:16px;min-height:50px;color:rgba(255,255,255,.58)}
+  @media(max-width:1050px){.tdTrackControlStrip{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tdCompactSetting:last-child{grid-column:1/-1;margin-top:14px;padding:14px 0 0;border-left:0;border-top:1px solid rgba(255,255,255,.08)}}
+`;
 const focusListeners = new Set();
 let focusedAppId = null;
 let locationInterval = null;
@@ -2133,26 +2310,6 @@ const clearAudioCache = (path, options) => {
     }
     audioCache.clear();
 };
-const decodePayloadToObjectUrl = (payload) => {
-    let base64 = payload.data ?? "";
-    let mime = payload.mime;
-    if (base64.startsWith("data:")) {
-        const match = base64.match(/^data:([^;]+);base64,(.+)$/);
-        if (match) {
-            mime = mime ?? match[1];
-            base64 = match[2];
-        }
-    }
-    const binary = window.atob(base64);
-    const buffer = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-        buffer[index] = binary.charCodeAt(index);
-    }
-    const blob = new Blob([buffer.buffer], {
-        type: mime || "audio/mpeg",
-    });
-    return URL.createObjectURL(blob);
-};
 const verifyStreamAudioUrl = async (url) => {
     try {
         const response = await fetch(url, {
@@ -2173,37 +2330,22 @@ const resolveAudioUrl = async (track) => {
         cached.pinned = isPinnedAudioCachePath(track.path);
         return cached.url;
     }
-    try {
-        const streamPayload = await getTrackAudioUrl(track.path);
-        if (streamPayload?.url && (await verifyStreamAudioUrl(streamPayload.url))) {
-            audioCache.set(track.path, {
-                url: streamPayload.url,
-                mtime: streamPayload.mtime ?? 0,
-                lastUsedAt: Date.now(),
-                pinned: isPinnedAudioCachePath(track.path),
-                revocable: false,
-            });
-            pruneAudioCache();
-            return streamPayload.url;
-        }
+    const streamPayload = await getTrackAudioUrl(track.path);
+    if (!streamPayload?.url) {
+        throw new Error("ThemeDeck audio stream URL is unavailable");
     }
-    catch (error) {
-        console.warn("[ThemeDeck] falling back to base64 audio payload", error);
+    if (!(await verifyStreamAudioUrl(streamPayload.url))) {
+        throw new Error("ThemeDeck audio stream did not pass its health check");
     }
-    const payload = await loadTrackAudio(track.path);
-    if (!payload?.data) {
-        throw new Error("No audio data returned");
-    }
-    const url = decodePayloadToObjectUrl(payload);
     audioCache.set(track.path, {
-        url,
-        mtime: payload.mtime ?? 0,
+        url: streamPayload.url,
+        mtime: streamPayload.mtime ?? 0,
         lastUsedAt: Date.now(),
         pinned: isPinnedAudioCachePath(track.path),
-        revocable: true,
+        revocable: false,
     });
     pruneAudioCache();
-    return url;
+    return streamPayload.url;
 };
 const clearGlobalAmbientResumeSnapshot = () => {
     globalAmbientResumeSnapshot = null;
@@ -2545,15 +2687,15 @@ const dismissActiveContextMenu = () => {
     }
     try {
         DFL.Navigation.CloseSideMenus?.();
-        DFL.Navigation.CloseMainMenu?.();
-        DFL.Navigation.CloseQuickAccessMenu?.();
     }
     catch (error) {
         console.error("[ThemeDeck] side menu close failed", error);
     }
-    dispatchEscapeKey(document.activeElement);
-    dispatchEscapeKey(document);
-    dispatchEscapeKey(window);
+    if (isGamepadContextMenuVisible()) {
+        dispatchEscapeKey(document.activeElement);
+        dispatchEscapeKey(document);
+        dispatchEscapeKey(window);
+    }
 };
 const getLibraryPath = () => {
     try {
@@ -3322,7 +3464,7 @@ const insertThemeDeckMenu = (children, appId) => {
         dismissActiveContextMenu();
         window.setTimeout(() => {
             dismissActiveContextMenu();
-            DFL.Navigation.Navigate(`/themedeck/${latestAppId}`);
+            navigateToThemeDeckEditor(`/themedeck/${latestAppId}`);
             window.setTimeout(dismissActiveContextMenu, 0);
             window.setTimeout(dismissActiveContextMenu, 120);
             window.setTimeout(dismissActiveContextMenu, 300);
@@ -3692,9 +3834,14 @@ const looksLikeStoreSignal = (value) => {
     if (typeof value !== "string")
         return false;
     const text = value.toLowerCase();
+    if (text.includes("/settings") ||
+        text.includes("#/settings") ||
+        text.includes("steamsettings") ||
+        text.includes("settings?")) {
+        return false;
+    }
     return (text.includes("/store") ||
         text.includes("#/store") ||
-        text.includes("tab=store") ||
         text.includes("storehome") ||
         text.includes("store.steampowered.com") ||
         text.includes("store%2esteampowered%2ecom") ||
@@ -3871,6 +4018,9 @@ const detectStoreFromTabs = async () => {
         const hash = String(window.location?.hash || "").toLowerCase();
         const search = String(window.location?.search || "").toLowerCase();
         const full = href + " " + path + " " + hash + " " + search;
+        if (full.includes("/settings") || full.includes("#/settings") || full.includes("steamsettings")) {
+          return false;
+        }
         if (full.includes("store.steampowered.com") || full.includes("/store") || full.includes("#/store")) {
           return true;
         }
@@ -3892,6 +4042,126 @@ const detectStoreFromTabs = async () => {
                     window.setTimeout(() => resolve(null), 1000);
                 }),
             ]);
+            const value = result && typeof result === "object" && "result" in result
+                ? result.result
+                : result;
+            return value === true || value === "true";
+        }
+        catch {
+            return false;
+        }
+    }));
+    return results.some(Boolean);
+};
+let nowPlayingPluginApi;
+const getNowPlayingPluginApi = () => {
+    if (nowPlayingPluginApi)
+        return nowPlayingPluginApi;
+    try {
+        const connection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
+        nowPlayingPluginApi = connection?.connect?.(2, "Now Playing") ?? null;
+    }
+    catch {
+        try {
+            const connection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
+            nowPlayingPluginApi = connection?.connect?.(1, "Now Playing") ?? null;
+        }
+        catch {
+            nowPlayingPluginApi = null;
+        }
+    }
+    return nowPlayingPluginApi;
+};
+const withTimeout = async (promise, timeoutMs) => Promise.race([
+    promise,
+    new Promise((resolve) => window.setTimeout(() => resolve(null), timeoutMs)),
+]);
+const readNowPlayingState = async () => {
+    const api = getNowPlayingPluginApi();
+    if (!api?.call)
+        return null;
+    try {
+        const snapshot = await withTimeout(Promise.resolve(api.call("get_snapshot")), 1100);
+        if (!snapshot)
+            return null;
+        const candidates = [
+            snapshot.selected,
+            ...(Array.isArray(snapshot.players) ? snapshot.players : []),
+        ].filter(Boolean);
+        const playing = candidates.find((player) => String(player.status || "").toLowerCase() === "playing");
+        return {
+            active: Boolean(playing),
+            player: String(playing?.name || playing?.id || ""),
+            source: "now-playing",
+        };
+    }
+    catch (error) {
+        console.debug("[ThemeDeck] Now Playing direct snapshot unavailable", error);
+        return null;
+    }
+};
+const audibleMediaProbeCode = `
+  (() => {
+    try {
+      if (!window.__themedeckYouTubeProbeInstalled) {
+        window.__themedeckYouTubeProbeInstalled = true;
+        window.__themedeckYouTubePlaying = false;
+        window.addEventListener('message', (event) => {
+          try {
+            const trailerHeroFrame = Array.from(document.querySelectorAll('iframe.trailerhero-video')).some((frame) => frame.contentWindow === event.source);
+            if (trailerHeroFrame) return;
+            const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            const info = payload && payload.info;
+            const state = info && (info.playerState ?? info.player_state);
+            if (state === 1) window.__themedeckYouTubePlaying = true;
+            if (state === 0 || state === 2 || state === -1) window.__themedeckYouTubePlaying = false;
+          } catch {}
+        });
+      }
+      const nativePlaying = Array.from(document.querySelectorAll('video, audio')).some((node) => {
+        const media = node;
+        if (media.classList?.contains('trailerhero-video') || media.closest?.('.trailerhero-host')) return false;
+        const style = window.getComputedStyle(media);
+        const visible = style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0;
+        return visible && !media.paused && !media.ended && !media.muted && Number(media.volume || 0) > 0.01 && media.readyState >= 2;
+      });
+      const youtubeFrames = Array.from(document.querySelectorAll('iframe')).filter((frame) => {
+        if (frame.classList?.contains('trailerhero-video') || frame.closest?.('.trailerhero-host')) return false;
+        return /(?:youtube\.com|youtube-nocookie\.com|youtu\.be)/i.test(String(frame.src || ''));
+      });
+      if (youtubeFrames.length === 0) window.__themedeckYouTubePlaying = false;
+      return nativePlaying || (youtubeFrames.length > 0 && window.__themedeckYouTubePlaying === true);
+    } catch {
+      return false;
+    }
+  })();
+`;
+const detectAudibleSteamMedia = async () => {
+    try {
+        const localMedia = Array.from(document.querySelectorAll("video, audio"));
+        if (localMedia.some((media) => {
+            if (media.classList.contains("trailerhero-video") || media.closest(".trailerhero-host")) {
+                return false;
+            }
+            const style = window.getComputedStyle(media);
+            return (style.display !== "none" &&
+                style.visibility !== "hidden" &&
+                Number(style.opacity || "1") > 0 &&
+                !media.paused &&
+                !media.ended &&
+                !media.muted &&
+                media.volume > 0.01 &&
+                media.readyState >= 2);
+        })) {
+            return true;
+        }
+    }
+    catch {
+        // Continue with Steam tab probes.
+    }
+    const results = await Promise.all(SP_TAB_CANDIDATES.map(async (tab) => {
+        try {
+            const result = await withTimeout(executeInTab(tab, true, audibleMediaProbeCode), 650);
             const value = result && typeof result === "object" && "result" in result
                 ? result.result
                 : result;
@@ -3937,8 +4207,18 @@ const refreshExternalMediaState = async () => {
     }
     externalMediaProbeInFlight = true;
     try {
-        const state = await getExternalMediaState();
-        setExternalMediaActive(!!state?.active);
+        const [nowPlayingState, steamMediaActive, steamCdpState] = await Promise.all([
+            readNowPlayingState(),
+            detectAudibleSteamMedia(),
+            getSteamMediaState().catch(() => ({ active: false, player: "" })),
+        ]);
+        if (steamMediaActive || steamCdpState?.active || nowPlayingState?.active) {
+            setExternalMediaActive(true);
+            return;
+        }
+        // Compatibility with Now Playing 1.x and other Windows media sessions.
+        const legacyState = await getExternalMediaState();
+        setExternalMediaActive(Boolean(legacyState?.active));
     }
     catch (error) {
         console.error("[ThemeDeck] external media probe failed", error);
@@ -4446,6 +4726,23 @@ const usePlaybackStateValue = () => {
     SP_REACT.useEffect(() => subscribePlayback(setState), []);
     return state;
 };
+const readExcludedAutoAssignAppIds = () => {
+    try {
+        const raw = window.localStorage?.getItem(EXCLUDED_AUTO_ASSIGN_STORAGE_KEY);
+        const values = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(values))
+            return new Set();
+        return new Set(values
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value) && value > 0));
+    }
+    catch {
+        return new Set();
+    }
+};
+const persistExcludedAutoAssignAppIds = (values) => {
+    window.localStorage?.setItem(EXCLUDED_AUTO_ASSIGN_STORAGE_KEY, JSON.stringify(Array.from(values).sort((a, b) => a - b)));
+};
 const useBooleanPreference = (readFn, persistFn, eventName) => {
     const [value, setValue] = SP_REACT.useState(() => readFn());
     SP_REACT.useEffect(() => {
@@ -4531,6 +4828,69 @@ const useLaunchStopModeSetting = () => {
     }, []);
     return [mode, update];
 };
+const AutoAssignExclusionsModal = ({ games, initial, closeModal, onChange, }) => {
+    const [selected, setSelected] = SP_REACT.useState(() => new Set(initial));
+    const toggle = (appId) => {
+        setSelected((current) => {
+            const next = new Set(current);
+            if (next.has(appId))
+                next.delete(appId);
+            else
+                next.add(appId);
+            persistExcludedAutoAssignAppIds(next);
+            onChange(next);
+            return next;
+        });
+    };
+    return (window.SP_REACT.createElement(DFL.ModalRoot, { closeModal: closeModal },
+        window.SP_REACT.createElement("div", { className: "tdExclusionModal", style: {
+                width: "min(600px, calc(100vw - 48px))",
+                maxWidth: "100%",
+                height: "min(620px, calc(100vh - 96px))",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.55rem",
+                overflow: "hidden",
+            } },
+            window.SP_REACT.createElement("style", null, `
+          .tdExclusionModal * { box-sizing: border-box; min-width: 0; letter-spacing: 0; }
+          .tdExclusionList { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.22) transparent; }
+          .tdExclusionList::-webkit-scrollbar { width: 5px; }
+          .tdExclusionList::-webkit-scrollbar-track { background: transparent; }
+          .tdExclusionList::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 999px; }
+          .tdExclusionList::-webkit-scrollbar-button { display:none; width:0; height:0; }
+          .tdExclusionRow.DialogButton {
+            width: 100% !important;
+            min-height: 42px !important;
+            height: 42px !important;
+            padding: 0 10px !important;
+            margin: 0 !important;
+            border-radius: 5px !important;
+            display: grid !important;
+            grid-template-columns: 24px minmax(0, 1fr) !important;
+            align-items: center !important;
+            text-align: left !important;
+            font-size: 14px !important;
+            color: #fff !important;
+            background: rgba(255,255,255,.065) !important;
+            border: 1px solid rgba(255,255,255,.07) !important;
+          }
+          .tdExclusionRow:focus, .tdExclusionRow.gpfocus { color: #171717 !important; background: #f0b429 !important; border-color: #ffe09a !important; box-shadow: 0 0 0 2px rgba(255,255,255,.9) !important; }
+          .tdExclusionCheck { width:18px; height:18px; border-radius:4px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.34); background:rgba(0,0,0,.22); color:#fff; }
+          .tdExclusionCheck[data-checked="true"] { border-color:#f0b429; background:#f0b429; color:#171717; }
+          .tdExclusionRow:focus .tdExclusionCheck,.tdExclusionRow.gpfocus .tdExclusionCheck { border-color:#171717; background:#171717; color:#f0b429; }
+        `),
+            window.SP_REACT.createElement("div", { style: { fontSize: 20, fontWeight: 700 } }, t("autoAssignExclusionsTitle")),
+            window.SP_REACT.createElement("div", { style: { opacity: 0.72, fontSize: 13, lineHeight: 1.35 } }, t("autoAssignExclusionsDesc")),
+            window.SP_REACT.createElement("div", { className: "tdExclusionList", style: { flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: "3px 9px 3px 3px" } },
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 6, width: "100%" } }, games.map((game) => {
+                    const checked = selected.has(game.appid);
+                    return (window.SP_REACT.createElement(FocusableButton, { key: game.appid, className: "DialogButton tdExclusionRow", role: "checkbox", "aria-checked": checked, onClick: () => toggle(game.appid) },
+                        window.SP_REACT.createElement("span", { className: "tdExclusionCheck", "data-checked": checked ? "true" : "false" }, checked ? window.SP_REACT.createElement(FaCheck, null) : null),
+                        window.SP_REACT.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, game.name)));
+                }))),
+            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: closeModal, style: { alignSelf: "stretch", width: "100%", minWidth: 0, height: 40, minHeight: 40 } }, t("close")))));
+};
 const Content = () => {
     const { tracks, setTracks, globalTrack, setGlobalTrack, storeTrack, setStoreTrack, refreshTracks, } = useTrackState();
     const [library, setLibrary] = SP_REACT.useState([]);
@@ -4564,6 +4924,7 @@ const Content = () => {
     const bulkAssignRunIdRef = SP_REACT.useRef(0);
     const [showMissingGames, setShowMissingGames] = SP_REACT.useState(false);
     const [showAssignedGames, setShowAssignedGames] = SP_REACT.useState(false);
+    const [excludedAutoAssignAppIds, setExcludedAutoAssignAppIds] = SP_REACT.useState(() => readExcludedAutoAssignAppIds());
     const [resolvedMissingNames, setResolvedMissingNames] = SP_REACT.useState({});
     const [failedMissingNameIds, setFailedMissingNameIds] = SP_REACT.useState({});
     const missingNameAttemptsRef = SP_REACT.useRef(new Map());
@@ -4649,7 +5010,7 @@ const Content = () => {
         }))
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [libraryGames, tracks, getGameName]);
-    const missingGameNameStats = SP_REACT.useMemo(() => {
+    SP_REACT.useMemo(() => {
         const total = missingGamesStatus.length;
         const resolved = missingGamesStatus.filter((game) => game.status === "resolved").length;
         const failed = missingGamesStatus.filter((game) => game.status === "failed").length;
@@ -5056,23 +5417,6 @@ const Content = () => {
         };
         confirmModal = DFL.showModal(window.SP_REACT.createElement(DFL.ConfirmModal, { strTitle: t("deleteDownloadedTracksTitle"), strDescription: t("confirmDeleteDownloadedTracks"), strOKButtonText: t("yes"), strCancelButtonText: t("no"), bDestructiveWarning: true, onOK: openProgress, onCancel: closeConfirm, closeModal: closeConfirm }), undefined, { strTitle: t("deleteDownloadedTracksTitle") });
     };
-    const handleDeleteUnusedTracks = () => {
-        let confirmModal = null;
-        const closeConfirm = () => confirmModal?.Close();
-        const runDelete = async () => {
-            closeConfirm();
-            try {
-                const result = await deleteUnusedTracks();
-                const removed = (result && typeof result.removed === "number") ? result.removed : 0;
-                toaster.toast({ title: "ThemeDeck", body: t("deleteUnusedTracksDone", { count: removed }) });
-            }
-            catch (error) {
-                console.error("[ThemeDeck] delete unused tracks failed", error);
-                toaster.toast({ title: "ThemeDeck", body: t("deleteUnusedTracksFailed") });
-            }
-        };
-        confirmModal = DFL.showModal(window.SP_REACT.createElement(DFL.ConfirmModal, { strTitle: t("deleteUnusedTracksTitle"), strDescription: t("confirmDeleteUnusedTracks"), strOKButtonText: t("yes"), strCancelButtonText: t("no"), bDestructiveWarning: true, onOK: runDelete, onCancel: closeConfirm, closeModal: closeConfirm }), undefined, { strTitle: t("deleteUnusedTracksTitle") });
-    };
     const handleStopBulkAssign = SP_REACT.useCallback(() => {
         if (!bulkAssign.running) {
             return;
@@ -5084,6 +5428,11 @@ const Content = () => {
             message: t("stoppingAfterCurrent"),
         }));
     }, [bulkAssign.running]);
+    const handleOpenAutoAssignExclusions = SP_REACT.useCallback(() => {
+        let modal = null;
+        const closeModal = () => modal?.Close();
+        modal = DFL.showModal(window.SP_REACT.createElement(AutoAssignExclusionsModal, { games: libraryGames, initial: excludedAutoAssignAppIds, closeModal: closeModal, onChange: setExcludedAutoAssignAppIds }), undefined, { strTitle: t("autoAssignExclusionsTitle") });
+    }, [excludedAutoAssignAppIds, libraryGames]);
     const handleAutoAssignMissingTracks = SP_REACT.useCallback(async () => {
         if (bulkAssign.running || ytDlpBusy) {
             return;
@@ -5109,7 +5458,7 @@ const Content = () => {
         catch (_ignored) {
             // Keep using current in-memory tracks if refresh fails.
         }
-        const allMissingGames = libraryGames.filter((game) => !latestTracks[game.appid]);
+        const allMissingGames = libraryGames.filter((game) => !latestTracks[game.appid] && !excludedAutoAssignAppIds.has(game.appid));
         if (!allMissingGames.length) {
             toaster.toast({
                 title: "ThemeDeck",
@@ -5384,6 +5733,7 @@ const Content = () => {
         bulkAssign.running,
         getGameName,
         libraryGames,
+        excludedAutoAssignAppIds,
         tracks,
         ytDlpBusy,
         ytDlpStatus.installed,
@@ -5620,483 +5970,320 @@ const Content = () => {
     SP_REACT.useEffect(() => {
         focusFirstInteractiveElement(topFocusRef.current);
     }, []);
+    const qamIconButton = { width: 38, minWidth: 38, height: 38, minHeight: 38, padding: 0, display: "grid", placeItems: "center" };
+    const qamChoice = (active) => ({
+        width: "100%",
+        minHeight: 36,
+        display: "grid",
+        gridTemplateColumns: "12px minmax(0,1fr)",
+        alignItems: "center",
+        gap: 9,
+        padding: "0 10px",
+        textAlign: "left",
+        border: active ? "1px solid rgba(240,180,41,.72)" : "1px solid rgba(255,255,255,.075)",
+        background: active ? "rgba(240,180,41,.11)" : "rgba(255,255,255,.035)",
+    });
+    const renderQamTrack = (kind) => {
+        const currentTrack = kind === "ambient" ? globalTrack : storeTrack;
+        const playingId = kind === "ambient" ? GLOBAL_AMBIENT_APP_ID : STORE_TRACK_APP_ID;
+        const chooseLabel = kind === "ambient" ? t("chooseGlobal") : t("chooseStore");
+        const emptyLabel = kind === "ambient" ? t("noGlobalTrackSelected") : t("noStoreOnlyTrackSelected");
+        const title = kind === "ambient" ? t("globalAmbientPanelTitle") : t("storeOnlyPanelTitle");
+        const preview = kind === "ambient" ? handleGlobalPreviewToggle : handleStorePreviewToggle;
+        const remove = kind === "ambient" ? handleRemoveGlobalTrack : handleRemoveStoreTrack;
+        const volume = kind === "ambient" ? handleGlobalVolumeChange : handleStoreVolumeChange;
+        const offset = kind === "ambient" ? handleGlobalStartOffsetChange : handleStoreStartOffsetChange;
+        const loop = kind === "ambient" ? handleGlobalLoopChange : handleStoreLoopChange;
+        return (window.SP_REACT.createElement("section", { className: "tdQamCard" },
+            window.SP_REACT.createElement("div", { style: { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 10, alignItems: "start" } },
+                window.SP_REACT.createElement("div", { style: { minWidth: 0 } },
+                    window.SP_REACT.createElement("h2", null, title),
+                    window.SP_REACT.createElement("div", { className: "tdQamMeta" }, currentTrack?.filename || emptyLabel)),
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 7 } },
+                    currentTrack ? window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdQamIconButton", title: playback.appId === playingId && playback.status === "playing" ? t("pausePreview") : t("previewTrack"), onClick: preview, style: qamIconButton }, playback.appId === playingId && playback.status === "playing" ? window.SP_REACT.createElement(FaPause, null) : window.SP_REACT.createElement(FaPlay, null)) : null,
+                    currentTrack ? window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdQamIconButton", title: t("removeTrack"), onClick: remove, style: qamIconButton },
+                        window.SP_REACT.createElement(FaTrash, null)) : null,
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdQamIconButton", title: chooseLabel, onClick: () => navigateToThemeDeckEditor(kind === "ambient" ? "/themedeck/global" : "/themedeck/store"), style: qamIconButton },
+                        window.SP_REACT.createElement(FaChevronRight, null)))),
+            currentTrack ? (window.SP_REACT.createElement("div", { className: "tdQamTrackControls" },
+                window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(currentTrack.volume * 100), label: t("volume"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: volume }),
+                window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(currentTrack.startOffset), label: t("startSkip"), min: 0, max: 30, step: 1, valueSuffix: "s", showValue: true, onChange: offset }),
+                window.SP_REACT.createElement(DFL.ToggleField, { checked: currentTrack.loop, label: t("loopTrack"), description: t("loopTrackDesc"), onChange: loop }))) : null));
+    };
     return (window.SP_REACT.createElement(DFL.ScrollPanel, null,
-        window.SP_REACT.createElement("div", { className: "themedeck-main", style: {
-                paddingBottom: "1.5rem",
-                paddingRight: "0.85rem",
-                paddingLeft: "0.25rem",
-                width: "100%",
-                maxWidth: "100%",
-                boxSizing: "border-box",
-                overflowX: "hidden",
-            } },
+        window.SP_REACT.createElement(DFL.Focusable, { className: "tdQamRedesign", "flow-children": "vertical", style: { width: "100%", padding: "2px 12px 26px 4px", overflowX: "hidden" } },
             window.SP_REACT.createElement("style", null, `
-        .themedeck-main,
-        .themedeck-main * {
-          min-width: 0 !important;
-          box-sizing: border-box !important;
-        }
-        .themedeck-main .themedeck-fit {
-          width: calc(100% - 0.35rem) !important;
-          max-width: calc(100% - 0.35rem) !important;
-          min-width: 0 !important;
-          margin-right: auto !important;
-          box-sizing: border-box !important;
-        }
-        .themedeck-main .themedeck-wrap {
-          white-space: normal !important;
-          overflow-wrap: anywhere !important;
-          word-break: break-word !important;
-        }
-        .themedeck-main [class*="PanelSectionRow"] {
-          max-width: 100% !important;
-          width: 100% !important;
-          min-width: 0 !important;
-        }
-        .themedeck-main [class*="PanelSectionRow"] > * {
-          max-width: 100% !important;
-          min-width: 0 !important;
-        }
-        .themedeck-main [class*="FieldLabel"],
-        .themedeck-main [class*="FieldDescription"],
-        .themedeck-main [class*="ValueSuffix"],
-        .themedeck-main [class*="Value"] {
-          white-space: normal !important;
-          overflow-wrap: anywhere !important;
-          word-break: break-word !important;
-        }
-      `),
+          .tdQamRedesign,.tdQamRedesign *{box-sizing:border-box;min-width:0;letter-spacing:0}
+          .tdQamRedesign .DialogButton{width:100%;min-height:36px!important;border-radius:5px!important;padding:0 10px!important;font-size:15px!important}
+          .tdQamRedesign .DialogButton:hover,.tdQamRedesign .DialogButton:focus,.tdQamRedesign .DialogButton.gpfocus{background:rgba(240,180,41,.16)!important;color:#fff!important;border-color:rgba(240,180,41,.92)!important;box-shadow:0 0 0 2px rgba(240,180,41,.22)!important}
+          .tdQamRedesign .DialogButton:hover *,.tdQamRedesign .DialogButton:focus *,.tdQamRedesign .DialogButton.gpfocus *{color:inherit!important}
+          .tdQamRedesign .DialogButton:hover svg,.tdQamRedesign .DialogButton:focus svg,.tdQamRedesign .DialogButton.gpfocus svg{color:#fff!important;fill:currentColor!important}
+          .tdQamRedesign .tdQamIconButton{width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;padding:0!important}
+          .tdQamRedesign .tdQamIconButton:focus,.tdQamRedesign .tdQamIconButton.gpfocus{background:rgba(240,180,41,.16)!important;color:#fff!important;border-color:rgba(240,180,41,.92)!important;box-shadow:0 0 0 2px rgba(240,180,41,.22)!important}
+          .tdQamRedesign .tdQamIconButton:focus svg,.tdQamRedesign .tdQamIconButton.gpfocus svg{color:#fff!important;fill:currentColor!important}
+          .tdQamCard{width:100%;margin:0 0 9px;padding:13px 12px;border:1px solid rgba(255,255,255,.085);border-radius:6px;background:rgba(255,255,255,.035);overflow:hidden}
+          .tdQamCard h2{margin:0;font-size:16px;line-height:1.2;font-weight:700}
+          .tdQamMeta{margin-top:4px;font-size:12px;line-height:1.3;opacity:.56;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+          .tdQamSectionLabel{margin:14px 4px 7px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.48}
+          .tdQamTrackControls{display:grid;gap:7px;margin-top:11px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07)}
+          .tdQamList{max-height:190px;overflow-y:auto;margin-top:8px;padding:7px 9px;border-radius:5px;background:rgba(0,0,0,.16);font-size:.73rem;line-height:1.42}
+          .tdQamRedesign [class*="PanelSectionRow"]{width:100%!important;max-width:100%!important}
+        `),
             window.SP_REACT.createElement("div", { ref: topFocusRef, tabIndex: -1, style: { position: "absolute", width: 0, height: 0, outline: "none" } }),
-            window.SP_REACT.createElement("div", null,
-                    window.SP_REACT.createElement(DFL.PanelSection, null,
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement(DFL.ToggleField, { checked: autoPlay, label: t("autoPlayLabel"), description: t("autoPlayDesc"), onChange: (value) => setAutoPlay(value) })),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                            window.SP_REACT.createElement(DFL.ToggleField, { checked: normalizeDownloadedAudio, label: t("normalizeAudioLabel"), description: t("normalizeAudioDesc"), onChange: (value) => setNormalizeDownloadedAudio(value) }),
-                            window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem" } },
-                                window.SP_REACT.createElement(DFL.ToggleField, { checked: upmixDownloadedAudio, label: t("upmixAudioLabel"), description: t("upmixAudioDesc"), onChange: (value) => setUpmixDownloadedAudio(value) })),
-                            window.SP_REACT.createElement("div", { style: {
-                                    opacity: 0.78,
-                                    fontSize: "0.82rem",
-                                    marginTop: "0.2rem",
-                                    color: audioNormalizationStatus.available
-                                        ? "inherit"
-                                        : "#ffb3b3",
-                                    overflowWrap: "anywhere",
-                                } }, audioNormalizationStatus.available
-                                ? `${t("normalizationAvailable")} ${audioNormalizationStatus.path || ""}`.trim()
-                                : t("normalizationUnavailable")))),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                            window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(gameTrackMasterVolume * 100), label: t("gameMusicVolumeLabel"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: (value) => setGameTrackMasterVolume(clamp(value / 100)) }),
-                            t("gameMusicVolumeDesc") ? (window.SP_REACT.createElement("div", { style: { opacity: 0.78, fontSize: "0.82rem", marginTop: "0.2rem" } }, t("gameMusicVolumeDesc"))) : null)),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                            window.SP_REACT.createElement("div", { style: { fontWeight: 600 } }, t("stopMusicAfterPlay")),
-                            t("stopMusicAfterPlayDesc") ? (window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.85rem" } }, t("stopMusicAfterPlayDesc"))) : null,
-                            window.SP_REACT.createElement("div", { style: {
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "0.35rem",
-                                    marginTop: "0.45rem",
-                                }, role: "radiogroup", "aria-label": t("stopMusicTimingAria") }, [
-                                {
-                                    value: "launch_start",
-                                    label: t("launchStart"),
-                                },
-                                {
-                                    value: "game_started",
-                                    label: t("launchFinish"),
-                                },
-                            ].map((option) => (window.SP_REACT.createElement(FocusableButton, { key: option.value, className: "DialogButton themedeck-fit themedeck-wrap", onClick: () => setLaunchStopMode(option.value), role: "radio", "aria-checked": launchStopMode === option.value, style: {
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                    justifyContent: "flex-start",
-                                    width: "100%",
-                                    boxSizing: "border-box",
-                                    whiteSpace: "normal",
-                                    textAlign: "left",
-                                    fontSize: "0.92rem",
-                                    paddingRight: "0.65rem",
-                                    paddingLeft: "0.65rem",
-                                    border: launchStopMode === option.value
-                                        ? "1px solid rgba(120, 180, 255, 0.85)"
-                                        : undefined,
-                                } },
-                                window.SP_REACT.createElement("span", { style: { minWidth: "1.4rem", textAlign: "center" } }, launchStopMode === option.value ? "(x)" : "( )"),
-                                window.SP_REACT.createElement("span", null, option.label))))))),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement(DFL.ToggleField, { checked: globalAmbientEnabled, label: t("enableGlobalLabel"), description: t("enableGlobalDesc"), onChange: (value) => {
-                                setGlobalAmbientEnabled(value);
-                                scheduleAutoPlaybackFromContext();
-                            } })),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement(DFL.ToggleField, { checked: storeTrackEnabled, label: t("enableStoreLabel"), description: t("enableStoreDesc"), onChange: (value) => {
-                                setStoreTrackEnabled(value);
-                                scheduleAutoPlaybackFromContext();
-                            } })),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement(DFL.ToggleField, { checked: ambientDisableStore, label: t("disableGlobalStoreLabel"), description: t("disableGlobalStoreDesc"), onChange: (value) => {
-                                setAmbientDisableStore(value);
-                                scheduleAutoPlaybackFromContext();
-                            } })),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                            window.SP_REACT.createElement("div", { style: { fontWeight: 600 } }, t("globalInterruptionLabel")),
-                            t("globalInterruptionDesc") ? (window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.85rem" } }, t("globalInterruptionDesc"))) : null,
-                            window.SP_REACT.createElement("div", { style: {
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "0.35rem",
-                                    marginTop: "0.45rem",
-                                }, role: "radiogroup", "aria-label": t("globalAmbientBehaviorAria") }, [
-                                {
-                                    value: "stop",
-                                    label: t("interruptStop"),
-                                },
-                                {
-                                    value: "pause",
-                                    label: t("interruptPause"),
-                                },
-                                {
-                                    value: "mute",
-                                    label: t("interruptMute"),
-                                },
-                            ].map((option) => (window.SP_REACT.createElement(FocusableButton, { key: option.value, className: "DialogButton themedeck-fit themedeck-wrap", onClick: () => setAmbientInterruptionMode(option.value), role: "radio", "aria-checked": ambientInterruptionMode === option.value, style: {
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                    justifyContent: "flex-start",
-                                    width: "100%",
-                                    boxSizing: "border-box",
-                                    whiteSpace: "normal",
-                                    textAlign: "left",
-                                    fontSize: "0.92rem",
-                                    paddingRight: "0.65rem",
-                                    paddingLeft: "0.65rem",
-                                    border: ambientInterruptionMode === option.value
-                                        ? "1px solid rgba(120, 180, 255, 0.85)"
-                                        : undefined,
-                                } },
-                                window.SP_REACT.createElement("span", { style: { minWidth: "1.4rem", textAlign: "center" } }, ambientInterruptionMode === option.value ? "(x)" : "( )"),
-                                window.SP_REACT.createElement("span", null, option.label))))))),
-                    window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                        window.SP_REACT.createElement("div", { style: {
-                                width: "100%",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "0.35rem",
-                                alignItems: "stretch",
-                            } },
-                            window.SP_REACT.createElement("div", { style: { color: "#ff6b6b", fontWeight: 700, fontSize: "0.86rem" } }, t("ytdlpWarning")),
-                            window.SP_REACT.createElement("div", { style: { color: "#ff8f8f", fontSize: "0.84rem" } }, ytDlpStatus.installed
-                                ? `yt-dlp ${ytDlpStatus.version || ""}`.trim()
-                                : t("ytdlpNotInstalled")),
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: handleUpdateYtDlp, disabled: ytDlpBusy, style: {
-                                    textAlign: "left",
-                                    fontSize: "0.92rem",
-                                    paddingRight: "0.65rem",
-                                    paddingLeft: "0.65rem",
-                                    color: "#ff6b6b",
-                                    border: "1px solid rgba(255, 107, 107, 0.7)",
-                                } }, ytDlpBusy ? t("updating") : t("updateYtdlp")),
-                            t("deleteDownloadedTracksDesc") ? (window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.84rem" } }, t("deleteDownloadedTracksDesc"))) : null,
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: handleDeleteDownloadedTracks, style: {
-                                    textAlign: "left",
-                                    fontSize: "0.92rem",
-                                    paddingRight: "0.65rem",
-                                    paddingLeft: "0.65rem",
-                                    color: "#ff8f8f",
-                                    border: "1px solid rgba(255, 143, 143, 0.62)",
-                                } }, t("deleteDownloadedTracks")),
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: handleDeleteUnusedTracks, style: {
-                                    textAlign: "left",
-                                    fontSize: "0.92rem",
-                                    paddingRight: "0.65rem",
-                                    paddingLeft: "0.65rem",
-                                    color: "#ff8f8f",
-                                    border: "1px solid rgba(255, 143, 143, 0.62)",
-                                } }, t("deleteUnusedTracks")))))),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("autoAssignTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                        t("autoAssignDesc") ? (window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.85rem" } }, t("autoAssignDesc"))) : null,
-                        window.SP_REACT.createElement("div", { style: { opacity: 0.95, fontSize: "0.88rem", marginTop: "0.25rem", fontWeight: 600 } }, t("missingCount", { count: unassignedLibraryGameCount })),
-                        window.SP_REACT.createElement("div", { style: { opacity: 0.75, fontSize: "0.8rem", marginTop: "0.15rem" } }, t("libraryCount", { count: libraryGames.length })),
-                        window.SP_REACT.createElement("div", { style: {
-                                marginTop: "0.5rem",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "0.35rem",
-                                marginBottom: "0.35rem",
-                                alignItems: "stretch",
-                            } },
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: handleAutoAssignMissingTracks, disabled: bulkAssign.running || ytDlpBusy || !ytDlpStatus.installed, style: {
-                                    textAlign: "left",
-                                    fontSize: "0.92rem",
-                                    paddingRight: "0.65rem",
-                                    paddingLeft: "0.65rem",
-                                } }, bulkAssign.running ? t("running") : t("autoAssignMissing")),
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: handleStopBulkAssign, disabled: !bulkAssign.running, style: {
-                                    textAlign: "left",
-                                    fontSize: "0.92rem",
-                                    paddingRight: "0.65rem",
-                                    paddingLeft: "0.65rem",
-                                } }, t("stopButton"))),
-                        (bulkAssign.running || bulkAssign.message) && (window.SP_REACT.createElement("div", { style: { marginTop: "0.55rem" } },
-                            window.SP_REACT.createElement("div", { style: {
-                                    width: "100%",
-                                    height: "0.55rem",
-                                    borderRadius: "0.35rem",
-                                    background: "rgba(255,255,255,0.18)",
-                                    overflow: "hidden",
-                                } },
-                                window.SP_REACT.createElement("div", { style: {
-                                        width: `${bulkAssign.total > 0
-                                            ? Math.min(100, Math.round((bulkAssign.completed / bulkAssign.total) * 100))
-                                            : 0}%`,
-                                        height: "100%",
-                                        background: "rgba(98, 168, 255, 0.95)",
-                                        transition: "width 0.2s ease",
-                                    } })),
-                            window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem", fontSize: "0.82rem", opacity: 0.85 } },
-                                bulkAssign.completed,
-                                "/",
-                                bulkAssign.total,
-                                " completed",
-                                " • ",
-                                "assigned ",
-                                bulkAssign.assigned),
-                            window.SP_REACT.createElement("div", { style: { marginTop: "0.15rem", fontSize: "0.82rem", opacity: 0.85 } },
-                                "skipped ",
-                                bulkAssign.skipped,
-                                " • ",
-                                "failed ",
-                                bulkAssign.failed),
-                            bulkAssign.currentGame && (window.SP_REACT.createElement("div", { style: { marginTop: "0.2rem", fontSize: "0.82rem", opacity: 0.85 } },
-                                "Current game: ",
-                                bulkAssign.currentGame,
-                                bulkAssign.stopRequested ? " (stopping...)" : "")),
-                            !!bulkAssign.message && (window.SP_REACT.createElement("div", { style: { marginTop: "0.2rem", fontSize: "0.82rem", opacity: 0.85 } }, bulkAssign.message)),
-                            !!bulkAssign.ffmpegMessage && (window.SP_REACT.createElement("div", { style: {
-                                    marginTop: "0.2rem",
-                                    fontSize: "0.82rem",
-                                    color: bulkAssign.ffmpegStatus === "success"
-                                        ? "#ffb15c"
-                                        : bulkAssign.ffmpegStatus === "failed"
-                                            ? "#ff8f8f"
-                                            : "rgba(255,255,255,0.72)",
-                                } }, bulkAssign.ffmpegMessage)))))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            width: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "0.35rem",
-                            marginTop: "0.35rem",
-                        } },
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: () => setShowMissingGames((prev) => !prev), style: {
-                                textAlign: "left",
-                                fontSize: "0.92rem",
-                                paddingRight: "0.65rem",
-                                paddingLeft: "0.65rem",
-                            } }, showMissingGames ? t("hideMissingGames") : t("showMissingGames")),
-                        showMissingGames ? (window.SP_REACT.createElement("div", { style: {
-                                width: "100%",
-                                borderRadius: "0.4rem",
-                                background: "rgba(255,255,255,0.05)",
-                                padding: "0.55rem 0.65rem",
-                                maxHeight: "16rem",
-                                overflowY: "auto",
-                                overflowX: "hidden",
-                            } }, missingGameNameStats.total > 0 ? (window.SP_REACT.createElement(window.SP_REACT.Fragment, null,
-                            window.SP_REACT.createElement("div", { style: { fontSize: "0.82rem", opacity: 0.9, marginBottom: "0.35rem" } },
-                                missingGameNameStats.resolved,
-                                "/",
-                                missingGameNameStats.total,
-                                " names resolved",
-                                " • ",
-                                "pending ",
-                                missingGameNameStats.pending,
-                                " • ",
-                                "unavailable ",
-                                missingGameNameStats.failed,
-                                missingResolveInFlightCount > 0
-                                    ? ` • checking ${missingResolveInFlightCount}`
-                                    : ""),
-                            window.SP_REACT.createElement("div", { style: {
-                                    width: "100%",
-                                    height: "0.5rem",
-                                    borderRadius: "0.35rem",
-                                    background: "rgba(255,255,255,0.16)",
-                                    overflow: "hidden",
-                                    marginBottom: "0.45rem",
-                                } },
-                                window.SP_REACT.createElement("div", { style: {
-                                        width: `${missingGameNameStats.percent}%`,
-                                        height: "100%",
-                                        background: "rgba(98, 168, 255, 0.95)",
-                                        transition: "width 0.25s ease",
-                                    } })),
-                            missingGameNameStats.pending > 0 && missingGamesList.length === 0 ? (window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.86rem", marginBottom: "0.25rem" } }, "Resolving game names...")) : null,
-                            missingGamesList.map((game) => (window.SP_REACT.createElement("div", { key: game.appid, style: {
-                                    padding: "0.22rem 0",
-                                    fontSize: "0.86rem",
-                                    overflowWrap: "anywhere",
-                                    wordBreak: "break-word",
-                                    color: game.status === "failed"
-                                        ? "rgba(255, 200, 200, 0.92)"
-                                        : game.isNonSteam
-                                            ? "#6fe28f"
-                                            : "inherit",
-                                } },
-                                game.name,
-                                " (",
-                                game.appid,
-                                ")"))))) : (window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.86rem" } }, t("noGamesMissingMusic"))))) : null)),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            width: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "0.35rem",
-                            marginTop: "0.35rem",
-                        } },
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: () => setShowAssignedGames((prev) => !prev), style: {
-                                textAlign: "left",
-                                fontSize: "0.92rem",
-                                paddingRight: "0.65rem",
-                                paddingLeft: "0.65rem",
-                            } }, showAssignedGames ? t("hideAssignedGames") : t("showAssignedGames")),
-                        showAssignedGames ? (window.SP_REACT.createElement("div", { style: {
-                                width: "100%",
-                                borderRadius: "0.4rem",
-                                background: "rgba(255,255,255,0.05)",
-                                padding: "0.55rem 0.65rem",
-                                maxHeight: "16rem",
-                                overflowY: "auto",
-                                overflowX: "hidden",
-                            } }, assignedGamesList.length > 0 ? (window.SP_REACT.createElement(window.SP_REACT.Fragment, null,
-                            window.SP_REACT.createElement("div", { style: { fontSize: "0.82rem", opacity: 0.82, marginBottom: "0.35rem" } }, t("assignedNormalizedCaption")),
-                            assignedGamesList.map((game) => (window.SP_REACT.createElement("div", { key: game.appid, style: {
-                                    padding: "0.22rem 0",
-                                    fontSize: "0.86rem",
-                                    overflowWrap: "anywhere",
-                                    wordBreak: "break-word",
-                                    color: game.normalized ? "#ffb15c" : "inherit",
-                                } },
-                                game.name,
-                                " (",
-                                game.appid,
-                                ")"))))) : (window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.86rem" } }, t("noGamesWithMusic"))))) : null))),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("globalAmbientPanelTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: () => DFL.Navigation.Navigate("/themedeck/global"), style: {
-                            textAlign: "left",
-                            fontSize: "0.92rem",
-                            paddingRight: "0.65rem",
-                            paddingLeft: "0.65rem",
-                        } }, t("chooseGlobal"))),
-                !globalTrack ? (window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", null, t("noGlobalTrackSelected")))) : (window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                        window.SP_REACT.createElement("div", { style: { fontWeight: 600, overflowWrap: "anywhere" } }, globalTrack.filename),
-                        window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.9rem", overflowWrap: "anywhere" } }, globalTrack.path),
-                        window.SP_REACT.createElement("div", { style: {
-                                display: "flex",
-                                gap: "0.5rem",
-                                marginTop: "0.5rem",
-                                flexWrap: "nowrap",
-                            } },
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", style: {
-                                    width: "3rem",
-                                    height: "2.6rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: 0,
-                                }, title: playback.appId === GLOBAL_AMBIENT_APP_ID &&
-                                    playback.status === "playing"
-                                    ? t("pausePreview")
-                                    : t("previewTrack"), onClick: handleGlobalPreviewToggle }, playback.appId === GLOBAL_AMBIENT_APP_ID &&
-                                playback.status === "playing" ? (window.SP_REACT.createElement(FaPause, null)) : (window.SP_REACT.createElement(FaPlay, null))),
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", style: {
-                                    width: "3rem",
-                                    height: "2.6rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: 0,
-                                }, title: t("removeGlobalAmbient"), onClick: handleRemoveGlobalTrack },
-                                window.SP_REACT.createElement(FaTrash, null))),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.5rem" } },
-                            window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(globalTrack.volume * 100), label: t("volume"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: handleGlobalVolumeChange })),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem" } },
-                            window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(globalTrack.startOffset), label: t("startSkip"), min: 0, max: 30, step: 1, valueSuffix: "s", showValue: true, onChange: handleGlobalStartOffsetChange })),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem" } },
-                            window.SP_REACT.createElement(DFL.ToggleField, { checked: globalTrack.loop, label: t("loopTrack"), description: t("loopTrackDesc"), onChange: handleGlobalLoopChange })))))),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("storeOnlyPanelTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton themedeck-fit themedeck-wrap", onClick: () => DFL.Navigation.Navigate("/themedeck/store"), style: {
-                            textAlign: "left",
-                            fontSize: "0.92rem",
-                            paddingRight: "0.65rem",
-                            paddingLeft: "0.65rem",
-                        } }, t("chooseStore"))),
-                !storeTrack ? (window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", null, t("noStoreOnlyTrackSelected")))) : (window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                        window.SP_REACT.createElement("div", { style: { fontWeight: 600, overflowWrap: "anywhere" } }, storeTrack.filename),
-                        window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.9rem", overflowWrap: "anywhere" } }, storeTrack.path),
-                        window.SP_REACT.createElement("div", { style: {
-                                display: "flex",
-                                gap: "0.5rem",
-                                marginTop: "0.5rem",
-                                flexWrap: "nowrap",
-                            } },
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", style: {
-                                    width: "3rem",
-                                    height: "2.6rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: 0,
-                                }, title: playback.appId === STORE_TRACK_APP_ID &&
-                                    playback.status === "playing"
-                                    ? t("pausePreview")
-                                    : t("previewTrack"), onClick: handleStorePreviewToggle }, playback.appId === STORE_TRACK_APP_ID &&
-                                playback.status === "playing" ? (window.SP_REACT.createElement(FaPause, null)) : (window.SP_REACT.createElement(FaPlay, null))),
-                            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", style: {
-                                    width: "3rem",
-                                    height: "2.6rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: 0,
-                                }, title: t("removeStoreOnly"), onClick: handleRemoveStoreTrack },
-                                window.SP_REACT.createElement(FaTrash, null))),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.5rem" } },
-                            window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(storeTrack.volume * 100), label: t("volume"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: handleStoreVolumeChange })),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem" } },
-                            window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(storeTrack.startOffset), label: t("startSkip"), min: 0, max: 30, step: 1, valueSuffix: "s", showValue: true, onChange: handleStoreStartOffsetChange })),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem" } },
-                            window.SP_REACT.createElement(DFL.ToggleField, { checked: storeTrack.loop, label: t("loopTrack"), description: t("loopTrackDesc"), onChange: handleStoreLoopChange })))))))));
+            window.SP_REACT.createElement("div", { className: "tdQamSectionLabel" }, "ThemeDeck"),
+            window.SP_REACT.createElement("section", { className: "tdQamCard" },
+                window.SP_REACT.createElement(DFL.ToggleField, { checked: autoPlay, label: t("autoPlayLabel"), description: t("autoPlayDesc"), onChange: setAutoPlay }),
+                window.SP_REACT.createElement("div", { style: { marginTop: 8 } },
+                    window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(gameTrackMasterVolume * 100), label: t("gameMusicVolumeLabel"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: (value) => setGameTrackMasterVolume(clamp(value / 100)) })),
+                window.SP_REACT.createElement("div", { style: { marginTop: 10, fontSize: ".76rem", fontWeight: 700 } }, t("stopMusicAfterPlay")),
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "grid", gap: 5, marginTop: 6 } }, [{ value: "launch_start", label: t("launchStart") }, { value: "game_started", label: t("launchFinish") }].map((option) => window.SP_REACT.createElement(FocusableButton, { key: option.value, className: "DialogButton", role: "radio", "aria-checked": launchStopMode === option.value, onClick: () => setLaunchStopMode(option.value), style: qamChoice(launchStopMode === option.value) },
+                    window.SP_REACT.createElement("span", { style: { width: 8, height: 8, borderRadius: 8, background: launchStopMode === option.value ? "#f0b429" : "rgba(255,255,255,.24)" } }),
+                    window.SP_REACT.createElement("span", null, option.label)))),
+                window.SP_REACT.createElement("div", { style: { display: "grid", gap: 7, marginTop: 10, paddingTop: 9, borderTop: "1px solid rgba(255,255,255,.07)" } },
+                    window.SP_REACT.createElement(DFL.ToggleField, { checked: globalAmbientEnabled, label: t("enableGlobalLabel"), description: t("enableGlobalDesc"), onChange: (value) => { setGlobalAmbientEnabled(value); scheduleAutoPlaybackFromContext(); } }),
+                    window.SP_REACT.createElement(DFL.ToggleField, { checked: storeTrackEnabled, label: t("enableStoreLabel"), description: t("enableStoreDesc"), onChange: (value) => { setStoreTrackEnabled(value); scheduleAutoPlaybackFromContext(); } }),
+                    window.SP_REACT.createElement(DFL.ToggleField, { checked: ambientDisableStore, label: t("disableGlobalStoreLabel"), description: t("disableGlobalStoreDesc"), onChange: (value) => { setAmbientDisableStore(value); scheduleAutoPlaybackFromContext(); } })),
+                window.SP_REACT.createElement("div", { style: { marginTop: 10, fontSize: ".76rem", fontWeight: 700 } }, t("globalInterruptionLabel")),
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "grid", gap: 5, marginTop: 6 } }, [{ value: "stop", label: t("interruptStop") }, { value: "pause", label: t("interruptPause") }, { value: "mute", label: t("interruptMute") }].map((option) => window.SP_REACT.createElement(FocusableButton, { key: option.value, className: "DialogButton", role: "radio", "aria-checked": ambientInterruptionMode === option.value, onClick: () => setAmbientInterruptionMode(option.value), style: qamChoice(ambientInterruptionMode === option.value) },
+                    window.SP_REACT.createElement("span", { style: { width: 8, height: 8, borderRadius: 8, background: ambientInterruptionMode === option.value ? "#f0b429" : "rgba(255,255,255,.24)" } }),
+                    window.SP_REACT.createElement("span", null, option.label))))),
+            window.SP_REACT.createElement("div", { className: "tdQamSectionLabel" }, t("globalAmbientPanelTitle")),
+            renderQamTrack("ambient"),
+            renderQamTrack("store"),
+            window.SP_REACT.createElement("div", { className: "tdQamSectionLabel" }, t("autoAssignTitle")),
+            window.SP_REACT.createElement("section", { className: "tdQamCard" },
+                window.SP_REACT.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 9, alignItems: "baseline" } },
+                    window.SP_REACT.createElement("h2", null, t("autoAssignTitle")),
+                    window.SP_REACT.createElement("strong", { style: { fontSize: ".78rem" } }, unassignedLibraryGameCount)),
+                window.SP_REACT.createElement("div", { className: "tdQamMeta" }, t("libraryCount", { count: libraryGames.length })),
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "grid", gap: 6, marginTop: 10 } },
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleAutoAssignMissingTracks, disabled: bulkAssign.running || ytDlpBusy || !ytDlpStatus.installed }, bulkAssign.running ? t("running") : t("autoAssignMissing")),
+                    bulkAssign.running ? window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleStopBulkAssign }, t("stopButton")) : null,
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => setShowMissingGames((value) => !value) }, showMissingGames ? t("hideMissingGames") : t("showMissingGames")),
+                    showMissingGames ? window.SP_REACT.createElement("div", { className: "tdQamList" }, missingGamesList.length ? missingGamesList.map((game) => window.SP_REACT.createElement("div", { key: game.appid }, game.name)) : t("noGamesMissingMusic")) : null,
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => setShowAssignedGames((value) => !value) }, showAssignedGames ? t("hideAssignedGames") : t("showAssignedGames")),
+                    showAssignedGames ? window.SP_REACT.createElement("div", { className: "tdQamList" }, assignedGamesList.length ? assignedGamesList.map((game) => window.SP_REACT.createElement("div", { key: game.appid, style: { color: game.normalized ? "#f0b429" : "inherit" } }, game.name)) : t("noGamesWithMusic")) : null,
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleOpenAutoAssignExclusions, style: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 14px", alignItems: "center", textAlign: "left" } },
+                        window.SP_REACT.createElement("span", null, t("chooseAutoAssignExclusions")),
+                        window.SP_REACT.createElement(FaChevronRight, { size: 12 }))),
+                (bulkAssign.running || bulkAssign.message) ? window.SP_REACT.createElement("div", { style: { marginTop: 9, fontSize: ".71rem", opacity: .62 } }, bulkAssign.message || `${bulkAssign.completed}/${bulkAssign.total}`) : null),
+            window.SP_REACT.createElement("div", { className: "tdQamSectionLabel" }, "Audio"),
+            window.SP_REACT.createElement("section", { className: "tdQamCard" },
+                window.SP_REACT.createElement(DFL.ToggleField, { checked: normalizeDownloadedAudio, label: t("normalizeAudioLabel"), description: t("normalizeAudioDesc"), onChange: setNormalizeDownloadedAudio }),
+                window.SP_REACT.createElement("div", { style: { marginTop: 7 } },
+                    window.SP_REACT.createElement(DFL.ToggleField, { checked: upmixDownloadedAudio, label: t("upmixAudioLabel"), description: t("upmixAudioDesc"), onChange: setUpmixDownloadedAudio })),
+                window.SP_REACT.createElement("div", { className: "tdQamMeta", style: { color: audioNormalizationStatus.available ? "inherit" : "#ff9e9e" } }, audioNormalizationStatus.available ? t("normalizationAvailable") : t("normalizationUnavailable")),
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "grid", gap: 6, marginTop: 10 } },
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", disabled: ytDlpBusy, onClick: handleUpdateYtDlp }, ytDlpBusy ? t("updating") : t("updateYtdlp")),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleDeleteDownloadedTracks }, t("deleteDownloadedTracks")))))));
+};
+const filePickerJoin = (base, child) => {
+    const separator = base.includes("\\") ? "\\" : "/";
+    return `${base.replace(/[\\/]+$/, "")}${separator}${child}`;
+};
+const filePickerParent = (path) => {
+    const clean = path.replace(/[\\/]+$/, "");
+    if (/^[A-Za-z]:$/.test(clean))
+        return `${clean}\\`;
+    const index = Math.max(clean.lastIndexOf("\\"), clean.lastIndexOf("/"));
+    if (index < 0)
+        return path;
+    const parent = clean.slice(0, index);
+    return /^[A-Za-z]:$/.test(parent) ? `${parent}\\` : parent || "/";
+};
+const THEMEDECK_EDITOR_ACTIVE_CLASS = "tdThemeDeckEditorActive";
+const THEMEDECK_EDITOR_STYLE_ID = "td-themedeck-editor-chrome-style";
+const THEMEDECK_EDITOR_CHROME_SELECTORS = [
+    "#header",
+    '[class*="BasicFooter"]',
+    '[class*="FooterLegend"]',
+    '[class*="QuickAccessFooter"]',
+    '[class*="GamepadFooter"]',
+    '[class*="GamepadHeader"]',
+    '[class*="HeaderStatus"]',
+    '[class*="StatusIcons"]',
+    '[class*="TopBar"]',
+];
+const themeDeckEditorDocuments = () => {
+    const documents = [];
+    const addDocument = (candidate) => {
+        try {
+            if (candidate?.documentElement && !documents.includes(candidate)) {
+                documents.push(candidate);
+            }
+        }
+        catch { }
+    };
+    const addWindowDocument = (candidate) => {
+        if (!candidate)
+            return;
+        try {
+            addDocument(candidate.document);
+        }
+        catch { }
+        try {
+            addDocument(candidate.window?.document);
+        }
+        catch { }
+        try {
+            addDocument(candidate.m_Window?.document);
+        }
+        catch { }
+        try {
+            addDocument(candidate.m_popup?.document);
+        }
+        catch { }
+        try {
+            addDocument(candidate.BrowserWindow?.document);
+        }
+        catch { }
+        try {
+            addDocument(candidate.GetWindow?.()?.document);
+        }
+        catch { }
+    };
+    addDocument(document);
+    try {
+        addDocument(window.top?.document);
+    }
+    catch { }
+    try {
+        addDocument(window.parent?.document);
+    }
+    catch { }
+    try {
+        addDocument(window.opener?.document);
+    }
+    catch { }
+    const store = DFL.Router?.WindowStore;
+    addWindowDocument(store?.GamepadUIMainWindowInstance);
+    if (Array.isArray(store?.SteamUIWindows)) {
+        store.SteamUIWindows.forEach(addWindowDocument);
+    }
+    return documents;
+};
+const markThemeDeckEditorChrome = () => {
+    themeDeckEditorDocuments().forEach((targetDocument) => {
+        try {
+            targetDocument.documentElement.classList.add(THEMEDECK_EDITOR_ACTIVE_CLASS);
+            targetDocument.body?.classList.add(THEMEDECK_EDITOR_ACTIVE_CLASS);
+            let style = targetDocument.getElementById(THEMEDECK_EDITOR_STYLE_ID);
+            if (!style) {
+                style = targetDocument.createElement("style");
+                style.id = THEMEDECK_EDITOR_STYLE_ID;
+                const htmlSelectors = THEMEDECK_EDITOR_CHROME_SELECTORS.map((selector) => `html.${THEMEDECK_EDITOR_ACTIVE_CLASS} ${selector}`);
+                const bodySelectors = THEMEDECK_EDITOR_CHROME_SELECTORS.map((selector) => `body.${THEMEDECK_EDITOR_ACTIVE_CLASS} ${selector}`);
+                style.textContent = `${[...htmlSelectors, ...bodySelectors].join(",")}{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:none!important;animation:none!important}`;
+                targetDocument.head?.appendChild(style);
+            }
+        }
+        catch { }
+    });
+};
+const useThemeDeckEditorChromeSuppression = () => {
+    SP_REACT.useEffect(() => {
+        markThemeDeckEditorChrome();
+        const followUps = [40, 120, 300, 700, 1200, 2000].map((delay) => window.setTimeout(markThemeDeckEditorChrome, delay));
+        const steady = window.setInterval(markThemeDeckEditorChrome, 1800);
+        return () => {
+            window.clearInterval(steady);
+            followUps.forEach((timer) => window.clearTimeout(timer));
+            themeDeckEditorDocuments().forEach((targetDocument) => {
+                try {
+                    targetDocument.documentElement.classList.remove(THEMEDECK_EDITOR_ACTIVE_CLASS);
+                    targetDocument.body?.classList.remove(THEMEDECK_EDITOR_ACTIVE_CLASS);
+                }
+                catch { }
+            });
+        };
+    }, []);
+};
+const navigateToThemeDeckEditor = (path) => {
+    markThemeDeckEditorChrome();
+    DFL.Navigation.Navigate(path);
+};
+const ThemeDeckFilePickerModal = ({ initialPath, closeModal, onSelect, }) => {
+    const [listing, setListing] = SP_REACT.useState({ path: initialPath, dirs: [], files: [] });
+    const [manualPath, setManualPath] = SP_REACT.useState(initialPath);
+    const [selectedPath, setSelectedPath] = SP_REACT.useState("");
+    const [loading, setLoading] = SP_REACT.useState(true);
+    const [saving, setSaving] = SP_REACT.useState(false);
+    const load = SP_REACT.useCallback(async (path) => {
+        setLoading(true);
+        setSelectedPath("");
+        try {
+            const next = await listDirectory(path);
+            setListing(next);
+            setManualPath(next.path);
+        }
+        catch (error) {
+            toaster.toast({ title: "ThemeDeck", body: getErrorMessage(error, t("unknownError")) });
+        }
+        finally {
+            setLoading(false);
+        }
+    }, []);
+    SP_REACT.useEffect(() => { void load(initialPath); }, [initialPath, load]);
+    const audioFiles = listing.files.filter((file) => AUDIO_EXTENSIONS.some((extension) => file.toLocaleLowerCase().endsWith(`.${extension}`)));
+    const confirm = async () => {
+        if (!selectedPath || saving)
+            return;
+        setSaving(true);
+        try {
+            const validation = await validateAudioPath(selectedPath);
+            if (!(validation?.valid ?? validation?.ok))
+                throw new Error(validation?.error || validation?.message || "Unsupported audio file");
+            await onSelect(String(validation?.path || selectedPath));
+            closeModal?.();
+        }
+        catch (error) {
+            toaster.toast({ title: "ThemeDeck", body: t("unableAddFile", { error: getErrorMessage(error, t("unknownError")) }) });
+        }
+        finally {
+            setSaving(false);
+        }
+    };
+    return (window.SP_REACT.createElement(DFL.ModalRoot, { closeModal: closeModal },
+        window.SP_REACT.createElement(DFL.Focusable, { className: "tdFilePicker", "flow-children": "vertical", style: { position: "fixed", left: "50%", top: "50%", transform: "translate(-50%,-50%)", zIndex: 10000, width: "min(820px,calc(100vw - 72px))", height: "min(620px,calc(100vh - 72px))", display: "grid", gridTemplateRows: "auto minmax(0,1fr) auto", gap: 12, padding: 18, borderRadius: 8, border: "1px solid rgba(255,255,255,.16)", background: "rgba(16,17,18,.98)", boxShadow: "0 28px 90px rgba(0,0,0,.72)", overflow: "hidden" } },
+            window.SP_REACT.createElement("style", null, `
+          .tdFilePicker,.tdFilePicker *{box-sizing:border-box;min-width:0;letter-spacing:0}
+          .tdFilePicker .DialogButton{color:#fff!important;border-radius:5px!important;font-size:14px!important}
+          .tdFilePicker .DialogButton:focus,.tdFilePicker .DialogButton.gpfocus{background:#f0b429!important;color:#171717!important;box-shadow:0 0 0 2px rgba(255,255,255,.9)!important}
+          .tdFilePickerList{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.3) transparent}
+          .tdFilePickerList::-webkit-scrollbar{width:8px}.tdFilePickerList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border:2px solid transparent;background-clip:padding-box;border-radius:999px}
+          .tdFilePickerSpinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;animation:tdFilePickerSpin .8s linear infinite}
+          @keyframes tdFilePickerSpin{to{transform:rotate(360deg)}}
+          .tdFilePickerEntry{width:100%!important;height:42px!important;min-height:42px!important;padding:0 12px!important;display:grid!important;grid-template-columns:24px minmax(0,1fr)!important;gap:9px!important;align-items:center!important;text-align:left!important;background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.06)!important}
+          .tdFilePickerEntry[data-selected="true"]{border-color:#f0b429!important;background:rgba(240,180,41,.14)!important}
+        `),
+            window.SP_REACT.createElement("div", { style: { display: "grid", gridTemplateColumns: "42px minmax(0,1fr) 76px", gap: 8, alignItems: "center" } },
+                window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", title: t("up"), onClick: () => void load(filePickerParent(listing.path)), style: { width: 42, minWidth: 42, height: 42, minHeight: 42, padding: 0, display: "grid", placeItems: "center" } },
+                    window.SP_REACT.createElement(FaArrowLeft, null)),
+                window.SP_REACT.createElement(DFL.TextField, { value: manualPath, onChange: (event) => setManualPath(event.target.value), style: { width: "100%", minWidth: 0 } }),
+                window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => void load(manualPath), style: { width: 76, minWidth: 76, height: 42, minHeight: 42, padding: "0 8px", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" } }, t("go"))),
+            window.SP_REACT.createElement(DFL.Focusable, { className: "tdFilePickerList", "flow-children": "vertical", style: { minHeight: 0, overflowY: "auto", overflowX: "hidden", display: "grid", alignContent: "start", gap: 6, padding: "2px 6px 2px 2px" } },
+                loading ? window.SP_REACT.createElement("div", { style: { height: 54, display: "grid", placeItems: "center" } },
+                    window.SP_REACT.createElement("span", { className: "tdFilePickerSpinner" })) : null,
+                !loading && listing.dirs.map((directory) => (window.SP_REACT.createElement(FocusableButton, { key: `dir-${directory}`, className: "DialogButton tdFilePickerEntry", onClick: () => void load(filePickerJoin(listing.path, directory)) },
+                    window.SP_REACT.createElement(FaFolder, null),
+                    window.SP_REACT.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, directory)))),
+                !loading && audioFiles.map((file) => {
+                    const path = filePickerJoin(listing.path, file);
+                    return window.SP_REACT.createElement(FocusableButton, { key: `file-${file}`, className: "DialogButton tdFilePickerEntry", "data-selected": selectedPath === path ? "true" : "false", onClick: () => setSelectedPath(path) },
+                        window.SP_REACT.createElement(FaMusic, null),
+                        window.SP_REACT.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, file));
+                })),
+            window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", disabled: !selectedPath || saving, onClick: () => void confirm(), style: { width: "100%", minWidth: 0, height: 46, minHeight: 46, background: selectedPath ? "#f0b429" : "rgba(255,255,255,.08)", color: selectedPath ? "#171717" : "rgba(255,255,255,.48)", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 } },
+                window.SP_REACT.createElement(FaCheck, null),
+                saving ? t("loading") : t("chooseAudioFile")))));
 };
 const ChangeTheme = () => {
+    useThemeDeckEditorChromeSuppression();
     const params = DFL.useParams();
     const appId = Number(params?.appid);
     const [track, setTrack] = SP_REACT.useState(null);
     const [loading, setLoading] = SP_REACT.useState(true);
-    const [currentDir, setCurrentDir] = SP_REACT.useState("/home/deck");
-    const [browser, setBrowser] = SP_REACT.useState({
-        path: "/home/deck",
-        dirs: [],
-        files: [],
-    });
-    const [browserLoading, setBrowserLoading] = SP_REACT.useState(true);
-    const [manualPath, setManualPath] = SP_REACT.useState("/home/deck");
+    const pickerStartPath = "C:\\";
     const [ytDlpStatus, setYtDlpStatus] = SP_REACT.useState({
         installed: false,
     });
@@ -6107,7 +6294,6 @@ const ChangeTheme = () => {
     const [youtubeError, setYoutubeError] = SP_REACT.useState("");
     const [downloadingVideoId, setDownloadingVideoId] = SP_REACT.useState(null);
     const [routePathname, setRoutePathname] = SP_REACT.useState(window.location.pathname || "");
-    const [selectedYouTubeId, setSelectedYouTubeId] = SP_REACT.useState(null);
     const topFocusRef = SP_REACT.useRef(null);
     const assignedVideoId = SP_REACT.useMemo(() => {
         if (!track?.filename)
@@ -6166,16 +6352,6 @@ const ChangeTheme = () => {
             window.clearTimeout(delayedRefresh);
         };
     }, [appId, routePathname]);
-    SP_REACT.useEffect(() => {
-        if (!youtubeResults.length) {
-            setSelectedYouTubeId(null);
-            return;
-        }
-        const currentlySelected = youtubeResults.find((item) => item.id === selectedYouTubeId);
-        if (!currentlySelected) {
-            setSelectedYouTubeId(youtubeResults[0].id);
-        }
-    }, [youtubeResults, selectedYouTubeId]);
     const refreshYtDlpStatus = SP_REACT.useCallback(async (silent = false) => {
         try {
             const status = await getYtDlpStatus();
@@ -6194,26 +6370,6 @@ const ChangeTheme = () => {
     SP_REACT.useEffect(() => {
         refreshYtDlpStatus(true);
     }, [refreshYtDlpStatus]);
-    const refreshDirectory = SP_REACT.useCallback(async (nextDir) => {
-        if (!appId)
-            return;
-        setBrowserLoading(true);
-        try {
-            const listing = await listDirectory(nextDir || currentDir);
-            setBrowser(listing);
-            setCurrentDir(listing.path);
-            setManualPath(listing.path);
-        }
-        catch (error) {
-            console.error("[ThemeDeck] list directory failed", error);
-        }
-        finally {
-            setBrowserLoading(false);
-        }
-    }, [appId, currentDir]);
-    SP_REACT.useEffect(() => {
-        refreshDirectory("/home/deck");
-    }, []);
     SP_REACT.useEffect(() => {
         focusFirstInteractiveElement(topFocusRef.current);
     }, [appId]);
@@ -6257,6 +6413,11 @@ const ChangeTheme = () => {
                 body: t("unableAddFile", { error: `${fullPath}: ${message}` }),
             });
         }
+    };
+    const handleChooseAudioFile = async () => {
+        let modal = null;
+        const closeModal = () => modal?.Close();
+        modal = DFL.showModal(window.SP_REACT.createElement(ThemeDeckFilePickerModal, { initialPath: pickerStartPath, closeModal: closeModal, onSelect: saveFromPath }), undefined, { strTitle: t("browseLocalTitle") });
     };
     const handleYouTubeSearch = async () => {
         if (!ytDlpStatus.installed) {
@@ -6311,10 +6472,6 @@ const ChangeTheme = () => {
         setPreviewLoadingVideoId(result.id);
         try {
             const response = await getYouTubePreviewStream(result.webpage_url);
-            const streamUrl = (response?.stream_url || "").trim();
-            if (!streamUrl) {
-                throw new Error("No preview stream URL returned");
-            }
             let preview = previewAudioRef.current;
             if (!preview) {
                 preview = new Audio();
@@ -6324,13 +6481,8 @@ const ChangeTheme = () => {
             preview.onended = () => {
                 setPreviewingVideoId(null);
             };
-            preview.onerror = () => {
-                setPreviewingVideoId(null);
-            };
-            preview.pause();
             preview.currentTime = 0;
-            preview.src = streamUrl;
-            await preview.play();
+            await playYouTubePreview(preview, response);
             setPreviewingVideoId(result.id);
         }
         catch (error) {
@@ -6384,25 +6536,6 @@ const ChangeTheme = () => {
             setDownloadingVideoId(null);
             refreshYtDlpStatus(true);
         }
-    };
-    const selectedYouTubeResult = SP_REACT.useMemo(() => youtubeResults.find((item) => item.id === selectedYouTubeId) ?? null, [youtubeResults, selectedYouTubeId]);
-    const joinPath = joinFsPath;
-    const goUp = () => {
-        const parent = parentFsPath(currentDir);
-        if (parent === currentDir)
-            return;
-        refreshDirectory(parent);
-    };
-    const handleDirClick = (dir) => {
-        refreshDirectory(joinPath(currentDir, dir));
-    };
-    const handleFileClick = (file) => {
-        saveFromPath(joinPath(currentDir, file));
-    };
-    const handleManualGo = () => {
-        if (!manualPath)
-            return;
-        refreshDirectory(manualPath);
     };
     const handleRemove = async () => {
         if (!appId)
@@ -6482,48 +6615,6 @@ const ChangeTheme = () => {
             });
         }
     };
-    const dismissThemeDeckMenu = () => { try { dismissActiveContextMenu(); } catch (e) { } };
-    SP_REACT.useEffect(() => {
-        dismissThemeDeckMenu();
-        const ids = [0, 90, 220, 420].map((delay) => window.setTimeout(dismissThemeDeckMenu, delay));
-        return () => ids.forEach((id) => window.clearTimeout(id));
-    }, []);
-    const handleChooseAudioFile = async () => {
-        try {
-            let startPath = currentDir || "C:\\";
-            for (let attempts = 0; attempts < 8; attempts += 1) {
-                const picked = await openFilePicker(0, startPath, true, false, undefined, undefined, false, true);
-                const selectedPath = (picked && (picked.realpath || picked.path)) || "";
-                if (!selectedPath) {
-                    return;
-                }
-                const validation = await validateAudioPath(selectedPath);
-                if (validation.ok && validation.is_file) {
-                    const audioPath = validation.path || selectedPath;
-                    setCurrentDir(validation.parent || startPath);
-                    await saveFromPath(audioPath);
-                    return;
-                }
-                if (validation.is_dir && validation.path) {
-                    startPath = validation.path;
-                    setCurrentDir(validation.path);
-                    continue;
-                }
-                toaster.toast({
-                    title: "ThemeDeck",
-                    body: validation.message || "Please choose a supported audio file.",
-                });
-                return;
-            }
-            toaster.toast({
-                title: "ThemeDeck",
-                body: "Please choose a supported audio file.",
-            });
-        }
-        catch (error) {
-            console.error("[ThemeDeck] choose audio file failed", error);
-        }
-    };
     const handleTrackPreviewToggle = () => {
         if (!track || !appId)
             return;
@@ -6539,548 +6630,294 @@ const ChangeTheme = () => {
                 window.SP_REACT.createElement(DFL.PanelSection, { title: "ThemeDeck" },
                     window.SP_REACT.createElement(DFL.PanelSectionRow, null, t("invalidGameId"))))));
     }
+    const gameName = getDisplayName(appId);
+    const compactIconButton = {
+        width: 42,
+        minWidth: 42,
+        height: 42,
+        minHeight: 42,
+        padding: 0,
+        display: "grid",
+        placeItems: "center",
+    };
     return (window.SP_REACT.createElement(DFL.ScrollPanel, null,
-        window.SP_REACT.createElement("div", { style: {
-                padding: 24,
-                paddingTop: 48,
-                paddingBottom: 140,
-                minHeight: "100vh",
-                boxSizing: "border-box",
-            } },
+        window.SP_REACT.createElement(DFL.Focusable, { className: "tdGameEditor", "flow-children": "vertical", style: { position: "fixed", inset: 0, zIndex: 10, width: "100%", minHeight: "100vh", overflowY: "auto", overflowX: "hidden", padding: "30px max(36px,calc((100vw - 1460px)/2)) 110px", color: "#fff", background: "#080909" } },
+            window.SP_REACT.createElement("style", null, `
+          .tdGameEditor,.tdGameEditor *{box-sizing:border-box;letter-spacing:0}
+          .tdGameEditor{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px)}
+          .tdGameEditor .DialogButton{border-radius:6px!important;min-height:42px!important}
+          .tdGameEditor .tdGameIconButton:focus,.tdGameEditor .tdGameIconButton.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
+          .tdGameEditor .tdGameIconButton:focus svg,.tdGameEditor .tdGameIconButton.gpfocus svg{color:#151515!important;fill:currentColor!important}
+          .tdGameEditorCard{width:100%;margin-top:16px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
+          .tdGameTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch}
+          .tdGameTopRow .tdGameEditorCard{height:100%}
+          .tdGameSearchRow{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:10px;margin-top:14px;align-items:stretch}
+          .tdGameSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:44px!important;min-height:44px!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+          .tdMiniSpinner{display:inline-block;width:17px;height:17px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:tdMiniSpin .8s linear infinite}
+          @keyframes tdMiniSpin{to{transform:rotate(360deg)}}
+          .tdGameEditorResult{display:grid;grid-template-columns:112px minmax(0,1fr) 42px 42px;gap:10px;align-items:center;min-height:72px;padding:7px;border-bottom:1px solid rgba(255,255,255,.075)}
+          .tdGameEditorResult:last-child{border-bottom:0}
+          ${SELECTED_TRACK_PANEL_CSS}
+          @media(max-width:900px){.tdGameTopRow{grid-template-columns:minmax(0,1fr)}}
+        `),
             window.SP_REACT.createElement("div", { ref: topFocusRef, tabIndex: -1, style: { position: "absolute", width: 0, height: 0, outline: "none" } }),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: "ThemeDeck" },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            width: "100%",
-                            display: "flex",
-                            gap: "0.5rem",
-                            flexWrap: "nowrap",
-                            alignItems: "center",
-                        } },
-                        track ? (window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleTrackPreviewToggle, style: { minWidth: "6.5rem", whiteSpace: "nowrap" } }, playback.appId === appId && playback.status === "playing"
-                            ? t("pause")
-                            : t("play"))) : null,
-                        track ? (window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleRemove, style: { minWidth: "8.5rem", whiteSpace: "nowrap" } }, t("removeMusic"))) : null,
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => DFL.Navigation.NavigateBack(), style: { minWidth: "6rem", whiteSpace: "nowrap" } }, t("done")))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, loading ? (window.SP_REACT.createElement(DFL.Spinner, null)) : track ? (window.SP_REACT.createElement("div", null,
-                    window.SP_REACT.createElement("div", { style: { fontWeight: 600 } }, track.filename),
-                    window.SP_REACT.createElement("div", { style: { opacity: 0.8 } }, track.path))) : (window.SP_REACT.createElement("div", null, t("noMusicSelected")))),
-                track ? (window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: { width: "100%" } },
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.25rem" } },
-                            window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(track.volume * 100), label: t("volume"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: handleTrackVolumeChange })),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem" } },
-                            window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(track.startOffset), label: t("startSkip"), min: 0, max: 30, step: 1, valueSuffix: "s", showValue: true, onChange: handleTrackStartOffsetChange })),
-                        window.SP_REACT.createElement("div", { style: { marginTop: "0.35rem" } },
-                            window.SP_REACT.createElement(DFL.ToggleField, { checked: track.loop, label: t("loopTrack"), description: t("loopTrackDesc"), onChange: handleTrackLoopChange }))))) : null),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("youtubeSearchTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            width: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "0.35rem",
-                        } },
-                        window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.85rem" } }, t("searchYoutubeDesc")),
-                        !ytDlpStatus.installed ? (window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: async () => {
-                                setYtDlpBusy(true);
-                                try {
-                                    const status = await updateYtDlp();
-                                    setYtDlpStatus(status);
-                                    toaster.toast({
-                                        title: "ThemeDeck",
-                                        body: t("ytdlpReady", { version: status.version || "latest" }),
-                                    });
-                                }
-                                catch (error) {
-                                    toaster.toast({
-                                        title: "ThemeDeck",
-                                        body: t("failedInstallYtdlp", {
-                                            error: getErrorMessage(error, t("unknownUpdateError")),
-                                        }),
-                                    });
-                                }
-                                finally {
-                                    setYtDlpBusy(false);
-                                    refreshYtDlpStatus(true);
-                                }
-                            }, disabled: ytDlpBusy, style: { width: "fit-content" } }, ytDlpBusy ? t("installing") : t("installYtdlp"))) : null)),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            display: "grid",
-                            gridTemplateColumns: "1fr auto",
-                            width: "100%",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                        } },
-                        window.SP_REACT.createElement(DFL.TextField, { value: youtubeQuery, onChange: (event) => setYoutubeQuery(event.target.value), style: { width: "100%", minWidth: "22rem" } }),
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleYouTubeSearch, disabled: youtubeLoading || ytDlpBusy, style: { minWidth: "12rem" } }, youtubeLoading ? t("searching") : t("search")))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, youtubeError ? (window.SP_REACT.createElement("div", { style: {
-                        width: "100%",
-                        padding: "0.55rem 0.7rem",
-                        borderRadius: "0.35rem",
-                        background: "rgba(255, 90, 90, 0.13)",
-                        color: "#ffd7d7",
-                        fontSize: "0.85rem",
-                        lineHeight: 1.35,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                    } }, youtubeError)) : null),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, youtubeLoading ? (window.SP_REACT.createElement(DFL.Spinner, null)) : (window.SP_REACT.createElement("div", { style: {
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.5rem",
-                        marginTop: "0.5rem",
-                    } },
-                    window.SP_REACT.createElement("div", { style: {
-                            width: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "0.5rem",
-                        } },
-                        youtubeResults.map((result) => {
-                            const duration = formatDuration(result.duration);
-                            const thumbnailUrl = `https://i.ytimg.com/vi/${encodeURIComponent(result.id)}/hqdefault.jpg`;
-                            const isCurrentlyAssigned = !!assignedVideoId && assignedVideoId === result.id;
-                            const isSelected = selectedYouTubeId === result.id;
-                            return (window.SP_REACT.createElement("div", { key: result.id, style: {
-                                    borderRadius: "0.4rem",
-                                    padding: "0.6rem",
-                                    background: isCurrentlyAssigned
-                                        ? "rgba(80, 190, 90, 0.22)"
-                                        : "rgba(255,255,255,0.05)",
-                                    border: isCurrentlyAssigned
-                                        ? "1px solid rgba(120, 230, 130, 0.75)"
-                                        : isSelected
-                                            ? "1px solid rgba(120, 180, 255, 0.85)"
-                                            : "1px solid transparent",
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    gap: "0.6rem",
-                                } },
-                                window.SP_REACT.createElement("div", { onClick: () => setSelectedYouTubeId(result.id), style: { display: "flex", flexDirection: "row", alignItems: "center", gap: "0.6rem", flex: 1, minWidth: 0, cursor: "pointer" } },
-                                    window.SP_REACT.createElement("img", { src: thumbnailUrl, alt: result.title, style: {
-                                            width: "8.5rem",
-                                            flex: "0 0 auto",
-                                            aspectRatio: "16 / 9",
-                                            objectFit: "cover",
-                                            borderRadius: "0.35rem",
-                                            background: "rgba(0,0,0,0.25)",
-                                        } }),
-                                    window.SP_REACT.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "0.2rem", minWidth: 0 } },
-                                        isCurrentlyAssigned ? (window.SP_REACT.createElement("div", { style: {
-                                                display: "inline-block",
-                                                width: "fit-content",
-                                                padding: "0.15rem 0.4rem",
-                                                borderRadius: "0.3rem",
-                                                background: "rgba(120, 230, 130, 0.2)",
-                                                color: "#b9fbc1",
-                                                fontWeight: 700,
-                                                fontSize: "0.75rem",
-                                            } }, t("currentAssigned"))) : null,
-                                        window.SP_REACT.createElement("div", { style: { fontWeight: 600 } }, result.title),
-                                        window.SP_REACT.createElement("div", { style: { opacity: 0.8, fontSize: "0.85rem" } }, [result.uploader || "", duration].filter(Boolean).join("  |  ") ||
-                                            "YouTube"))),
-                                window.SP_REACT.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "0.4rem", flex: "0 0 auto" } },
-                                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => {
-                                            setSelectedYouTubeId(result.id);
-                                            handleYouTubePreview(result);
-                                        }, disabled: previewLoadingVideoId !== null || downloadingVideoId !== null, style: { minWidth: "9rem", whiteSpace: "nowrap" } }, previewLoadingVideoId === result.id
-                                        ? t("loading")
-                                        : previewingVideoId === result.id
-                                            ? t("stopPreview")
-                                            : t("playPreview")),
-                                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => {
-                                            setSelectedYouTubeId(result.id);
-                                            handleYouTubeDownload(result);
-                                        }, disabled: downloadingVideoId !== null, style: { minWidth: "11rem", whiteSpace: "nowrap" } }, downloadingVideoId === result.id
-                                        ? t("downloading")
-                                        : t("downloadAssign")))));
-                        }),
-                        !youtubeResults.length && (window.SP_REACT.createElement("div", { style: { opacity: 0.7, whiteSpace: "nowrap" } }, t("noResults")))))))),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("browseLocalTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            display: "flex",
-                            width: "100%",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                        } },
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: goUp, disabled: isRootPath(currentDir), title: t("up"), style: { minWidth: "3rem", width: "3rem", paddingLeft: 0, paddingRight: 0, textAlign: "center" } }, "\u2191"),
-                        window.SP_REACT.createElement("div", { style: { flexGrow: 1, fontFamily: "monospace", overflowWrap: "anywhere" } }, currentDir))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            display: "grid",
-                            gridTemplateColumns: "1fr auto",
-                            width: "100%",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                        } },
-                        window.SP_REACT.createElement(DFL.TextField, { value: manualPath, onChange: (e) => setManualPath(e.target.value), style: { width: "100%", minWidth: "20rem" } }),
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleManualGo }, t("go")))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, browserLoading ? (window.SP_REACT.createElement(DFL.Spinner, null)) : (window.SP_REACT.createElement("div", { style: {
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.35rem",
-                        marginTop: "0.35rem",
-                        paddingRight: "0.25rem",
-                    } },
-                    browser.dirs.map((dir) => (window.SP_REACT.createElement(FocusableButton, { key: `dir-${dir}`, className: "DialogButton", onClick: () => handleDirClick(dir), style: { justifyContent: "flex-start", textAlign: "left" } },
-                        window.SP_REACT.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "0.55rem", minWidth: 0 } },
-                            window.SP_REACT.createElement(FaFolder, { style: { flex: "0 0 auto" } }),
-                            window.SP_REACT.createElement("span", { style: { overflowWrap: "anywhere" } }, dir))))),
-                    browser.files
-                        .filter((file) => AUDIO_EXTENSIONS.some((ext) => file.toLowerCase().endsWith(`.${ext}`)))
-                        .map((file) => (window.SP_REACT.createElement(FocusableButton, { key: `file-${file}`, className: "DialogButton", onClick: () => handleFileClick(file), style: { justifyContent: "flex-start", textAlign: "left" } },
-                        window.SP_REACT.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "0.55rem", minWidth: 0 } },
-                            window.SP_REACT.createElement(FaMusic, { style: { flex: "0 0 auto" } }),
-                            window.SP_REACT.createElement("span", { style: { overflowWrap: "anywhere" } }, file))))),
-                    !browser.dirs.length && !browser.files.length && (window.SP_REACT.createElement("div", { style: { opacity: 0.6 } }, "Folder is empty.")))))))));
+            window.SP_REACT.createElement("header", { style: { display: "grid", gridTemplateColumns: "42px minmax(0,1fr)", gap: 14, alignItems: "center" } },
+                window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdGameIconButton", title: t("back"), onClick: () => DFL.Navigation.NavigateBack(), style: compactIconButton },
+                    window.SP_REACT.createElement(FaArrowLeft, null)),
+                window.SP_REACT.createElement("div", { style: { minWidth: 0 } },
+                    window.SP_REACT.createElement("div", { style: { fontSize: 13, opacity: .56, textTransform: "uppercase", fontWeight: 700 } }, "ThemeDeck"),
+                    window.SP_REACT.createElement("h1", { style: { margin: "4px 0 0", fontSize: 31, lineHeight: 1.08, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, gameName))),
+            window.SP_REACT.createElement(DFL.Focusable, { className: "tdGameTopRow", "flow-children": "horizontal" },
+                window.SP_REACT.createElement(DFL.Focusable, { className: "tdGameEditorCard", "flow-children": "vertical" },
+                    window.SP_REACT.createElement(SelectedTrackPanel, { track: track, loading: loading, emptyText: t("noMusicSelected"), isPlaying: playback.appId === appId && playback.status === "playing", onPreview: handleTrackPreviewToggle, onRemove: handleRemove, onVolumeChange: handleTrackVolumeChange, onStartChange: handleTrackStartOffsetChange, onLoopChange: handleTrackLoopChange })),
+                window.SP_REACT.createElement(DFL.Focusable, { className: "tdGameEditorCard", "flow-children": "vertical", style: { display: "flex", flexDirection: "column", justifyContent: "space-between" } },
+                    window.SP_REACT.createElement("div", null,
+                        window.SP_REACT.createElement("h2", { style: { margin: 0, fontSize: 19 } }, t("browseLocalTitle")),
+                        window.SP_REACT.createElement("div", { style: { marginTop: 5, fontSize: 13, opacity: .55 } }, t("chooseAudioFile"))),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", title: t("chooseAudioFile"), onClick: () => void handleChooseAudioFile(), style: { width: "100%", minWidth: 0, height: 44, minHeight: 44, marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 9 } },
+                        window.SP_REACT.createElement(FaFolder, null),
+                        window.SP_REACT.createElement("span", null, t("chooseAudioFile"))))),
+            window.SP_REACT.createElement("section", { className: "tdGameEditorCard" },
+                window.SP_REACT.createElement("div", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 14 } },
+                    window.SP_REACT.createElement("div", null,
+                        window.SP_REACT.createElement("h2", { style: { margin: 0, fontSize: 21 } }, t("youtubeSearchTitle")),
+                        window.SP_REACT.createElement("div", { style: { marginTop: 4, fontSize: 13, opacity: .58 } }, t("searchYoutubeDesc"))),
+                    window.SP_REACT.createElement("div", { style: { fontSize: 12, opacity: ytDlpStatus.installed ? .52 : 1, color: ytDlpStatus.installed ? "inherit" : "#ff9e9e" } }, ytDlpStatus.installed ? `yt-dlp ${ytDlpStatus.version || ""}`.trim() : t("ytdlpNotInstalled"))),
+                !ytDlpStatus.installed ? (window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", disabled: ytDlpBusy, onClick: async () => {
+                        setYtDlpBusy(true);
+                        try {
+                            setYtDlpStatus(await updateYtDlp());
+                        }
+                        catch (error) {
+                            toaster.toast({ title: "ThemeDeck", body: getErrorMessage(error, t("unknownUpdateError")) });
+                        }
+                        finally {
+                            setYtDlpBusy(false);
+                            void refreshYtDlpStatus(true);
+                        }
+                    }, style: { marginTop: 12 } }, ytDlpBusy ? t("installing") : t("installYtdlp"))) : null,
+                window.SP_REACT.createElement(DFL.Focusable, { className: "tdGameSearchRow", "flow-children": "horizontal" },
+                    window.SP_REACT.createElement(DFL.TextField, { value: youtubeQuery, onChange: (event) => setYoutubeQuery(event.target.value), style: { width: "100%", minWidth: 0 } }),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", title: youtubeLoading ? t("searching") : t("search"), onClick: handleYouTubeSearch, disabled: youtubeLoading || ytDlpBusy }, youtubeLoading ? window.SP_REACT.createElement("span", { className: "tdMiniSpinner" }) : t("search"))),
+                youtubeError ? window.SP_REACT.createElement("div", { style: { marginTop: 10, color: "#ffb6b6", fontSize: 13 } }, youtubeError) : null,
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { marginTop: youtubeResults.length ? 14 : 0 } }, youtubeResults.map((result) => {
+                    const assigned = Boolean(assignedVideoId && assignedVideoId === result.id);
+                    return (window.SP_REACT.createElement(DFL.Focusable, { key: result.id, className: "tdGameEditorResult", "flow-children": "horizontal", style: { background: assigned ? "rgba(80,190,90,.09)" : "transparent" } },
+                        window.SP_REACT.createElement("img", { src: `https://i.ytimg.com/vi/${encodeURIComponent(result.id)}/hqdefault.jpg`, alt: "", style: { width: 112, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 4 } }),
+                        window.SP_REACT.createElement("div", { style: { minWidth: 0 } },
+                            window.SP_REACT.createElement("div", { style: { fontSize: 14, fontWeight: 650, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, result.title),
+                            window.SP_REACT.createElement("div", { style: { marginTop: 3, fontSize: 12, opacity: .55, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, [result.uploader || "YouTube", formatDuration(result.duration)].filter(Boolean).join(" · "))),
+                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdGameIconButton", title: previewingVideoId === result.id ? t("stopPreview") : t("playPreview"), onClick: () => void handleYouTubePreview(result), disabled: previewLoadingVideoId !== null || downloadingVideoId !== null, style: compactIconButton }, previewLoadingVideoId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : previewingVideoId === result.id ? window.SP_REACT.createElement(FaPause, null) : window.SP_REACT.createElement(FaPlay, null)),
+                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdGameIconButton", title: t("downloadAssign"), onClick: () => void handleYouTubeDownload(result), disabled: downloadingVideoId !== null, style: compactIconButton }, downloadingVideoId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : window.SP_REACT.createElement(FaDownload, null))));
+                }))))));
 };
-const ChangeGlobalTheme = () => {
+const ScopedThemeEditor = ({ target }) => {
+    useThemeDeckEditorChromeSuppression();
     const [track, setTrack] = SP_REACT.useState(null);
     const [loading, setLoading] = SP_REACT.useState(true);
-    const [currentDir, setCurrentDir] = SP_REACT.useState("/home/deck");
-    const [browser, setBrowser] = SP_REACT.useState({
-        path: "/home/deck",
-        dirs: [],
-        files: [],
-    });
-    const [browserLoading, setBrowserLoading] = SP_REACT.useState(true);
-    const [manualPath, setManualPath] = SP_REACT.useState("/home/deck");
-    const topFocusRef = SP_REACT.useRef(null);
+    const [query, setQuery] = SP_REACT.useState("");
+    const [searching, setSearching] = SP_REACT.useState(false);
+    const [results, setResults] = SP_REACT.useState([]);
+    const [error, setError] = SP_REACT.useState("");
+    const [previewingId, setPreviewingId] = SP_REACT.useState(null);
+    const [downloadingId, setDownloadingId] = SP_REACT.useState(null);
+    const [downloadProgress, setDownloadProgress] = SP_REACT.useState(0);
+    const audioRef = SP_REACT.useRef(null);
+    const isAmbient = target === "ambient";
+    const scopedPlayback = usePlaybackStateValue();
     const loadTrack = SP_REACT.useCallback(async () => {
         setLoading(true);
         try {
-            const data = await fetchGlobalTrack();
-            setTrack(normalizeGlobalTrack(data));
-        }
-        catch (error) {
-            console.error("[ThemeDeck] failed to load global track", error);
+            const value = isAmbient ? await fetchGlobalTrack() : await fetchStoreTrack();
+            setTrack(normalizeGlobalTrack(value));
         }
         finally {
             setLoading(false);
         }
-    }, []);
-    SP_REACT.useEffect(() => {
-        loadTrack();
-    }, [loadTrack]);
-    const refreshDirectory = SP_REACT.useCallback(async (nextDir) => {
-        setBrowserLoading(true);
-        try {
-            const listing = await listDirectory(nextDir || currentDir);
-            setBrowser(listing);
-            setCurrentDir(listing.path);
-            setManualPath(listing.path);
+    }, [isAmbient]);
+    SP_REACT.useEffect(() => { void loadTrack(); }, [loadTrack]);
+    SP_REACT.useEffect(() => () => {
+        const audio = audioRef.current;
+        if (audio) {
+            audio.pause();
+            audio.src = "";
         }
-        catch (error) {
-            console.error("[ThemeDeck] list directory failed", error);
+    }, []);
+    const saveFromPath = async (path) => {
+        const validation = await validateAudioPath(path);
+        if (!validation?.valid)
+            throw new Error(validation?.error || "Unsupported audio file");
+        const resolved = validation.path || path;
+        const filename = resolved.split(/[\\/]/).pop() || "track";
+        if (isAmbient)
+            await assignGlobalTrack(resolved, filename);
+        else
+            await assignStoreTrack(resolved, filename);
+        window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
+        await loadTrack();
+        toaster.toast({ title: "ThemeDeck", body: isAmbient ? t("savedGlobal") : t("savedStore") });
+    };
+    const chooseLocal = () => {
+        let modal = null;
+        const closeModal = () => modal?.Close();
+        modal = DFL.showModal(window.SP_REACT.createElement(ThemeDeckFilePickerModal, { initialPath: "C:\\\\", closeModal: closeModal, onSelect: saveFromPath }), undefined, { strTitle: t("browseLocalTitle") });
+    };
+    const runSearch = async () => {
+        const clean = query.trim();
+        if (!clean)
+            return;
+        setSearching(true);
+        setError("");
+        try {
+            const response = await searchYouTube(clean, 20);
+            setResults(response?.results || []);
+        }
+        catch (searchError) {
+            setError(getErrorMessage(searchError, t("unknownError")));
         }
         finally {
-            setBrowserLoading(false);
+            setSearching(false);
         }
-    }, [currentDir]);
-    SP_REACT.useEffect(() => {
-        refreshDirectory("/home/deck");
-    }, []);
-    SP_REACT.useEffect(() => {
-        focusFirstInteractiveElement(topFocusRef.current);
-    }, []);
-    const saveFromPath = async (fullPath) => {
+    };
+    const togglePreview = async (result) => {
+        const audio = audioRef.current;
+        if (previewingId === result.id && audio) {
+            audio.pause();
+            setPreviewingId(null);
+            return;
+        }
         try {
-            const filename = fullPath.split("/").pop() || "track";
-            const saved = await assignGlobalTrack(fullPath, filename);
-            const normalized = normalizeGlobalTrack(saved);
-            setTrack(normalized);
-            latestGlobalTrackForAutoPlay = normalized;
-            clearGlobalAmbientResumeSnapshot();
+            const stream = await getYouTubePreviewStream(result.webpage_url);
+            const nextAudio = audio || new Audio();
+            audioRef.current = nextAudio;
+            nextAudio.onended = () => setPreviewingId(null);
+            await playYouTubePreview(nextAudio, stream);
+            setPreviewingId(result.id);
+        }
+        catch (previewError) {
+            toaster.toast({ title: "ThemeDeck", body: getErrorMessage(previewError, t("unknownError")) });
+        }
+    };
+    const download = async (result) => {
+        if (downloadingId)
+            return;
+        setDownloadingId(result.id);
+        setDownloadProgress(4);
+        try {
+            const started = await startDiscoverDownload(target, result.webpage_url, readAudioNormalizationSetting(), readAudioUpmixSetting());
+            let current = started;
+            while (current.running) {
+                setDownloadProgress((value) => Math.min(92, Math.max(value + 1, Number(current.progress || 0))));
+                await new Promise((resolve) => window.setTimeout(resolve, 300));
+                current = await getDiscoverDownloadProgress(started.jobId);
+            }
+            if (current.status !== "completed")
+                throw new Error(current.error || t("unknownError"));
+            setDownloadProgress(100);
             window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
-            scheduleAutoPlaybackFromContext();
-            toaster.toast({
-                title: "ThemeDeck",
-                body: t("savedGlobal"),
-            });
+            await loadTrack();
+            toaster.toast({ title: "ThemeDeck", body: isAmbient ? t("savedGlobal") : t("savedStore") });
         }
-        catch (error) {
-            console.error("[ThemeDeck] global save from path failed", error);
-            toaster.toast({
-                title: "ThemeDeck",
-                body: t("unableAddFile", {
-                    error: getErrorMessage(error, t("unknownError")),
-                }),
-            });
+        catch (downloadError) {
+            toaster.toast({ title: "ThemeDeck", body: getErrorMessage(downloadError, t("unknownError")) });
+        }
+        finally {
+            window.setTimeout(() => {
+                setDownloadingId(null);
+                setDownloadProgress(0);
+            }, 450);
         }
     };
-    const joinPath = joinFsPath;
-    const goUp = () => {
-        const parent = parentFsPath(currentDir);
-        if (parent === currentDir)
-            return;
-        refreshDirectory(parent);
-    };
-    const handleDirClick = (dir) => {
-        refreshDirectory(joinPath(currentDir, dir));
-    };
-    const handleFileClick = (file) => {
-        saveFromPath(joinPath(currentDir, file));
-    };
-    const handleManualGo = () => {
-        if (!manualPath)
-            return;
-        refreshDirectory(manualPath);
-    };
-    const handleRemove = async () => {
-        try {
+    const remove = async () => {
+        if (isAmbient)
             await deleteGlobalTrack();
-            setTrack(null);
-            latestGlobalTrackForAutoPlay = null;
-            clearGlobalAmbientResumeSnapshot();
-            window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
-            scheduleAutoPlaybackFromContext();
-            toaster.toast({
-                title: "ThemeDeck",
-                body: t("clearedGlobal"),
-            });
-        }
-        catch (error) {
-            console.error("[ThemeDeck] global remove failed", error);
-        }
-    };
-    return (window.SP_REACT.createElement(DFL.ScrollPanel, null,
-        window.SP_REACT.createElement("div", { style: {
-                padding: 24,
-                paddingTop: 48,
-                paddingBottom: 140,
-                minHeight: "100vh",
-                boxSizing: "border-box",
-            } },
-            window.SP_REACT.createElement("div", { ref: topFocusRef, tabIndex: -1, style: { position: "absolute", width: 0, height: 0, outline: "none" } }),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("globalTrackTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, loading ? (window.SP_REACT.createElement(DFL.Spinner, null)) : track ? (window.SP_REACT.createElement("div", null,
-                    window.SP_REACT.createElement("div", { style: { fontWeight: 600 } }, track.filename),
-                    window.SP_REACT.createElement("div", { style: { opacity: 0.8 } }, track.path))) : (window.SP_REACT.createElement("div", null, t("noGlobalTrack")))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            width: "100%",
-                            display: "flex",
-                            gap: "0.5rem",
-                            flexWrap: "nowrap",
-                            alignItems: "center",
-                        } },
-                        track ? (window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleRemove, style: { minWidth: "8.5rem", whiteSpace: "nowrap" } }, t("removeMusic"))) : null,
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => DFL.Navigation.NavigateBack(), style: { minWidth: "6rem", whiteSpace: "nowrap" } }, t("done"))))),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("browseLocalTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            display: "flex",
-                            width: "100%",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                        } },
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: goUp, disabled: isRootPath(currentDir), title: t("up"), style: { minWidth: "3rem", width: "3rem", paddingLeft: 0, paddingRight: 0, textAlign: "center" } }, "\u2191"),
-                        window.SP_REACT.createElement("div", { style: { flexGrow: 1, fontFamily: "monospace", overflowWrap: "anywhere" } }, currentDir))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            display: "grid",
-                            gridTemplateColumns: "1fr auto",
-                            width: "100%",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                        } },
-                        window.SP_REACT.createElement(DFL.TextField, { value: manualPath, onChange: (e) => setManualPath(e.target.value), style: { width: "100%", minWidth: "20rem" } }),
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleManualGo }, t("go")))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, browserLoading ? (window.SP_REACT.createElement(DFL.Spinner, null)) : (window.SP_REACT.createElement("div", { style: {
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.35rem",
-                        marginTop: "0.35rem",
-                        paddingRight: "0.25rem",
-                    } },
-                    browser.dirs.map((dir) => (window.SP_REACT.createElement(FocusableButton, { key: `dir-${dir}`, className: "DialogButton", onClick: () => handleDirClick(dir), style: { justifyContent: "flex-start", textAlign: "left" } },
-                        window.SP_REACT.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "0.55rem", minWidth: 0 } },
-                            window.SP_REACT.createElement(FaFolder, { style: { flex: "0 0 auto" } }),
-                            window.SP_REACT.createElement("span", { style: { overflowWrap: "anywhere" } }, dir))))),
-                    browser.files
-                        .filter((file) => AUDIO_EXTENSIONS.some((ext) => file.toLowerCase().endsWith(`.${ext}`)))
-                        .map((file) => (window.SP_REACT.createElement(FocusableButton, { key: `file-${file}`, className: "DialogButton", onClick: () => handleFileClick(file), style: { justifyContent: "flex-start", textAlign: "left" } },
-                        window.SP_REACT.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "0.55rem", minWidth: 0 } },
-                            window.SP_REACT.createElement(FaMusic, { style: { flex: "0 0 auto" } }),
-                            window.SP_REACT.createElement("span", { style: { overflowWrap: "anywhere" } }, file))))),
-                    !browser.dirs.length && !browser.files.length && (window.SP_REACT.createElement("div", { style: { opacity: 0.6 } }, "Folder is empty.")))))))));
-};
-const ChangeStoreTheme = () => {
-    const [track, setTrack] = SP_REACT.useState(null);
-    const [loading, setLoading] = SP_REACT.useState(true);
-    const [currentDir, setCurrentDir] = SP_REACT.useState("/home/deck");
-    const [browser, setBrowser] = SP_REACT.useState({
-        path: "/home/deck",
-        dirs: [],
-        files: [],
-    });
-    const [browserLoading, setBrowserLoading] = SP_REACT.useState(true);
-    const [manualPath, setManualPath] = SP_REACT.useState("/home/deck");
-    const topFocusRef = SP_REACT.useRef(null);
-    const loadTrack = SP_REACT.useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await fetchStoreTrack();
-            setTrack(normalizeGlobalTrack(data));
-        }
-        catch (error) {
-            console.error("[ThemeDeck] failed to load store track", error);
-        }
-        finally {
-            setLoading(false);
-        }
-    }, []);
-    SP_REACT.useEffect(() => {
-        loadTrack();
-    }, [loadTrack]);
-    const refreshDirectory = SP_REACT.useCallback(async (nextDir) => {
-        setBrowserLoading(true);
-        try {
-            const listing = await listDirectory(nextDir || currentDir);
-            setBrowser(listing);
-            setCurrentDir(listing.path);
-            setManualPath(listing.path);
-        }
-        catch (error) {
-            console.error("[ThemeDeck] list directory failed", error);
-        }
-        finally {
-            setBrowserLoading(false);
-        }
-    }, [currentDir]);
-    SP_REACT.useEffect(() => {
-        refreshDirectory("/home/deck");
-    }, []);
-    SP_REACT.useEffect(() => {
-        focusFirstInteractiveElement(topFocusRef.current);
-    }, []);
-    const saveFromPath = async (fullPath) => {
-        try {
-            const filename = fullPath.split("/").pop() || "track";
-            const saved = await assignStoreTrack(fullPath, filename);
-            const normalized = normalizeGlobalTrack(saved);
-            setTrack(normalized);
-            latestStoreTrackForAutoPlay = normalized;
-            window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
-            scheduleAutoPlaybackFromContext();
-            toaster.toast({
-                title: "ThemeDeck",
-                body: t("savedStore"),
-            });
-        }
-        catch (error) {
-            console.error("[ThemeDeck] store save from path failed", error);
-            toaster.toast({
-                title: "ThemeDeck",
-                body: t("unableAddFile", {
-                    error: getErrorMessage(error, t("unknownError")),
-                }),
-            });
-        }
-    };
-    const joinPath = joinFsPath;
-    const goUp = () => {
-        const parent = parentFsPath(currentDir);
-        if (parent === currentDir)
-            return;
-        refreshDirectory(parent);
-    };
-    const handleDirClick = (dir) => {
-        refreshDirectory(joinPath(currentDir, dir));
-    };
-    const handleFileClick = (file) => {
-        saveFromPath(joinPath(currentDir, file));
-    };
-    const handleManualGo = () => {
-        if (!manualPath)
-            return;
-        refreshDirectory(manualPath);
-    };
-    const handleRemove = async () => {
-        try {
+        else
             await deleteStoreTrack();
-            setTrack(null);
-            latestStoreTrackForAutoPlay = null;
-            window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
-            scheduleAutoPlaybackFromContext();
-            toaster.toast({
-                title: "ThemeDeck",
-                body: t("clearedStore"),
-            });
-        }
-        catch (error) {
-            console.error("[ThemeDeck] store remove failed", error);
-        }
+        setTrack(null);
+        window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
+    };
+    const updateVolume = async (value) => {
+        if (!track)
+            return;
+        const normalized = clamp(value / 100);
+        setTrack({ ...track, volume: normalized });
+        const updated = isAmbient ? await updateGlobalVolume(normalized) : await updateStoreVolume(normalized);
+        setTrack(normalizeGlobalTrack(updated));
+    };
+    const updateStart = async (value) => {
+        if (!track)
+            return;
+        const normalized = clamp(value, 0, 30);
+        setTrack({ ...track, startOffset: normalized });
+        const updated = isAmbient ? await updateGlobalStartOffset(normalized) : await updateStoreStartOffset(normalized);
+        setTrack(normalizeGlobalTrack(updated));
+    };
+    const updateLoop = async (value) => {
+        if (!track)
+            return;
+        setTrack({ ...track, loop: value });
+        const updated = isAmbient ? await updateGlobalLoop(value) : await updateStoreLoop(value);
+        setTrack(normalizeGlobalTrack(updated));
+    };
+    const previewTrack = () => {
+        if (!track)
+            return;
+        const appId = isAmbient ? GLOBAL_AMBIENT_APP_ID : STORE_TRACK_APP_ID;
+        if (playbackState.appId === appId && playbackState.status === "playing")
+            stopPlayback();
+        else
+            playTrack({ appId, ...track }, "manual");
     };
     return (window.SP_REACT.createElement(DFL.ScrollPanel, null,
-        window.SP_REACT.createElement("div", { style: {
-                padding: 24,
-                paddingTop: 48,
-                paddingBottom: 140,
-                minHeight: "100vh",
-                boxSizing: "border-box",
-            } },
-            window.SP_REACT.createElement("div", { ref: topFocusRef, tabIndex: -1, style: { position: "absolute", width: 0, height: 0, outline: "none" } }),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("storeTrackTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, loading ? (window.SP_REACT.createElement(DFL.Spinner, null)) : track ? (window.SP_REACT.createElement("div", null,
-                    window.SP_REACT.createElement("div", { style: { fontWeight: 600 } }, track.filename),
-                    window.SP_REACT.createElement("div", { style: { opacity: 0.8 } }, track.path))) : (window.SP_REACT.createElement("div", null, t("noStoreTrack")))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            width: "100%",
-                            display: "flex",
-                            gap: "0.5rem",
-                            flexWrap: "nowrap",
-                            alignItems: "center",
-                        } },
-                        track ? (window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleRemove, style: { minWidth: "8.5rem", whiteSpace: "nowrap" } }, t("removeMusic"))) : null,
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => DFL.Navigation.NavigateBack(), style: { minWidth: "6rem", whiteSpace: "nowrap" } }, t("done"))))),
-            window.SP_REACT.createElement(DFL.PanelSection, { title: t("browseLocalTitle") },
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            display: "flex",
-                            width: "100%",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                        } },
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: goUp, disabled: isRootPath(currentDir), title: t("up"), style: { minWidth: "3rem", width: "3rem", paddingLeft: 0, paddingRight: 0, textAlign: "center" } }, "\u2191"),
-                        window.SP_REACT.createElement("div", { style: { flexGrow: 1, fontFamily: "monospace", overflowWrap: "anywhere" } }, currentDir))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null,
-                    window.SP_REACT.createElement("div", { style: {
-                            display: "grid",
-                            gridTemplateColumns: "1fr auto",
-                            width: "100%",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                        } },
-                        window.SP_REACT.createElement(DFL.TextField, { value: manualPath, onChange: (e) => setManualPath(e.target.value), style: { width: "100%", minWidth: "20rem" } }),
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: handleManualGo }, t("go")))),
-                window.SP_REACT.createElement(DFL.PanelSectionRow, null, browserLoading ? (window.SP_REACT.createElement(DFL.Spinner, null)) : (window.SP_REACT.createElement("div", { style: {
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.35rem",
-                        marginTop: "0.35rem",
-                        paddingRight: "0.25rem",
-                    } },
-                    browser.dirs.map((dir) => (window.SP_REACT.createElement(FocusableButton, { key: `dir-${dir}`, className: "DialogButton", onClick: () => handleDirClick(dir), style: { justifyContent: "flex-start", textAlign: "left" } },
-                        window.SP_REACT.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "0.55rem", minWidth: 0 } },
-                            window.SP_REACT.createElement(FaFolder, { style: { flex: "0 0 auto" } }),
-                            window.SP_REACT.createElement("span", { style: { overflowWrap: "anywhere" } }, dir))))),
-                    browser.files
-                        .filter((file) => AUDIO_EXTENSIONS.some((ext) => file.toLowerCase().endsWith(`.${ext}`)))
-                        .map((file) => (window.SP_REACT.createElement(FocusableButton, { key: `file-${file}`, className: "DialogButton", onClick: () => handleFileClick(file), style: { justifyContent: "flex-start", textAlign: "left" } },
-                        window.SP_REACT.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "0.55rem", minWidth: 0 } },
-                            window.SP_REACT.createElement(FaMusic, { style: { flex: "0 0 auto" } }),
-                            window.SP_REACT.createElement("span", { style: { overflowWrap: "anywhere" } }, file))))),
-                    !browser.dirs.length && !browser.files.length && (window.SP_REACT.createElement("div", { style: { opacity: 0.6 } }, "Folder is empty.")))))))));
+        window.SP_REACT.createElement(DFL.Focusable, { className: "tdScopedEditor", "flow-children": "vertical", style: { position: "fixed", inset: 0, zIndex: 10, minHeight: "100vh", padding: "30px max(36px,calc((100vw - 1460px)/2)) 110px", boxSizing: "border-box", overflowY: "auto", overflowX: "hidden", color: "#fff", background: "#080909" } },
+            window.SP_REACT.createElement("style", null, `
+          .tdScopedEditor *{box-sizing:border-box;letter-spacing:0;min-width:0}
+          .tdScopedEditor .DialogButton{color:#fff!important;border-radius:6px!important;min-height:42px!important}
+          .tdScopedHeader{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:center}
+          .tdScopedCard{width:100%;height:100%;margin-top:16px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
+          .tdScopedTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch}
+          .tdScopedSearchRow{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:10px;margin-top:14px;align-items:stretch}
+          .tdScopedSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:44px!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+          .tdScopedEditor .tdScopeResult{display:grid;grid-template-columns:132px minmax(0,1fr) 40px 40px;align-items:center;gap:10px;min-height:82px;padding:7px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.045);border-radius:6px}
+          .tdScopedEditor .tdScopeIcon{width:40px!important;min-width:40px!important;height:40px!important;min-height:40px!important;padding:0!important;display:grid!important;place-items:center!important}
+          .tdScopedEditor .tdScopeIcon:focus,.tdScopedEditor .tdScopeIcon.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
+          .tdScopedEditor .tdScopeIcon:focus svg,.tdScopedEditor .tdScopeIcon.gpfocus svg{color:#151515!important;fill:currentColor!important}
+          .tdMiniSpinner{display:inline-block;width:17px;height:17px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:tdMiniSpin .8s linear infinite}
+          @keyframes tdMiniSpin{to{transform:rotate(360deg)}}
+          ${SELECTED_TRACK_PANEL_CSS}
+          @media(max-width:900px){.tdScopedTopRow{grid-template-columns:minmax(0,1fr)}}
+        `),
+            window.SP_REACT.createElement("header", { className: "tdScopedHeader" },
+                window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: t("back"), onClick: () => DFL.Navigation.NavigateBack() },
+                    window.SP_REACT.createElement(FaArrowLeft, null)),
+                window.SP_REACT.createElement("div", null,
+                    window.SP_REACT.createElement("div", { style: { fontSize: 13, opacity: .56, textTransform: "uppercase", fontWeight: 700 } }, "ThemeDeck"),
+                    window.SP_REACT.createElement("h1", { style: { margin: "4px 0 0", fontSize: 31, lineHeight: 1.08 } }, isAmbient ? t("globalTrackTitle") : t("storeTrackTitle")))),
+            window.SP_REACT.createElement(DFL.Focusable, { className: "tdScopedTopRow", "flow-children": "horizontal" },
+                window.SP_REACT.createElement(DFL.Focusable, { className: "tdScopedCard", "flow-children": "vertical" },
+                    window.SP_REACT.createElement(SelectedTrackPanel, { track: track, loading: loading, emptyText: isAmbient ? t("noGlobalTrack") : t("noStoreTrack"), isPlaying: scopedPlayback.appId === (isAmbient ? GLOBAL_AMBIENT_APP_ID : STORE_TRACK_APP_ID) && scopedPlayback.status === "playing", onPreview: previewTrack, onRemove: remove, onVolumeChange: updateVolume, onStartChange: updateStart, onLoopChange: updateLoop })),
+                window.SP_REACT.createElement(DFL.Focusable, { className: "tdScopedCard", "flow-children": "vertical", style: { display: "flex", flexDirection: "column", justifyContent: "space-between" } },
+                    window.SP_REACT.createElement("div", null,
+                        window.SP_REACT.createElement("h2", { style: { margin: 0, fontSize: 19 } }, t("browseLocalTitle")),
+                        window.SP_REACT.createElement("div", { style: { marginTop: 5, fontSize: 13, opacity: .55 } }, t("chooseAudioFile"))),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", style: { width: "100%", minWidth: 0, height: 44, marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }, onClick: () => void chooseLocal() },
+                        window.SP_REACT.createElement(FaFolder, null),
+                        t("chooseAudioFile")))),
+            window.SP_REACT.createElement("section", { className: "tdScopedCard" },
+                window.SP_REACT.createElement("h2", { style: { margin: 0, fontSize: 20 } }, t("youtubeSearchTitle")),
+                window.SP_REACT.createElement(DFL.Focusable, { className: "tdScopedSearchRow", "flow-children": "horizontal" },
+                    window.SP_REACT.createElement(DFL.TextField, { value: query, onChange: (event) => setQuery(event.target.value), style: { width: "100%", minWidth: 0 } }),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", title: searching ? t("searching") : t("search"), onClick: () => void runSearch(), disabled: searching }, searching ? window.SP_REACT.createElement("span", { className: "tdMiniSpinner" }) : t("search"))),
+                error ? window.SP_REACT.createElement("div", { style: { color: "#ffb7b7", fontSize: 13, marginTop: 7 } }, error) : null,
+                downloadingId ? (window.SP_REACT.createElement("div", { style: { height: 7, marginTop: 9, borderRadius: 4, overflow: "hidden", background: "rgba(255,255,255,.15)" } },
+                    window.SP_REACT.createElement("div", { style: { width: `${downloadProgress}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" } }))) : null,
+                window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "flex", flexDirection: "column", gap: 7, marginTop: results.length ? 10 : 0 } }, results.map((result) => (window.SP_REACT.createElement(DFL.Focusable, { key: result.id, className: "tdScopeResult", "flow-children": "horizontal" },
+                    window.SP_REACT.createElement("img", { src: `https://i.ytimg.com/vi/${encodeURIComponent(result.id)}/hqdefault.jpg`, alt: "", style: { width: 132, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 4 } }),
+                    window.SP_REACT.createElement("div", null,
+                        window.SP_REACT.createElement("div", { style: { fontWeight: 650, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, result.title),
+                        window.SP_REACT.createElement("div", { style: { opacity: .62, fontSize: 12, marginTop: 4 } }, [result.uploader || "YouTube", formatDuration(result.duration)].filter(Boolean).join(" · "))),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: previewingId === result.id ? t("stopPreview") : t("playPreview"), onClick: () => void togglePreview(result) }, previewingId === result.id ? window.SP_REACT.createElement(FaPause, null) : window.SP_REACT.createElement(FaPlay, null)),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: t("downloadAssign"), disabled: Boolean(downloadingId), onClick: () => void download(result) }, downloadingId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : window.SP_REACT.createElement(FaDownload, null))))))))));
 };
 var index = definePlugin(() => {
     startLocationWatcher();
@@ -7088,13 +6925,15 @@ var index = definePlugin(() => {
     startAutoPlaybackCoordinator();
     const gamePatches = GAME_DETAIL_ROUTES.map((path) => injectBridgeIntoRoute(path));
     const contextMenuUnpatch = patchContextMenuFocus();
-    routerHook.addRoute("/themedeck/global", () => window.SP_REACT.createElement(ChangeGlobalTheme, null), { exact: true });
-    routerHook.addRoute("/themedeck/store", () => window.SP_REACT.createElement(ChangeStoreTheme, null), { exact: true });
+    routerHook.addRoute("/themedeck/global", () => window.SP_REACT.createElement(ScopedThemeEditor, { target: "ambient" }), { exact: true });
+    routerHook.addRoute("/themedeck/store", () => window.SP_REACT.createElement(ScopedThemeEditor, { target: "store" }), { exact: true });
     routerHook.addRoute("/themedeck/:appid", () => window.SP_REACT.createElement(ChangeTheme, null), { exact: true });
     return {
         name: "ThemeDeck",
-        titleView: (window.SP_REACT.createElement("div", { className: DFL.staticClasses.Title }, "ThemeDeck")),
-        icon: window.SP_REACT.createElement(FaMusic, null),
+        titleView: (window.SP_REACT.createElement("div", { className: DFL.staticClasses.Title, style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.45rem", width: "100%", marginLeft: "auto", paddingRight: 8 } },
+            window.SP_REACT.createElement(FaCompactDisc, { size: 19 }),
+            window.SP_REACT.createElement("span", null, "ThemeDeck"))),
+        icon: window.SP_REACT.createElement(FaCompactDisc, null),
         content: window.SP_REACT.createElement(Content, null),
         onDismount() {
             stopLocationWatcher();
