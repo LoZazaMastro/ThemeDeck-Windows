@@ -1,4 +1,4 @@
-# ThemeDeck Windows 3.0.0
+# ThemeDeck Windows 3.2.0
 
 ThemeDeck Windows is a Windows-friendly fork of [ThemeDeck](https://github.com/BrenticusMaximus/ThemeDeck) for Decky Loader.
 

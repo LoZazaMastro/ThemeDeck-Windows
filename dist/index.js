@@ -2,7 +2,7 @@
 // @ts-ignore
 
 // Prevents it from being duplicated in output.
-const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"}};
+const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"},"version":"3.2.0"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 // Initialize
@@ -241,11 +241,12 @@ const UI_MODE_GAMEPAD = 4;
 const UI_MODE_DESKTOP = 7;
 const UI_MODE_POLL_MS = 2000;
 const UI_MODE_CACHE_MS = 1000;
-const RUNNING_APP_POLL_MS = 1250;
+const RUNNING_APP_POLL_MS = 3000;
 const EXTERNAL_MEDIA_POLL_MS = 1500;
+const STORE_CONTEXT_POLL_MS = 1500;
 const LAUNCH_FINISH_FALLBACK_MS = 8000;
 const DETAIL_ROUTE_GRACE_MS = 0;
-const AUTO_PLAYBACK_DEBOUNCE_MS = 0;
+const AUTO_PLAYBACK_DEBOUNCE_MS = 80;
 const AUDIO_CACHE_DYNAMIC_LIMIT = 2;
 const AUTO_ASSIGN_MAX_TRACK_SECONDS = 15 * 60;
 const STEAM_APP_TYPE_APPLICATION = 1 << 2;
@@ -273,7 +274,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set([
     228980, // Steamworks Common Redistributables
 ]);
 const EN_STRINGS = {
-    introVersion: "ThemeDeck 3.0.0",
+    introVersion: "ThemeDeck 3.2.0",
     introAssign: "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
     autoPlayLabel: "Auto play on game page",
     autoPlayDesc: "",
@@ -372,9 +373,9 @@ const EN_STRINGS = {
     chooseAudioFile: "Choose audio file",
     up: "Up",
     go: "Go",
-    globalTrackTitle: "ThemeDeck ambient track",
+    globalTrackTitle: "Ambient track",
     noGlobalTrack: "No ambient track selected yet.",
-    storeTrackTitle: "ThemeDeck Store track",
+    storeTrackTitle: "Store track",
     noStoreTrack: "No Store track selected yet.",
     savedGlobal: "Saved ambient music",
     clearedGlobal: "Cleared ambient music",
@@ -533,9 +534,9 @@ const TRANSLATIONS = {
         chooseAudioFile: "Scegli file audio",
         up: "Su",
         go: "Vai",
-        globalTrackTitle: "Traccia ambientale ThemeDeck",
+        globalTrackTitle: "Traccia ambientale",
         noGlobalTrack: "Nessuna traccia ambientale selezionata.",
-        storeTrackTitle: "Traccia Store ThemeDeck",
+        storeTrackTitle: "Traccia Store",
         noStoreTrack: "Nessuna traccia Store selezionata.",
         savedGlobal: "Musica ambientale salvata",
         clearedGlobal: "Musica ambientale rimossa",
@@ -684,9 +685,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "Ou parcourez les fichiers locaux du système",
         up: "Haut",
         go: "Aller",
-        globalTrackTitle: "Piste globale / ambiante ThemeDeck",
+        globalTrackTitle: "Piste d'ambiance",
         noGlobalTrack: "Aucune piste globale sélectionnée.",
-        storeTrackTitle: "Piste Store uniquement ThemeDeck",
+        storeTrackTitle: "Piste Store",
         noStoreTrack: "Aucune piste Store sélectionnée.",
     }),
     es: makeLocale({
@@ -773,9 +774,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "O explora archivos locales del sistema",
         up: "Arriba",
         go: "Ir",
-        globalTrackTitle: "Pista global / ambiental de ThemeDeck",
+        globalTrackTitle: "Pista ambiental",
         noGlobalTrack: "No hay pista global seleccionada.",
-        storeTrackTitle: "Pista solo para tienda de ThemeDeck",
+        storeTrackTitle: "Pista Store",
         noStoreTrack: "No hay pista de tienda seleccionada.",
     }),
     pt: makeLocale({
@@ -862,9 +863,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "Ou navegue pelos ficheiros locais do sistema",
         up: "Subir",
         go: "Ir",
-        globalTrackTitle: "Faixa global / ambiente ThemeDeck",
+        globalTrackTitle: "Faixa ambiente",
         noGlobalTrack: "Nenhuma faixa global selecionada.",
-        storeTrackTitle: "Faixa apenas da loja ThemeDeck",
+        storeTrackTitle: "Faixa Store",
         noStoreTrack: "Nenhuma faixa da loja selecionada.",
     }),
     "pt-br": makeLocale({
@@ -951,9 +952,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "Ou navegue pelos arquivos locais do sistema",
         up: "Subir",
         go: "Ir",
-        globalTrackTitle: "Faixa global / ambiente do ThemeDeck",
+        globalTrackTitle: "Faixa ambiente",
         noGlobalTrack: "Nenhuma faixa global selecionada.",
-        storeTrackTitle: "Faixa apenas da loja do ThemeDeck",
+        storeTrackTitle: "Faixa Store",
         noStoreTrack: "Nenhuma faixa da loja selecionada.",
     }),
     de: makeLocale({
@@ -1040,9 +1041,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "Oder lokale Dateien aus dem Systemspeicher durchsuchen",
         up: "Hoch",
         go: "Los",
-        globalTrackTitle: "ThemeDeck globale / ambiente Spur",
+        globalTrackTitle: "Umgebungsspur",
         noGlobalTrack: "Keine globale Spur ausgewählt.",
-        storeTrackTitle: "ThemeDeck Nur-Store-Spur",
+        storeTrackTitle: "Store-Spur",
         noStoreTrack: "Keine Store-Spur ausgewählt.",
     }),
     nl: makeLocale({
@@ -1129,9 +1130,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "Of blader door lokale bestanden op de systeemopslag",
         up: "Omhoog",
         go: "Ga",
-        globalTrackTitle: "ThemeDeck globale / ambient-track",
+        globalTrackTitle: "Ambient-track",
         noGlobalTrack: "Geen globale track geselecteerd.",
-        storeTrackTitle: "ThemeDeck alleen-Store-track",
+        storeTrackTitle: "Store-track",
         noStoreTrack: "Geen Store-track geselecteerd.",
     }),
     uk: makeLocale({
@@ -1218,9 +1219,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "Або перегляньте локальні файли системи",
         up: "Вгору",
         go: "Перейти",
-        globalTrackTitle: "Глобальний / фоновий трек ThemeDeck",
+        globalTrackTitle: "Фоновий трек",
         noGlobalTrack: "Глобальний трек не вибрано.",
-        storeTrackTitle: "Трек ThemeDeck лише для магазину",
+        storeTrackTitle: "Трек Store",
         noStoreTrack: "Трек магазину не вибрано.",
     }),
     zh: makeLocale({
@@ -1307,9 +1308,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "或浏览系统存储中的本地文件",
         up: "上级",
         go: "前往",
-        globalTrackTitle: "ThemeDeck 全局 / 环境曲目",
+        globalTrackTitle: "环境曲目",
         noGlobalTrack: "尚未选择全局曲目。",
-        storeTrackTitle: "ThemeDeck 仅商店曲目",
+        storeTrackTitle: "商店曲目",
         noStoreTrack: "尚未选择商店曲目。",
     }),
     ja: makeLocale({
@@ -1396,9 +1397,9 @@ const TRANSLATIONS = {
         browseLocalTitle: "またはシステムストレージ内のローカルファイルを参照",
         up: "上へ",
         go: "移動",
-        globalTrackTitle: "ThemeDeck グローバル / 環境トラック",
+        globalTrackTitle: "環境トラック",
         noGlobalTrack: "グローバルトラックが選択されていません。",
-        storeTrackTitle: "ThemeDeck ストア専用トラック",
+        storeTrackTitle: "ストアトラック",
         noStoreTrack: "ストアトラックが選択されていません。",
     }),
 };
@@ -1424,7 +1425,7 @@ const getDetectedLocale = () => {
 const ACTIVE_LOCALE = getDetectedLocale();
 const LOCALIZED_UI_OVERRIDES = {
     it: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         autoPlayDesc: "",
         gameMusicVolumeDesc: "",
         stopMusicAfterPlayDesc: "",
@@ -1450,9 +1451,9 @@ const LOCALIZED_UI_OVERRIDES = {
         noStoreOnlyTrackSelected: "Nessuna traccia Store selezionata.",
         removeStoreOnly: "Rimuovi musica Store",
         loopTrackDesc: "",
-        globalTrackTitle: "Traccia ambientale ThemeDeck",
+        globalTrackTitle: "Traccia ambientale",
         noGlobalTrack: "Nessuna traccia ambientale selezionata.",
-        storeTrackTitle: "Traccia Store ThemeDeck",
+        storeTrackTitle: "Traccia Store",
         noStoreTrack: "Nessuna traccia Store selezionata.",
         savedGlobal: "Musica ambientale salvata",
         clearedGlobal: "Musica ambientale rimossa",
@@ -1469,7 +1470,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
     },
     fr: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
         autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
         autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1500,9 +1501,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "Piste Store",
         noStoreOnlyTrackSelected: "Aucune piste Store sélectionnée.",
         removeStoreOnly: "Supprimer la musique Store",
-        globalTrackTitle: "Piste d'ambiance ThemeDeck",
+        globalTrackTitle: "Piste d'ambiance",
         noGlobalTrack: "Aucune piste d'ambiance sélectionnée.",
-        storeTrackTitle: "Piste Store ThemeDeck",
+        storeTrackTitle: "Piste Store",
         noStoreTrack: "Aucune piste Store sélectionnée.",
         savedGlobal: "Musique d'ambiance enregistrée",
         clearedGlobal: "Musique d'ambiance supprimée",
@@ -1518,7 +1519,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
     },
     es: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
         autoAssignExclusionsTitle: "Exclusiones de asignación automática",
         autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1549,9 +1550,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "Pista Store",
         noStoreOnlyTrackSelected: "No hay pista Store seleccionada.",
         removeStoreOnly: "Eliminar música Store",
-        globalTrackTitle: "Pista ambiental ThemeDeck",
+        globalTrackTitle: "Pista ambiental",
         noGlobalTrack: "Aún no hay pista ambiental seleccionada.",
-        storeTrackTitle: "Pista Store ThemeDeck",
+        storeTrackTitle: "Pista Store",
         noStoreTrack: "Aún no hay pista Store seleccionada.",
         savedGlobal: "Música ambiental guardada",
         clearedGlobal: "Música ambiental eliminada",
@@ -1567,7 +1568,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
     },
     pt: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
         autoAssignExclusionsTitle: "Exclusões da atribuição automática",
         autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -1598,9 +1599,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "Faixa Store",
         noStoreOnlyTrackSelected: "Nenhuma faixa Store selecionada.",
         removeStoreOnly: "Remover música Store",
-        globalTrackTitle: "Faixa ambiente ThemeDeck",
+        globalTrackTitle: "Faixa ambiente",
         noGlobalTrack: "Nenhuma faixa ambiente selecionada.",
-        storeTrackTitle: "Faixa Store ThemeDeck",
+        storeTrackTitle: "Faixa Store",
         noStoreTrack: "Nenhuma faixa Store selecionada.",
         savedGlobal: "Música ambiente salva",
         clearedGlobal: "Música ambiente removida",
@@ -1616,7 +1617,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     "pt-br": {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
         autoAssignExclusionsTitle: "Exclusões da atribuição automática",
         autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -1647,9 +1648,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "Faixa Store",
         noStoreOnlyTrackSelected: "Nenhuma faixa Store selecionada.",
         removeStoreOnly: "Remover música Store",
-        globalTrackTitle: "Faixa ambiente ThemeDeck",
+        globalTrackTitle: "Faixa ambiente",
         noGlobalTrack: "Nenhuma faixa ambiente selecionada.",
-        storeTrackTitle: "Faixa Store ThemeDeck",
+        storeTrackTitle: "Faixa Store",
         noStoreTrack: "Nenhuma faixa Store selecionada.",
         savedGlobal: "Música ambiente salva",
         clearedGlobal: "Música ambiente removida",
@@ -1665,7 +1666,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     de: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
         autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
         autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -1696,9 +1697,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "Store-Spur",
         noStoreOnlyTrackSelected: "Keine Store-Spur ausgewählt.",
         removeStoreOnly: "Store-Musik entfernen",
-        globalTrackTitle: "ThemeDeck-Umgebungsspur",
+        globalTrackTitle: "Umgebungsspur",
         noGlobalTrack: "Noch keine Umgebungsspur ausgewählt.",
-        storeTrackTitle: "ThemeDeck-Store-Spur",
+        storeTrackTitle: "Store-Spur",
         noStoreTrack: "Noch keine Store-Spur ausgewählt.",
         savedGlobal: "Umgebungsmusik gespeichert",
         clearedGlobal: "Umgebungsmusik entfernt",
@@ -1714,7 +1715,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
     },
     nl: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
         autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
         autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -1745,9 +1746,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "Store-track",
         noStoreOnlyTrackSelected: "Geen Store-track geselecteerd.",
         removeStoreOnly: "Store-muziek verwijderen",
-        globalTrackTitle: "ThemeDeck ambient-track",
+        globalTrackTitle: "Ambient-track",
         noGlobalTrack: "Nog geen ambient-track geselecteerd.",
-        storeTrackTitle: "ThemeDeck Store-track",
+        storeTrackTitle: "Store-track",
         noStoreTrack: "Nog geen Store-track geselecteerd.",
         savedGlobal: "Ambient-muziek opgeslagen",
         clearedGlobal: "Ambient-muziek verwijderd",
@@ -1763,7 +1764,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
     },
     uk: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
         autoAssignExclusionsTitle: "Виключення автоматичного призначення",
         autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -1794,9 +1795,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "Трек Store",
         noStoreOnlyTrackSelected: "Трек Store не вибрано.",
         removeStoreOnly: "Видалити музику Store",
-        globalTrackTitle: "Фоновий трек ThemeDeck",
+        globalTrackTitle: "Фоновий трек",
         noGlobalTrack: "Фоновий трек ще не вибрано.",
-        storeTrackTitle: "Трек Store ThemeDeck",
+        storeTrackTitle: "Трек Store",
         noStoreTrack: "Трек Store ще не вибрано.",
         savedGlobal: "Фонову музику збережено",
         clearedGlobal: "Фонову музику видалено",
@@ -1812,7 +1813,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
     },
     zh: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "从自动分配中排除游戏",
         autoAssignExclusionsTitle: "自动分配排除项",
         autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -1843,9 +1844,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "商店曲目",
         noStoreOnlyTrackSelected: "未选择商店曲目。",
         removeStoreOnly: "移除商店音乐",
-        globalTrackTitle: "ThemeDeck 环境曲目",
+        globalTrackTitle: "环境曲目",
         noGlobalTrack: "尚未选择环境曲目。",
-        storeTrackTitle: "ThemeDeck 商店曲目",
+        storeTrackTitle: "商店曲目",
         noStoreTrack: "尚未选择商店曲目。",
         savedGlobal: "已保存环境音乐",
         clearedGlobal: "已清除环境音乐",
@@ -1861,7 +1862,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "环境曲目中断行为",
     },
     ja: {
-        introVersion: "ThemeDeck 3.0.0",
+        introVersion: "ThemeDeck 3.2.0",
         chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
         autoAssignExclusionsTitle: "自動割り当ての除外設定",
         autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -1892,9 +1893,9 @@ const LOCALIZED_UI_OVERRIDES = {
         storeOnlyPanelTitle: "ストアトラック",
         noStoreOnlyTrackSelected: "ストアトラックが選択されていません。",
         removeStoreOnly: "ストア音楽を削除",
-        globalTrackTitle: "ThemeDeck 環境トラック",
+        globalTrackTitle: "環境トラック",
         noGlobalTrack: "環境トラックはまだ選択されていません。",
-        storeTrackTitle: "ThemeDeck ストアトラック",
+        storeTrackTitle: "ストアトラック",
         noStoreTrack: "ストアトラックはまだ選択されていません。",
         savedGlobal: "環境音楽を保存しました",
         clearedGlobal: "環境音楽を削除しました",
@@ -1908,6 +1909,71 @@ const LOCALIZED_UI_OVERRIDES = {
         ffmpegDisabled: "FFmpeg 処理は無効です",
         ffmpegFailedFor: "FFmpeg: {game} で失敗: {error}",
         globalAmbientBehaviorAria: "環境トラックの中断動作",
+    },
+};
+const SECONDARY_TRANSLATIONS = {
+    fr: {
+        normalizeAudioLabel: "Normaliser l'audio téléchargé", normalizeAudioDesc: "Utilise la normalisation du volume FFmpeg après les téléchargements YouTube lorsque FFmpeg est disponible.", normalizationAvailable: "FFmpeg détecté.", normalizationUnavailable: "FFmpeg non détecté. Les téléchargements fonctionneront, mais le traitement audio sera ignoré.", normalizationSkipped: "Piste téléchargée enregistrée, mais le traitement FFmpeg a été ignoré : {error}",
+        unableAddFile: "Impossible d'ajouter le fichier : {error}", unknownError: "Erreur inconnue", unknownUpdateError: "Erreur de mise à jour inconnue", ytdlpReady: "yt-dlp prêt ({version})", failedInstallYtdlp: "Échec de l'installation de yt-dlp : {error}", saveTrackToast: "\"{filename}\" enregistré pour {game}", clearedTrackToast: "Musique supprimée pour {game}", youtubeDownloadFailed: "Échec du téléchargement YouTube : {error}", youtubeSearchFailed: "Échec de la recherche YouTube : {error}",
+        couldNotSaveVolume: "Impossible d'enregistrer le volume", couldNotSaveLoop: "Impossible d'enregistrer la répétition", couldNotSaveStart: "Impossible d'enregistrer le début de la piste", couldNotSaveGlobalVolume: "Impossible d'enregistrer le volume de la piste d'ambiance", couldNotSaveGlobalLoop: "Impossible d'enregistrer la répétition de la piste d'ambiance", couldNotSaveGlobalStart: "Impossible d'enregistrer le début de la piste d'ambiance", couldNotSaveStoreVolume: "Impossible d'enregistrer le volume de la piste Store", couldNotSaveStoreLoop: "Impossible d'enregistrer la répétition de la piste Store", couldNotSaveStoreStart: "Impossible d'enregistrer le début de la piste Store",
+        failedRemoveGlobal: "Impossible de supprimer la piste d'ambiance", failedRemoveStore: "Impossible de supprimer la piste Store", failedLoadTracks: "Impossible de charger les pistes enregistrées", deleteDownloadedTracks: "Supprimer les pistes téléchargées", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "Supprimer les fichiers audio téléchargés ?", yes: "Oui", no: "Non", deleting: "Suppression...", preparingDelete: "Préparation de la suppression...", deletedProgress: "{completed} sur {total} supprimés", close: "Fermer", deletedDownloadedTracks: "{files} fichiers supprimés et {tracks} affectations retirées.", failedDeleteDownloadedTracks: "Impossible de supprimer les pistes téléchargées",
+        noGamesFound: "Aucun jeu trouvé dans la bibliothèque.", allGamesAssigned: "Tous les jeux de la bibliothèque ont déjà une musique.", ytdlpMissing: "yt-dlp n'est pas encore installé.", stoppingAfterCurrent: "Arrêt après l'opération en cours...", skippedAlreadyAssigned: "{game} ignoré (déjà affecté).", searchForGame: "Recherche YouTube pour {game} ({query})...", noEligibleResults: "Aucun résultat YouTube admissible pour {game}.", searchFailedForGame: "Échec de la recherche pour {game} : {error}", allDownloadAttemptsFailed: "Toutes les tentatives de téléchargement ont échoué pour {game} : {error}", stopMusicTimingAria: "Moment d'arrêt de la musique au lancement"
+    },
+    es: {
+        normalizeAudioLabel: "Normalizar el audio descargado", normalizeAudioDesc: "Usa la normalización de volumen de FFmpeg después de las descargas de YouTube cuando FFmpeg está disponible.", normalizationAvailable: "FFmpeg detectado.", normalizationUnavailable: "FFmpeg no detectado. Las descargas funcionarán, pero se omitirá el procesamiento de audio.", normalizationSkipped: "La pista descargada se guardó, pero se omitió el procesamiento de FFmpeg: {error}",
+        unableAddFile: "No se pudo añadir el archivo: {error}", unknownError: "Error desconocido", unknownUpdateError: "Error de actualización desconocido", ytdlpReady: "yt-dlp listo ({version})", failedInstallYtdlp: "No se pudo instalar yt-dlp: {error}", saveTrackToast: "Se guardó \"{filename}\" para {game}", clearedTrackToast: "Se eliminó la música de {game}", youtubeDownloadFailed: "Falló la descarga de YouTube: {error}", youtubeSearchFailed: "Falló la búsqueda de YouTube: {error}",
+        couldNotSaveVolume: "No se pudo guardar el volumen", couldNotSaveLoop: "No se pudo guardar la repetición", couldNotSaveStart: "No se pudo guardar el inicio de la pista", couldNotSaveGlobalVolume: "No se pudo guardar el volumen de la pista ambiental", couldNotSaveGlobalLoop: "No se pudo guardar la repetición de la pista ambiental", couldNotSaveGlobalStart: "No se pudo guardar el inicio de la pista ambiental", couldNotSaveStoreVolume: "No se pudo guardar el volumen de la pista Store", couldNotSaveStoreLoop: "No se pudo guardar la repetición de la pista Store", couldNotSaveStoreStart: "No se pudo guardar el inicio de la pista Store",
+        failedRemoveGlobal: "No se pudo eliminar la pista ambiental", failedRemoveStore: "No se pudo eliminar la pista Store", failedLoadTracks: "No se pudieron cargar las pistas guardadas", deleteDownloadedTracks: "Eliminar pistas descargadas", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "¿Eliminar los archivos de audio descargados?", yes: "Sí", no: "No", deleting: "Eliminando...", preparingDelete: "Preparando eliminación...", deletedProgress: "Eliminados {completed} de {total}", close: "Cerrar", deletedDownloadedTracks: "Se eliminaron {files} archivos y {tracks} asignaciones.", failedDeleteDownloadedTracks: "No se pudieron eliminar las pistas descargadas",
+        noGamesFound: "No se encontraron juegos en la biblioteca.", allGamesAssigned: "Todos los juegos de la biblioteca ya tienen música asignada.", ytdlpMissing: "yt-dlp aún no está instalado.", stoppingAfterCurrent: "Se detendrá después de la operación actual...", skippedAlreadyAssigned: "Se omitió {game} (ya tiene una pista).", searchForGame: "Buscando en YouTube para {game} ({query})...", noEligibleResults: "No hay resultados de YouTube válidos para {game}.", searchFailedForGame: "Falló la búsqueda de {game}: {error}", allDownloadAttemptsFailed: "Todos los intentos de descarga fallaron para {game}: {error}", stopMusicTimingAria: "Momento de detener la música durante el inicio"
+    },
+    pt: {
+        normalizeAudioLabel: "Normalizar áudio transferido", normalizeAudioDesc: "Usa a normalização de volume do FFmpeg após transferências do YouTube quando o FFmpeg está disponível.", normalizationAvailable: "FFmpeg detetado.", normalizationUnavailable: "FFmpeg não detetado. As transferências funcionarão, mas o processamento de áudio será ignorado.", normalizationSkipped: "A faixa transferida foi guardada, mas o processamento FFmpeg foi ignorado: {error}",
+        unableAddFile: "Não foi possível adicionar o ficheiro: {error}", unknownError: "Erro desconhecido", unknownUpdateError: "Erro de atualização desconhecido", ytdlpReady: "yt-dlp pronto ({version})", failedInstallYtdlp: "Falha ao instalar o yt-dlp: {error}", saveTrackToast: "\"{filename}\" guardado para {game}", clearedTrackToast: "Música removida de {game}", youtubeDownloadFailed: "Falha na transferência do YouTube: {error}", youtubeSearchFailed: "Falha na pesquisa do YouTube: {error}",
+        couldNotSaveVolume: "Não foi possível guardar o volume", couldNotSaveLoop: "Não foi possível guardar a repetição", couldNotSaveStart: "Não foi possível guardar o início da faixa", couldNotSaveGlobalVolume: "Não foi possível guardar o volume da faixa ambiente", couldNotSaveGlobalLoop: "Não foi possível guardar a repetição da faixa ambiente", couldNotSaveGlobalStart: "Não foi possível guardar o início da faixa ambiente", couldNotSaveStoreVolume: "Não foi possível guardar o volume da faixa Store", couldNotSaveStoreLoop: "Não foi possível guardar a repetição da faixa Store", couldNotSaveStoreStart: "Não foi possível guardar o início da faixa Store",
+        failedRemoveGlobal: "Falha ao remover a faixa ambiente", failedRemoveStore: "Falha ao remover a faixa Store", failedLoadTracks: "Falha ao carregar as faixas guardadas", deleteDownloadedTracks: "Eliminar faixas transferidas", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "Eliminar os ficheiros de áudio transferidos?", yes: "Sim", no: "Não", deleting: "A eliminar...", preparingDelete: "A preparar a eliminação...", deletedProgress: "Eliminados {completed} de {total}", close: "Fechar", deletedDownloadedTracks: "Eliminados {files} ficheiros e removidas {tracks} atribuições.", failedDeleteDownloadedTracks: "Falha ao eliminar as faixas transferidas",
+        noGamesFound: "Nenhum jogo encontrado na biblioteca.", allGamesAssigned: "Todos os jogos da biblioteca já têm música atribuída.", ytdlpMissing: "O yt-dlp ainda não está instalado.", stoppingAfterCurrent: "A parar após a operação atual...", skippedAlreadyAssigned: "{game} ignorado (já atribuído).", searchForGame: "A pesquisar no YouTube por {game} ({query})...", noEligibleResults: "Nenhum resultado do YouTube elegível para {game}.", searchFailedForGame: "A pesquisa de {game} falhou: {error}", allDownloadAttemptsFailed: "Todas as tentativas de transferência falharam para {game}: {error}", stopMusicTimingAria: "Momento de parar a música no arranque"
+    },
+    "pt-br": {
+        normalizeAudioLabel: "Normalizar áudio baixado", normalizeAudioDesc: "Usa a normalização de volume do FFmpeg após downloads do YouTube quando o FFmpeg está disponível.", normalizationAvailable: "FFmpeg detectado.", normalizationUnavailable: "FFmpeg não detectado. Os downloads funcionarão, mas o processamento de áudio será ignorado.", normalizationSkipped: "A faixa baixada foi salva, mas o processamento do FFmpeg foi ignorado: {error}",
+        unableAddFile: "Não foi possível adicionar o arquivo: {error}", unknownError: "Erro desconhecido", unknownUpdateError: "Erro de atualização desconhecido", ytdlpReady: "yt-dlp pronto ({version})", failedInstallYtdlp: "Falha ao instalar o yt-dlp: {error}", saveTrackToast: "\"{filename}\" salvo para {game}", clearedTrackToast: "Música removida de {game}", youtubeDownloadFailed: "Falha no download do YouTube: {error}", youtubeSearchFailed: "Falha na pesquisa do YouTube: {error}",
+        couldNotSaveVolume: "Não foi possível salvar o volume", couldNotSaveLoop: "Não foi possível salvar a repetição", couldNotSaveStart: "Não foi possível salvar o início da faixa", couldNotSaveGlobalVolume: "Não foi possível salvar o volume da faixa ambiente", couldNotSaveGlobalLoop: "Não foi possível salvar a repetição da faixa ambiente", couldNotSaveGlobalStart: "Não foi possível salvar o início da faixa ambiente", couldNotSaveStoreVolume: "Não foi possível salvar o volume da faixa Store", couldNotSaveStoreLoop: "Não foi possível salvar a repetição da faixa Store", couldNotSaveStoreStart: "Não foi possível salvar o início da faixa Store",
+        failedRemoveGlobal: "Falha ao remover a faixa ambiente", failedRemoveStore: "Falha ao remover a faixa Store", failedLoadTracks: "Falha ao carregar as faixas salvas", deleteDownloadedTracks: "Excluir faixas baixadas", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "Excluir os arquivos de áudio baixados?", yes: "Sim", no: "Não", deleting: "Excluindo...", preparingDelete: "Preparando exclusão...", deletedProgress: "Excluídos {completed} de {total}", close: "Fechar", deletedDownloadedTracks: "Excluídos {files} arquivos e removidas {tracks} atribuições.", failedDeleteDownloadedTracks: "Falha ao excluir as faixas baixadas",
+        noGamesFound: "Nenhum jogo encontrado na biblioteca.", allGamesAssigned: "Todos os jogos da biblioteca já têm música atribuída.", ytdlpMissing: "O yt-dlp ainda não está instalado.", stoppingAfterCurrent: "Parando após a operação atual...", skippedAlreadyAssigned: "{game} ignorado (já atribuído).", searchForGame: "Pesquisando no YouTube por {game} ({query})...", noEligibleResults: "Nenhum resultado válido do YouTube para {game}.", searchFailedForGame: "A pesquisa de {game} falhou: {error}", allDownloadAttemptsFailed: "Todas as tentativas de download falharam para {game}: {error}", stopMusicTimingAria: "Momento de parar a música na inicialização"
+    },
+    de: {
+        normalizeAudioLabel: "Heruntergeladenes Audio normalisieren", normalizeAudioDesc: "Verwendet die Lautheitsnormalisierung von FFmpeg nach YouTube-Downloads, wenn FFmpeg verfügbar ist.", normalizationAvailable: "FFmpeg erkannt.", normalizationUnavailable: "FFmpeg nicht erkannt. Downloads funktionieren weiterhin, die Audioverarbeitung wird jedoch übersprungen.", normalizationSkipped: "Die heruntergeladene Spur wurde gespeichert, aber die FFmpeg-Verarbeitung wurde übersprungen: {error}",
+        unableAddFile: "Datei konnte nicht hinzugefügt werden: {error}", unknownError: "Unbekannter Fehler", unknownUpdateError: "Unbekannter Aktualisierungsfehler", ytdlpReady: "yt-dlp bereit ({version})", failedInstallYtdlp: "yt-dlp konnte nicht installiert werden: {error}", saveTrackToast: "\"{filename}\" für {game} gespeichert", clearedTrackToast: "Musik für {game} entfernt", youtubeDownloadFailed: "YouTube-Download fehlgeschlagen: {error}", youtubeSearchFailed: "YouTube-Suche fehlgeschlagen: {error}",
+        couldNotSaveVolume: "Lautstärke konnte nicht gespeichert werden", couldNotSaveLoop: "Wiederholung konnte nicht gespeichert werden", couldNotSaveStart: "Spuranfang konnte nicht gespeichert werden", couldNotSaveGlobalVolume: "Lautstärke der Ambient-Spur konnte nicht gespeichert werden", couldNotSaveGlobalLoop: "Wiederholung der Ambient-Spur konnte nicht gespeichert werden", couldNotSaveGlobalStart: "Anfang der Ambient-Spur konnte nicht gespeichert werden", couldNotSaveStoreVolume: "Lautstärke der Store-Spur konnte nicht gespeichert werden", couldNotSaveStoreLoop: "Wiederholung der Store-Spur konnte nicht gespeichert werden", couldNotSaveStoreStart: "Anfang der Store-Spur konnte nicht gespeichert werden",
+        failedRemoveGlobal: "Ambient-Spur konnte nicht entfernt werden", failedRemoveStore: "Store-Spur konnte nicht entfernt werden", failedLoadTracks: "Gespeicherte Spuren konnten nicht geladen werden", deleteDownloadedTracks: "Heruntergeladene Spuren löschen", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "Heruntergeladene Audiodateien löschen?", yes: "Ja", no: "Nein", deleting: "Löschen...", preparingDelete: "Löschen wird vorbereitet...", deletedProgress: "{completed} von {total} gelöscht", close: "Schließen", deletedDownloadedTracks: "{files} Dateien gelöscht und {tracks} Zuweisungen entfernt.", failedDeleteDownloadedTracks: "Heruntergeladene Spuren konnten nicht gelöscht werden",
+        noGamesFound: "Keine Spiele in der Bibliothek gefunden.", allGamesAssigned: "Allen Bibliotheksspielen ist bereits Musik zugewiesen.", ytdlpMissing: "yt-dlp ist noch nicht installiert.", stoppingAfterCurrent: "Stopp nach dem aktuellen Vorgang...", skippedAlreadyAssigned: "{game} übersprungen (bereits zugewiesen).", searchForGame: "YouTube-Suche für {game} ({query})...", noEligibleResults: "Keine geeigneten YouTube-Ergebnisse für {game}.", searchFailedForGame: "Suche für {game} fehlgeschlagen: {error}", allDownloadAttemptsFailed: "Alle Downloadversuche für {game} sind fehlgeschlagen: {error}", stopMusicTimingAria: "Zeitpunkt zum Stoppen der Musik beim Start"
+    },
+    nl: {
+        normalizeAudioLabel: "Gedownloade audio normaliseren", normalizeAudioDesc: "Gebruikt FFmpeg-luidheidsnormalisatie na YouTube-downloads wanneer FFmpeg beschikbaar is.", normalizationAvailable: "FFmpeg gedetecteerd.", normalizationUnavailable: "FFmpeg niet gedetecteerd. Downloads werken wel, maar audioverwerking wordt overgeslagen.", normalizationSkipped: "De gedownloade track is opgeslagen, maar FFmpeg-verwerking is overgeslagen: {error}",
+        unableAddFile: "Bestand kon niet worden toegevoegd: {error}", unknownError: "Onbekende fout", unknownUpdateError: "Onbekende updatefout", ytdlpReady: "yt-dlp gereed ({version})", failedInstallYtdlp: "Installatie van yt-dlp mislukt: {error}", saveTrackToast: "\"{filename}\" opgeslagen voor {game}", clearedTrackToast: "Muziek verwijderd voor {game}", youtubeDownloadFailed: "YouTube-download mislukt: {error}", youtubeSearchFailed: "YouTube-zoekopdracht mislukt: {error}",
+        couldNotSaveVolume: "Volume kon niet worden opgeslagen", couldNotSaveLoop: "Herhalen kon niet worden opgeslagen", couldNotSaveStart: "Begin van track kon niet worden opgeslagen", couldNotSaveGlobalVolume: "Volume van ambient-track kon niet worden opgeslagen", couldNotSaveGlobalLoop: "Herhalen van ambient-track kon niet worden opgeslagen", couldNotSaveGlobalStart: "Begin van ambient-track kon niet worden opgeslagen", couldNotSaveStoreVolume: "Volume van Store-track kon niet worden opgeslagen", couldNotSaveStoreLoop: "Herhalen van Store-track kon niet worden opgeslagen", couldNotSaveStoreStart: "Begin van Store-track kon niet worden opgeslagen",
+        failedRemoveGlobal: "Ambient-track kon niet worden verwijderd", failedRemoveStore: "Store-track kon niet worden verwijderd", failedLoadTracks: "Opgeslagen tracks konden niet worden geladen", deleteDownloadedTracks: "Gedownloade tracks verwijderen", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "Gedownloade audiobestanden verwijderen?", yes: "Ja", no: "Nee", deleting: "Verwijderen...", preparingDelete: "Verwijderen voorbereiden...", deletedProgress: "{completed} van {total} verwijderd", close: "Sluiten", deletedDownloadedTracks: "{files} bestanden verwijderd en {tracks} toewijzingen gewist.", failedDeleteDownloadedTracks: "Gedownloade tracks konden niet worden verwijderd",
+        noGamesFound: "Geen spellen gevonden in de bibliotheek.", allGamesAssigned: "Alle bibliotheekspellen hebben al muziek toegewezen.", ytdlpMissing: "yt-dlp is nog niet geïnstalleerd.", stoppingAfterCurrent: "Stoppen na de huidige bewerking...", skippedAlreadyAssigned: "{game} overgeslagen (al toegewezen).", searchForGame: "YouTube doorzoeken voor {game} ({query})...", noEligibleResults: "Geen geschikte YouTube-resultaten voor {game}.", searchFailedForGame: "Zoeken naar {game} mislukt: {error}", allDownloadAttemptsFailed: "Alle downloadpogingen voor {game} zijn mislukt: {error}", stopMusicTimingAria: "Moment waarop muziek bij het starten stopt"
+    },
+    uk: {
+        normalizeAudioLabel: "Нормалізувати завантажене аудіо", normalizeAudioDesc: "Використовує нормалізацію гучності FFmpeg після завантажень із YouTube, якщо FFmpeg доступний.", normalizationAvailable: "FFmpeg виявлено.", normalizationUnavailable: "FFmpeg не виявлено. Завантаження працюватимуть, але обробку аудіо буде пропущено.", normalizationSkipped: "Завантажену доріжку збережено, але обробку FFmpeg пропущено: {error}",
+        unableAddFile: "Не вдалося додати файл: {error}", unknownError: "Невідома помилка", unknownUpdateError: "Невідома помилка оновлення", ytdlpReady: "yt-dlp готовий ({version})", failedInstallYtdlp: "Не вдалося встановити yt-dlp: {error}", saveTrackToast: "\"{filename}\" збережено для {game}", clearedTrackToast: "Музику для {game} видалено", youtubeDownloadFailed: "Помилка завантаження з YouTube: {error}", youtubeSearchFailed: "Помилка пошуку YouTube: {error}",
+        couldNotSaveVolume: "Не вдалося зберегти гучність", couldNotSaveLoop: "Не вдалося зберегти повтор", couldNotSaveStart: "Не вдалося зберегти початок доріжки", couldNotSaveGlobalVolume: "Не вдалося зберегти гучність фонової доріжки", couldNotSaveGlobalLoop: "Не вдалося зберегти повтор фонової доріжки", couldNotSaveGlobalStart: "Не вдалося зберегти початок фонової доріжки", couldNotSaveStoreVolume: "Не вдалося зберегти гучність доріжки Store", couldNotSaveStoreLoop: "Не вдалося зберегти повтор доріжки Store", couldNotSaveStoreStart: "Не вдалося зберегти початок доріжки Store",
+        failedRemoveGlobal: "Не вдалося видалити фонову доріжку", failedRemoveStore: "Не вдалося видалити доріжку Store", failedLoadTracks: "Не вдалося завантажити збережені доріжки", deleteDownloadedTracks: "Видалити завантажені доріжки", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "Видалити завантажені аудіофайли?", yes: "Так", no: "Ні", deleting: "Видалення...", preparingDelete: "Підготовка видалення...", deletedProgress: "Видалено {completed} з {total}", close: "Закрити", deletedDownloadedTracks: "Видалено {files} файлів і {tracks} призначень.", failedDeleteDownloadedTracks: "Не вдалося видалити завантажені доріжки",
+        noGamesFound: "Ігор у бібліотеці не знайдено.", allGamesAssigned: "Усім іграм бібліотеки вже призначено музику.", ytdlpMissing: "yt-dlp ще не встановлено.", stoppingAfterCurrent: "Зупинка після поточної операції...", skippedAlreadyAssigned: "{game} пропущено (вже призначено).", searchForGame: "Пошук на YouTube для {game} ({query})...", noEligibleResults: "Немає придатних результатів YouTube для {game}.", searchFailedForGame: "Помилка пошуку для {game}: {error}", allDownloadAttemptsFailed: "Усі спроби завантаження для {game} завершилися помилкою: {error}", stopMusicTimingAria: "Момент зупинки музики під час запуску"
+    },
+    zh: {
+        normalizeAudioLabel: "标准化已下载的音频", normalizeAudioDesc: "当 FFmpeg 可用时，在 YouTube 下载后使用 FFmpeg 进行响度标准化。", normalizationAvailable: "已检测到 FFmpeg。", normalizationUnavailable: "未检测到 FFmpeg。下载仍可使用，但会跳过音频处理。", normalizationSkipped: "已保存下载的曲目，但跳过了 FFmpeg 处理：{error}",
+        unableAddFile: "无法添加文件：{error}", unknownError: "未知错误", unknownUpdateError: "未知更新错误", ytdlpReady: "yt-dlp 已就绪（{version}）", failedInstallYtdlp: "无法安装 yt-dlp：{error}", saveTrackToast: "已为 {game} 保存“{filename}”", clearedTrackToast: "已清除 {game} 的音乐", youtubeDownloadFailed: "YouTube 下载失败：{error}", youtubeSearchFailed: "YouTube 搜索失败：{error}",
+        couldNotSaveVolume: "无法保存音量", couldNotSaveLoop: "无法保存循环设置", couldNotSaveStart: "无法保存曲目起始位置", couldNotSaveGlobalVolume: "无法保存环境曲目的音量", couldNotSaveGlobalLoop: "无法保存环境曲目的循环设置", couldNotSaveGlobalStart: "无法保存环境曲目的起始位置", couldNotSaveStoreVolume: "无法保存商店曲目的音量", couldNotSaveStoreLoop: "无法保存商店曲目的循环设置", couldNotSaveStoreStart: "无法保存商店曲目的起始位置",
+        failedRemoveGlobal: "无法移除环境曲目", failedRemoveStore: "无法移除商店曲目", failedLoadTracks: "无法加载已保存的曲目", deleteDownloadedTracks: "删除已下载的曲目", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "删除已下载的音频文件？", yes: "是", no: "否", deleting: "正在删除...", preparingDelete: "正在准备删除...", deletedProgress: "已删除 {completed}/{total}", close: "关闭", deletedDownloadedTracks: "已删除 {files} 个文件并移除 {tracks} 个分配。", failedDeleteDownloadedTracks: "无法删除已下载的曲目",
+        noGamesFound: "资料库中未找到游戏。", allGamesAssigned: "资料库中的所有游戏都已分配音乐。", ytdlpMissing: "尚未安装 yt-dlp。", stoppingAfterCurrent: "将在当前操作完成后停止...", skippedAlreadyAssigned: "已跳过 {game}（已分配）。", searchForGame: "正在为 {game} 搜索 YouTube（{query}）...", noEligibleResults: "没有适用于 {game} 的 YouTube 结果。", searchFailedForGame: "搜索 {game} 失败：{error}", allDownloadAttemptsFailed: "{game} 的所有下载尝试均失败：{error}", stopMusicTimingAria: "启动时停止音乐的时机"
+    },
+    ja: {
+        normalizeAudioLabel: "ダウンロードした音声を正規化", normalizeAudioDesc: "FFmpeg が利用可能な場合、YouTube からのダウンロード後に音量を正規化します。", normalizationAvailable: "FFmpeg を検出しました。", normalizationUnavailable: "FFmpeg が見つかりません。ダウンロードは動作しますが、音声処理はスキップされます。", normalizationSkipped: "ダウンロードしたトラックを保存しましたが、FFmpeg 処理はスキップされました：{error}",
+        unableAddFile: "ファイルを追加できませんでした：{error}", unknownError: "不明なエラー", unknownUpdateError: "不明な更新エラー", ytdlpReady: "yt-dlp 準備完了（{version}）", failedInstallYtdlp: "yt-dlp をインストールできませんでした：{error}", saveTrackToast: "{game} に「{filename}」を保存しました", clearedTrackToast: "{game} の音楽を削除しました", youtubeDownloadFailed: "YouTube のダウンロードに失敗しました：{error}", youtubeSearchFailed: "YouTube の検索に失敗しました：{error}",
+        couldNotSaveVolume: "音量を保存できませんでした", couldNotSaveLoop: "リピート設定を保存できませんでした", couldNotSaveStart: "トラックの開始位置を保存できませんでした", couldNotSaveGlobalVolume: "環境トラックの音量を保存できませんでした", couldNotSaveGlobalLoop: "環境トラックのリピート設定を保存できませんでした", couldNotSaveGlobalStart: "環境トラックの開始位置を保存できませんでした", couldNotSaveStoreVolume: "ストアトラックの音量を保存できませんでした", couldNotSaveStoreLoop: "ストアトラックのリピート設定を保存できませんでした", couldNotSaveStoreStart: "ストアトラックの開始位置を保存できませんでした",
+        failedRemoveGlobal: "環境トラックを削除できませんでした", failedRemoveStore: "ストアトラックを削除できませんでした", failedLoadTracks: "保存済みトラックを読み込めませんでした", deleteDownloadedTracks: "ダウンロードしたトラックを削除", deleteDownloadedTracksDesc: "", deleteDownloadedTracksTitle: "ダウンロードした音声ファイルを削除しますか？", yes: "はい", no: "いいえ", deleting: "削除中...", preparingDelete: "削除を準備中...", deletedProgress: "{total} 件中 {completed} 件を削除", close: "閉じる", deletedDownloadedTracks: "{files} 個のファイルを削除し、{tracks} 件の割り当てを解除しました。", failedDeleteDownloadedTracks: "ダウンロードしたトラックを削除できませんでした",
+        noGamesFound: "ライブラリにゲームが見つかりません。", allGamesAssigned: "ライブラリ内のすべてのゲームに音楽が割り当て済みです。", ytdlpMissing: "yt-dlp はまだインストールされていません。", stoppingAfterCurrent: "現在の処理後に停止します...", skippedAlreadyAssigned: "{game} をスキップしました（割り当て済み）。", searchForGame: "{game} を YouTube で検索中（{query}）...", noEligibleResults: "{game} に適した YouTube の結果がありません。", searchFailedForGame: "{game} の検索に失敗しました：{error}", allDownloadAttemptsFailed: "{game} のすべてのダウンロードに失敗しました：{error}", stopMusicTimingAria: "起動時に音楽を停止するタイミング"
     },
 };
 const HIDDEN_TEXT_KEYS = new Set([
@@ -1955,6 +2021,7 @@ const t = (key, values) => {
         return "";
     }
     let text = LOCALIZED_UI_OVERRIDES[ACTIVE_LOCALE]?.[key] ??
+        SECONDARY_TRANSLATIONS[ACTIVE_LOCALE]?.[key] ??
         TRANSLATIONS[ACTIVE_LOCALE]?.[key] ??
         EN_STRINGS[key];
     if (!values) {
@@ -2081,6 +2148,7 @@ let launchActivityAppId = null;
 let runningAppPollInterval = null;
 let runningAppRetry = null;
 let runningAppRefreshInFlight = false;
+let runningAppRefreshTimer = null;
 const runningAppSubscriptions = [];
 const launchingAppFirstSeenAtMs = new Map();
 let launchStopModeRuntime = "launch_start";
@@ -2645,6 +2713,9 @@ const applyLoopToActiveTrack = (appId, loop) => {
     sharedAudio.loop = loop;
 };
 const notifyFocus = (appId) => {
+    if (focusedAppId === appId) {
+        return;
+    }
     focusedAppId = appId;
     focusListeners.forEach((listener) => listener(appId));
     scheduleAutoPlaybackFromContext();
@@ -3307,6 +3378,15 @@ const refreshRunningGameState = async () => {
         runningAppRefreshInFlight = false;
     }
 };
+const scheduleRunningGameRefresh = (delay = 120) => {
+    if (runningAppRefreshTimer !== null) {
+        window.clearTimeout(runningAppRefreshTimer);
+    }
+    runningAppRefreshTimer = window.setTimeout(() => {
+        runningAppRefreshTimer = null;
+        void refreshRunningGameState();
+    }, delay);
+};
 const startRunningGameWatcher = () => {
     if (runningAppPollInterval) {
         return;
@@ -3326,7 +3406,7 @@ const startRunningGameWatcher = () => {
         }
         return;
     }
-    const registerMethods = [
+    const preferredRegisterMethods = [
         "RegisterForRunningAppsChanged",
         "RegisterForRunningAppChanges",
         "RegisterForAppRunningStateChanged",
@@ -3335,18 +3415,25 @@ const startRunningGameWatcher = () => {
         "RegisterForGameActionEnd",
         "RegisterForGameLaunched",
         "RegisterForGameExited",
+    ];
+    const fallbackRegisterMethods = [
         "RegisterForAppDetails",
         "RegisterForAppOverviewChanges",
     ];
+    const preferredMethod = preferredRegisterMethods.find((method) => typeof apps?.[method] === "function");
+    const fallbackMethod = fallbackRegisterMethods.find((method) => typeof apps?.[method] === "function");
+    const registerMethods = preferredMethod
+        ? [preferredMethod]
+        : fallbackMethod
+            ? [fallbackMethod]
+            : [];
     registerMethods.forEach((method) => {
         const register = apps?.[method];
         if (typeof register !== "function") {
             return;
         }
         try {
-            const token = register.call(apps, () => {
-                void refreshRunningGameState();
-            });
+            const token = register.call(apps, () => scheduleRunningGameRefresh());
             const clean = wrapUnsubscribe(token);
             if (clean) {
                 runningAppSubscriptions.push(clean);
@@ -3357,9 +3444,9 @@ const startRunningGameWatcher = () => {
         }
     });
     runningAppPollInterval = window.setInterval(() => {
-        void refreshRunningGameState();
+        scheduleRunningGameRefresh(0);
     }, RUNNING_APP_POLL_MS);
-    void refreshRunningGameState();
+    scheduleRunningGameRefresh(0);
 };
 const stopRunningGameWatcher = () => {
     runningAppSubscriptions.splice(0).forEach((clean) => {
@@ -3377,6 +3464,10 @@ const stopRunningGameWatcher = () => {
     if (runningAppRetry) {
         window.clearInterval(runningAppRetry);
         runningAppRetry = null;
+    }
+    if (runningAppRefreshTimer !== null) {
+        window.clearTimeout(runningAppRefreshTimer);
+        runningAppRefreshTimer = null;
     }
     runningAppRefreshInFlight = false;
     runningGameAppId = null;
@@ -4495,7 +4586,7 @@ const startAutoPlaybackCoordinator = () => {
     autoPlaybackRouteInterval = window.setInterval(() => {
         scheduleAutoPlaybackFromContext();
         refreshStoreContext();
-    }, 750);
+    }, STORE_CONTEXT_POLL_MS);
     externalMediaPollInterval = window.setInterval(() => {
         refreshExternalMediaState();
     }, EXTERNAL_MEDIA_POLL_MS);
@@ -6006,8 +6097,8 @@ const Content = () => {
                     window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdQamIconButton", title: chooseLabel, onClick: () => navigateToThemeDeckEditor(kind === "ambient" ? "/themedeck/global" : "/themedeck/store"), style: qamIconButton },
                         window.SP_REACT.createElement(FaChevronRight, null)))),
             currentTrack ? (window.SP_REACT.createElement("div", { className: "tdQamTrackControls" },
-                window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(currentTrack.volume * 100), label: t("volume"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: volume }),
-                window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(currentTrack.startOffset), label: t("startSkip"), min: 0, max: 30, step: 1, valueSuffix: "s", showValue: true, onChange: offset }),
+                window.SP_REACT.createElement(TrackSettingStepper, { label: t("volume"), value: Math.round(currentTrack.volume * 100), suffix: "%", min: 0, max: 100, step: 5, onChange: volume }),
+                window.SP_REACT.createElement(TrackSettingStepper, { label: t("startSkip"), value: Math.round(currentTrack.startOffset), suffix: "s", min: 0, max: 30, step: 1, onChange: offset }),
                 window.SP_REACT.createElement(DFL.ToggleField, { checked: currentTrack.loop, label: t("loopTrack"), description: t("loopTrackDesc"), onChange: loop }))) : null));
     };
     return (window.SP_REACT.createElement(DFL.ScrollPanel, null,
@@ -6026,6 +6117,12 @@ const Content = () => {
           .tdQamMeta{margin-top:4px;font-size:12px;line-height:1.3;opacity:.56;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
           .tdQamSectionLabel{margin:14px 4px 7px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.48}
           .tdQamTrackControls{display:grid;gap:7px;margin-top:11px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07)}
+          .tdQamRedesign .tdCompactSetting{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:0;border:0}
+          .tdQamRedesign .tdCompactSettingLabel{font-size:13px;font-weight:650;opacity:.68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          .tdQamRedesign .tdStepperRow{display:grid;grid-template-columns:36px minmax(48px,58px) 36px;gap:7px;align-items:center}
+          .tdQamRedesign .tdStepperButton.DialogButton{width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;padding:0!important;display:grid!important;place-items:center!important;border-radius:5px!important;background:rgba(255,255,255,.075)!important;color:#fff!important}
+          .tdQamRedesign .tdStepperButton.DialogButton:disabled{opacity:.32!important}
+          .tdQamRedesign .tdStepperValue{font-size:15px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
           .tdQamList{max-height:190px;overflow-y:auto;margin-top:8px;padding:7px 9px;border-radius:5px;background:rgba(0,0,0,.16);font-size:.73rem;line-height:1.42}
           .tdQamRedesign [class*="PanelSectionRow"]{width:100%!important;max-width:100%!important}
         `),
@@ -6034,7 +6131,7 @@ const Content = () => {
             window.SP_REACT.createElement("section", { className: "tdQamCard" },
                 window.SP_REACT.createElement(DFL.ToggleField, { checked: autoPlay, label: t("autoPlayLabel"), description: t("autoPlayDesc"), onChange: setAutoPlay }),
                 window.SP_REACT.createElement("div", { style: { marginTop: 8 } },
-                    window.SP_REACT.createElement(DFL.SliderField, { value: Math.round(gameTrackMasterVolume * 100), label: t("gameMusicVolumeLabel"), min: 0, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: (value) => setGameTrackMasterVolume(clamp(value / 100)) })),
+                    window.SP_REACT.createElement(TrackSettingStepper, { label: t("gameMusicVolumeLabel"), value: Math.round(gameTrackMasterVolume * 100), suffix: "%", min: 0, max: 100, step: 5, onChange: (value) => setGameTrackMasterVolume(clamp(value / 100)) })),
                 window.SP_REACT.createElement("div", { style: { marginTop: 10, fontSize: ".76rem", fontWeight: 700 } }, t("stopMusicAfterPlay")),
                 window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "grid", gap: 5, marginTop: 6 } }, [{ value: "launch_start", label: t("launchStart") }, { value: "game_started", label: t("launchFinish") }].map((option) => window.SP_REACT.createElement(FocusableButton, { key: option.value, className: "DialogButton", role: "radio", "aria-checked": launchStopMode === option.value, onClick: () => setLaunchStopMode(option.value), style: qamChoice(launchStopMode === option.value) },
                     window.SP_REACT.createElement("span", { style: { width: 8, height: 8, borderRadius: 8, background: launchStopMode === option.value ? "#f0b429" : "rgba(255,255,255,.24)" } }),
@@ -6438,7 +6535,7 @@ const ChangeTheme = () => {
         setYoutubeLoading(true);
         setYoutubeError("");
         try {
-            const response = await searchYouTube(query, 20);
+            const response = await searchYouTube(query, 30);
             setYoutubeResults(response?.results ?? []);
         }
         catch (error) {
@@ -6649,10 +6746,10 @@ const ChangeTheme = () => {
           .tdGameEditor .tdGameIconButton:focus,.tdGameEditor .tdGameIconButton.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
           .tdGameEditor .tdGameIconButton:focus svg,.tdGameEditor .tdGameIconButton.gpfocus svg{color:#151515!important;fill:currentColor!important}
           .tdGameEditorCard{width:100%;margin-top:16px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
-          .tdGameTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch}
-          .tdGameTopRow .tdGameEditorCard{height:100%}
+          .tdGameTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch;margin-top:16px}
+          .tdGameTopRow .tdGameEditorCard{height:100%;margin-top:0}
           .tdGameSearchRow{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:10px;margin-top:14px;align-items:stretch}
-          .tdGameSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:44px!important;min-height:44px!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+          .tdGameSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:100%!important;min-height:0!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
           .tdMiniSpinner{display:inline-block;width:17px;height:17px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:tdMiniSpin .8s linear infinite}
           @keyframes tdMiniSpin{to{transform:rotate(360deg)}}
           .tdGameEditorResult{display:grid;grid-template-columns:112px minmax(0,1fr) 42px 42px;gap:10px;align-items:center;min-height:72px;padding:7px;border-bottom:1px solid rgba(255,255,255,.075)}
@@ -6769,7 +6866,7 @@ const ScopedThemeEditor = ({ target }) => {
         setSearching(true);
         setError("");
         try {
-            const response = await searchYouTube(clean, 20);
+            const response = await searchYouTube(clean, 30);
             setResults(response?.results || []);
         }
         catch (searchError) {
@@ -6874,11 +6971,16 @@ const ScopedThemeEditor = ({ target }) => {
           .tdScopedEditor *{box-sizing:border-box;letter-spacing:0;min-width:0}
           .tdScopedEditor .DialogButton{color:#fff!important;border-radius:6px!important;min-height:42px!important}
           .tdScopedHeader{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:center}
-          .tdScopedCard{width:100%;height:100%;margin-top:16px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
-          .tdScopedTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch}
+          .tdScopedCard{width:100%;height:auto;margin-top:0;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
+          .tdScopedTopRow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.65fr);gap:16px;align-items:stretch;margin-top:16px}
+          .tdScopedTopRow .tdScopedCard{height:100%}
+          .tdScopedSearchCard{margin-top:16px}
           .tdScopedSearchRow{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:10px;margin-top:14px;align-items:stretch}
-          .tdScopedSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:44px!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+          .tdScopedSearchRow .DialogButton{width:136px!important;min-width:136px!important;height:100%!important;min-height:0!important;padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+          .tdScopedEditor .tdScopedTextButton:focus,.tdScopedEditor .tdScopedTextButton.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
+          .tdScopedEditor .tdScopedTextButton:focus *,.tdScopedEditor .tdScopedTextButton.gpfocus *{color:inherit!important}
           .tdScopedEditor .tdScopeResult{display:grid;grid-template-columns:132px minmax(0,1fr) 40px 40px;align-items:center;gap:10px;min-height:82px;padding:7px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.045);border-radius:6px}
+          .tdScopeDownloadProgress{grid-column:1/-1;height:7px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.15)}
           .tdScopedEditor .tdScopeIcon{width:40px!important;min-width:40px!important;height:40px!important;min-height:40px!important;padding:0!important;display:grid!important;place-items:center!important}
           .tdScopedEditor .tdScopeIcon:focus,.tdScopedEditor .tdScopeIcon.gpfocus{background:#f0b429!important;color:#151515!important;box-shadow:0 0 0 3px rgba(255,255,255,.9)!important}
           .tdScopedEditor .tdScopeIcon:focus svg,.tdScopedEditor .tdScopeIcon.gpfocus svg{color:#151515!important;fill:currentColor!important}
@@ -6900,24 +7002,24 @@ const ScopedThemeEditor = ({ target }) => {
                     window.SP_REACT.createElement("div", null,
                         window.SP_REACT.createElement("h2", { style: { margin: 0, fontSize: 19 } }, t("browseLocalTitle")),
                         window.SP_REACT.createElement("div", { style: { marginTop: 5, fontSize: 13, opacity: .55 } }, t("chooseAudioFile"))),
-                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", style: { width: "100%", minWidth: 0, height: 44, marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }, onClick: () => void chooseLocal() },
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopedTextButton", style: { width: "100%", minWidth: 0, height: 44, marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }, onClick: () => void chooseLocal() },
                         window.SP_REACT.createElement(FaFolder, null),
                         t("chooseAudioFile")))),
-            window.SP_REACT.createElement("section", { className: "tdScopedCard" },
+            window.SP_REACT.createElement("section", { className: "tdScopedCard tdScopedSearchCard" },
                 window.SP_REACT.createElement("h2", { style: { margin: 0, fontSize: 20 } }, t("youtubeSearchTitle")),
                 window.SP_REACT.createElement(DFL.Focusable, { className: "tdScopedSearchRow", "flow-children": "horizontal" },
                     window.SP_REACT.createElement(DFL.TextField, { value: query, onChange: (event) => setQuery(event.target.value), style: { width: "100%", minWidth: 0 } }),
-                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", title: searching ? t("searching") : t("search"), onClick: () => void runSearch(), disabled: searching }, searching ? window.SP_REACT.createElement("span", { className: "tdMiniSpinner" }) : t("search"))),
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopedTextButton", title: searching ? t("searching") : t("search"), onClick: () => void runSearch(), disabled: searching }, searching ? window.SP_REACT.createElement("span", { className: "tdMiniSpinner" }) : t("search"))),
                 error ? window.SP_REACT.createElement("div", { style: { color: "#ffb7b7", fontSize: 13, marginTop: 7 } }, error) : null,
-                downloadingId ? (window.SP_REACT.createElement("div", { style: { height: 7, marginTop: 9, borderRadius: 4, overflow: "hidden", background: "rgba(255,255,255,.15)" } },
-                    window.SP_REACT.createElement("div", { style: { width: `${downloadProgress}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" } }))) : null,
                 window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "vertical", style: { display: "flex", flexDirection: "column", gap: 7, marginTop: results.length ? 10 : 0 } }, results.map((result) => (window.SP_REACT.createElement(DFL.Focusable, { key: result.id, className: "tdScopeResult", "flow-children": "horizontal" },
                     window.SP_REACT.createElement("img", { src: `https://i.ytimg.com/vi/${encodeURIComponent(result.id)}/hqdefault.jpg`, alt: "", style: { width: 132, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 4 } }),
                     window.SP_REACT.createElement("div", null,
                         window.SP_REACT.createElement("div", { style: { fontWeight: 650, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, result.title),
                         window.SP_REACT.createElement("div", { style: { opacity: .62, fontSize: 12, marginTop: 4 } }, [result.uploader || "YouTube", formatDuration(result.duration)].filter(Boolean).join(" · "))),
                     window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: previewingId === result.id ? t("stopPreview") : t("playPreview"), onClick: () => void togglePreview(result) }, previewingId === result.id ? window.SP_REACT.createElement(FaPause, null) : window.SP_REACT.createElement(FaPlay, null)),
-                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: t("downloadAssign"), disabled: Boolean(downloadingId), onClick: () => void download(result) }, downloadingId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : window.SP_REACT.createElement(FaDownload, null))))))))));
+                    window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: t("downloadAssign"), disabled: Boolean(downloadingId), onClick: () => void download(result) }, downloadingId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : window.SP_REACT.createElement(FaDownload, null)),
+                    downloadingId === result.id ? window.SP_REACT.createElement("div", { className: "tdScopeDownloadProgress" },
+                        window.SP_REACT.createElement("div", { style: { width: `${downloadProgress}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" } })) : null))))))));
 };
 var index = definePlugin(() => {
     startLocationWatcher();

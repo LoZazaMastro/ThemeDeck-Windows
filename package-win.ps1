@@ -1,11 +1,15 @@
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Parent = Split-Path -Parent $Root
+$Version = (Get-Content (Join-Path $Root "package.json") -Raw | ConvertFrom-Json).version
 $Release = Join-Path $Root "release"
 $Stage = Join-Path $Release "ThemeDeck"
-$Zip = Join-Path $Release "ThemeDeck-Playhub_Installer-3.0.0.zip"
-$PublicZip = Join-Path (Split-Path -Parent $Root) "ThemeDeck-Playhub_Installer-3.0.0.zip"
-$PublicLegacyZip = Join-Path (Split-Path -Parent $Root) "ThemeDeck-Playhub_Installer.zip"
+$ProjectStage = Join-Path $Release "ThemeDeck-project-$Version"
+$Zip = Join-Path $Release "ThemeDeck-Playhub_Installer-$Version.zip"
+$PublicZip = Join-Path $Parent "ThemeDeck-Playhub_Installer-$Version.zip"
+$PublicProjectZip = Join-Path $Parent "ThemeDeck-project-$Version.zip"
+$PublicLegacyZip = Join-Path $Parent "ThemeDeck-Playhub_Installer.zip"
 
 $ResolvedRoot = [IO.Path]::GetFullPath($Root).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 $ResolvedRelease = [IO.Path]::GetFullPath($Release)
@@ -35,6 +39,17 @@ Copy-Item (Join-Path $Root "dist/index.js") (Join-Path $Stage "dist/index.js") -
 Compress-Archive -Path $Stage -DestinationPath $Zip -CompressionLevel Optimal -Force
 Copy-Item $Zip $PublicZip -Force
 Copy-Item $Zip $PublicLegacyZip -Force
+
+New-Item -ItemType Directory -Force -Path $ProjectStage | Out-Null
+$ProjectExclude = @("release", "node_modules", "node_modules-broken-copy", "__pycache__", ".pnpm-store")
+Get-ChildItem -LiteralPath $Root -Force | Where-Object {
+  $ProjectExclude -notcontains $_.Name
+} | ForEach-Object {
+  Copy-Item -LiteralPath $_.FullName -Destination $ProjectStage -Recurse -Force
+}
+Compress-Archive -Path $ProjectStage -DestinationPath $PublicProjectZip -CompressionLevel Optimal -Force
+
 Write-Host "Created $Zip"
 Write-Host "Updated $PublicZip"
+Write-Host "Updated $PublicProjectZip"
 Write-Host "Updated $PublicLegacyZip"
