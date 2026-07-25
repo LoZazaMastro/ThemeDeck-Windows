@@ -41,7 +41,7 @@ Copy-Item $Zip $PublicZip -Force
 Copy-Item $Zip $PublicLegacyZip -Force
 
 New-Item -ItemType Directory -Force -Path $ProjectStage | Out-Null
-$ProjectExclude = @("release", "node_modules", "node_modules-broken-copy", "__pycache__", ".pnpm-store")
+$ProjectExclude = @("release", "node_modules", "node_modules-broken-copy", "__pycache__", ".pnpm-store", ".git")
 Get-ChildItem -LiteralPath $Root -Force | Where-Object {
   $ProjectExclude -notcontains $_.Name
 } | ForEach-Object {

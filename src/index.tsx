@@ -103,6 +103,15 @@ type DeleteDownloadedTracksProgress = {
   error?: string;
 };
 
+type DeleteUnusedTracksResult = {
+  ok?: boolean;
+  tracks?: RawTrackMap;
+  removed?: number;
+  removed_files?: number;
+  removed_dirs?: number;
+  failed?: string[];
+};
+
 type AudioNormalizationStatus = {
   available: boolean;
   path?: string;
@@ -376,7 +385,7 @@ const getExternalMediaState = callable<[], ExternalMediaState>(
 const getSteamMediaState = callable<[], ExternalMediaState>(
   "get_steam_media_state"
 );
-const deleteUnusedTracks = callable<[], RawTrackMap>("delete_unused_tracks");
+const deleteUnusedTracks = callable<[], DeleteUnusedTracksResult>("delete_unused_tracks");
 const validateAudioPath = callable<[path: string], { valid: boolean; path?: string; filename?: string; error?: string }>(
   "validate_audio_path"
 );
@@ -434,7 +443,9 @@ const UI_MODE_DESKTOP = 7;
 const UI_MODE_POLL_MS = 2000;
 const UI_MODE_CACHE_MS = 1000;
 const RUNNING_APP_POLL_MS = 3000;
-const EXTERNAL_MEDIA_POLL_MS = 1500;
+const EXTERNAL_MEDIA_POLL_MS = 500;
+const STEAM_CDP_MEDIA_POLL_MS = 3000;
+const LEGACY_EXTERNAL_MEDIA_POLL_MS = 1500;
 const STORE_CONTEXT_POLL_MS = 1500;
 const LAUNCH_FINISH_FALLBACK_MS = 8000;
 const DETAIL_ROUTE_GRACE_MS = 0;
@@ -601,9 +612,9 @@ const EN_STRINGS = {
   failedRemoveGlobal: "Failed to remove global track",
   failedRemoveStore: "Failed to remove store track",
   failedLoadTracks: "Failed to load saved tracks",
-  deleteDownloadedTracks: "Delete downloaded tracks",
+  deleteDownloadedTracks: "Delete all downloads",
   deleteDownloadedTracksDesc: "",
-  deleteDownloadedTracksTitle: "Delete downloaded audio files?",
+  deleteDownloadedTracksTitle: "Delete all ThemeDeck downloads?",
   confirmDeleteDownloadedTracks:
     "Delete all audio files downloaded by ThemeDeck? Files selected from your personal folders and assigned to games are not subject to deletion.",
   yes: "Yes",
@@ -615,6 +626,12 @@ const EN_STRINGS = {
   deletedDownloadedTracks:
     "Deleted {files} files and removed {tracks} assignments.",
   failedDeleteDownloadedTracks: "Failed to delete downloaded tracks",
+  deleteUnusedDownloadedTracks: "Delete unused downloads",
+  deleteUnusedDownloadedTracksTitle: "Delete unused downloaded files?",
+  confirmDeleteUnusedDownloadedTracks:
+    "ThemeDeck removes only files it downloaded that are no longer assigned to a game, Ambient track, or Store track. Audio files chosen from your folders are left untouched.",
+  deletedUnusedDownloadedTracks: "Removed {files} unused files.",
+  failedDeleteUnusedDownloadedTracks: "Couldn't delete unused downloads",
   noGamesFound: "No games found in library.",
   allGamesAssigned: "All library games already have assigned music.",
   ytdlpMissing: "yt-dlp is not installed yet.",
@@ -1792,8 +1809,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     savedStore: "Musica Store salvata",
     clearedStore: "Musica Store rimossa",
     deleteDownloadedTracksDesc: "",
+    deleteDownloadedTracks: "Cancella tutti i download",
+    deleteDownloadedTracksTitle: "Eliminare tutti i download ThemeDeck?",
     confirmDeleteDownloadedTracks:
       "Cancellare tutti i file audio scaricati da ThemeDeck? I file selezionati dalle tue cartelle personali assegnati ai giochi non sono soggetti a eliminazione.",
+    deleteUnusedDownloadedTracks: "Cancella download non usati",
+    deleteUnusedDownloadedTracksTitle: "Eliminare i download non usati?",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck rimuove solo i file scaricati da ThemeDeck che non sono più assegnati a un gioco, alla traccia Ambient o alla traccia Store. I file audio scelti dalle tue cartelle restano intatti.",
+    deletedUnusedDownloadedTracks: "Rimossi {files} file non usati.",
+    failedDeleteUnusedDownloadedTracks: "Impossibile cancellare i download non usati",
     ffmpegNormalizedFor: "FFmpeg: normalizzato per {game}",
     ffmpegUpmixedFor: "FFmpeg: upmix 7.1 per {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg: normalizzato e upmix 7.1 per {game}",
@@ -1844,8 +1869,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "Musique d'ambiance supprimée",
     savedStore: "Musique Store enregistrée",
     clearedStore: "Musique Store supprimée",
+    deleteDownloadedTracks: "Supprimer tous les téléchargements",
+    deleteDownloadedTracksTitle: "Supprimer tous les téléchargements ThemeDeck ?",
     confirmDeleteDownloadedTracks:
       "Supprimer tous les fichiers audio téléchargés par ThemeDeck ? Les fichiers sélectionnés dans vos dossiers personnels et assignés aux jeux ne sont pas concernés.",
+    deleteUnusedDownloadedTracks: "Supprimer les téléchargements inutilisés",
+    deleteUnusedDownloadedTracksTitle: "Supprimer les fichiers téléchargés inutilisés ?",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck supprime uniquement les fichiers qu'il a téléchargés et qui ne sont plus assignés à un jeu, à la piste d'ambiance ou à la piste Store. Les fichiers audio choisis dans vos dossiers ne sont pas touchés.",
+    deletedUnusedDownloadedTracks: "{files} fichiers inutilisés supprimés.",
+    failedDeleteUnusedDownloadedTracks: "Impossible de supprimer les téléchargements inutilisés",
     ffmpegNormalizedFor: "FFmpeg : normalisé pour {game}",
     ffmpegUpmixedFor: "FFmpeg : upmix 7.1 pour {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg : normalisé et upmix 7.1 pour {game}",
@@ -1896,8 +1929,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "Música ambiental eliminada",
     savedStore: "Música Store guardada",
     clearedStore: "Música Store eliminada",
+    deleteDownloadedTracks: "Eliminar todas las descargas",
+    deleteDownloadedTracksTitle: "¿Eliminar todas las descargas de ThemeDeck?",
     confirmDeleteDownloadedTracks:
       "¿Eliminar todos los archivos de audio descargados por ThemeDeck? Los archivos seleccionados desde tus carpetas personales y asignados a juegos no se eliminarán.",
+    deleteUnusedDownloadedTracks: "Eliminar descargas no usadas",
+    deleteUnusedDownloadedTracksTitle: "¿Eliminar los archivos descargados no usados?",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck elimina solo los archivos que descargó y que ya no están asignados a un juego, a la pista ambiental o a la pista Store. Los archivos de audio elegidos desde tus carpetas no se tocan.",
+    deletedUnusedDownloadedTracks: "Se eliminaron {files} archivos no usados.",
+    failedDeleteUnusedDownloadedTracks: "No se pudieron eliminar las descargas no usadas",
     ffmpegNormalizedFor: "FFmpeg: normalizado para {game}",
     ffmpegUpmixedFor: "FFmpeg: upmix 7.1 para {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg: normalizado y upmix 7.1 para {game}",
@@ -1948,8 +1989,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "Música ambiente removida",
     savedStore: "Música Store salva",
     clearedStore: "Música Store removida",
+    deleteDownloadedTracks: "Eliminar todos os downloads",
+    deleteDownloadedTracksTitle: "Eliminar todos os downloads do ThemeDeck?",
     confirmDeleteDownloadedTracks:
       "Eliminar todos os ficheiros de áudio descarregados pelo ThemeDeck? Os ficheiros escolhidos nas tuas pastas pessoais e atribuídos a jogos não serão eliminados.",
+    deleteUnusedDownloadedTracks: "Eliminar downloads não usados",
+    deleteUnusedDownloadedTracksTitle: "Eliminar ficheiros descarregados não usados?",
+    confirmDeleteUnusedDownloadedTracks:
+      "O ThemeDeck remove apenas os ficheiros que descarregou e que já não estão atribuídos a um jogo, à faixa ambiente ou à faixa Store. Os ficheiros de áudio escolhidos nas tuas pastas não são tocados.",
+    deletedUnusedDownloadedTracks: "Eliminados {files} ficheiros não usados.",
+    failedDeleteUnusedDownloadedTracks: "Falha ao eliminar downloads não usados",
     ffmpegNormalizedFor: "FFmpeg: normalizado para {game}",
     ffmpegUpmixedFor: "FFmpeg: upmix 7.1 para {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg: normalizado e upmix 7.1 para {game}",
@@ -2000,8 +2049,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "Música ambiente removida",
     savedStore: "Música Store salva",
     clearedStore: "Música Store removida",
+    deleteDownloadedTracks: "Excluir todos os downloads",
+    deleteDownloadedTracksTitle: "Excluir todos os downloads do ThemeDeck?",
     confirmDeleteDownloadedTracks:
       "Excluir todos os arquivos de áudio baixados pelo ThemeDeck? Os arquivos escolhidos nas suas pastas pessoais e atribuídos a jogos não serão excluídos.",
+    deleteUnusedDownloadedTracks: "Excluir downloads não usados",
+    deleteUnusedDownloadedTracksTitle: "Excluir arquivos baixados não usados?",
+    confirmDeleteUnusedDownloadedTracks:
+      "O ThemeDeck remove apenas os arquivos que baixou e que não estão mais atribuídos a um jogo, à faixa ambiente ou à faixa Store. Os arquivos de áudio escolhidos nas suas pastas não são tocados.",
+    deletedUnusedDownloadedTracks: "{files} arquivos não usados excluídos.",
+    failedDeleteUnusedDownloadedTracks: "Falha ao excluir downloads não usados",
     ffmpegNormalizedFor: "FFmpeg: normalizado para {game}",
     ffmpegUpmixedFor: "FFmpeg: upmix 7.1 para {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg: normalizado e upmix 7.1 para {game}",
@@ -2052,8 +2109,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "Umgebungsmusik entfernt",
     savedStore: "Store-Musik gespeichert",
     clearedStore: "Store-Musik entfernt",
+    deleteDownloadedTracks: "Alle Downloads löschen",
+    deleteDownloadedTracksTitle: "Alle ThemeDeck-Downloads löschen?",
     confirmDeleteDownloadedTracks:
       "Alle von ThemeDeck heruntergeladenen Audiodateien löschen? Dateien aus deinen persönlichen Ordnern, die Spielen zugewiesen sind, werden nicht gelöscht.",
+    deleteUnusedDownloadedTracks: "Ungenutzte Downloads löschen",
+    deleteUnusedDownloadedTracksTitle: "Ungenutzte heruntergeladene Dateien löschen?",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck entfernt nur Dateien, die ThemeDeck heruntergeladen hat und die keinem Spiel, keiner Umgebungsspur und keiner Store-Spur mehr zugewiesen sind. Audiodateien aus deinen Ordnern bleiben unberührt.",
+    deletedUnusedDownloadedTracks: "{files} ungenutzte Dateien gelöscht.",
+    failedDeleteUnusedDownloadedTracks: "Ungenutzte Downloads konnten nicht gelöscht werden",
     ffmpegNormalizedFor: "FFmpeg: {game} normalisiert",
     ffmpegUpmixedFor: "FFmpeg: 7.1-Upmix für {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg: {game} normalisiert und auf 7.1 upgemixt",
@@ -2104,8 +2169,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "Ambient-muziek verwijderd",
     savedStore: "Store-muziek opgeslagen",
     clearedStore: "Store-muziek verwijderd",
+    deleteDownloadedTracks: "Alle downloads verwijderen",
+    deleteDownloadedTracksTitle: "Alle ThemeDeck-downloads verwijderen?",
     confirmDeleteDownloadedTracks:
       "Alle door ThemeDeck gedownloade audiobestanden verwijderen? Bestanden uit je persoonlijke mappen die aan games zijn toegewezen worden niet verwijderd.",
+    deleteUnusedDownloadedTracks: "Ongebruikte downloads verwijderen",
+    deleteUnusedDownloadedTracksTitle: "Ongebruikte gedownloade bestanden verwijderen?",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck verwijdert alleen bestanden die ThemeDeck heeft gedownload en die niet meer aan een game, ambient-track of Store-track zijn toegewezen. Audiobestanden uit je eigen mappen blijven staan.",
+    deletedUnusedDownloadedTracks: "{files} ongebruikte bestanden verwijderd.",
+    failedDeleteUnusedDownloadedTracks: "Ongebruikte downloads konden niet worden verwijderd",
     ffmpegNormalizedFor: "FFmpeg: genormaliseerd voor {game}",
     ffmpegUpmixedFor: "FFmpeg: 7.1-upmix voor {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg: genormaliseerd en 7.1-upmix voor {game}",
@@ -2156,8 +2229,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "Фонову музику видалено",
     savedStore: "Музику Store збережено",
     clearedStore: "Музику Store видалено",
+    deleteDownloadedTracks: "Видалити всі завантаження",
+    deleteDownloadedTracksTitle: "Видалити всі завантаження ThemeDeck?",
     confirmDeleteDownloadedTracks:
       "Видалити всі аудіофайли, завантажені ThemeDeck? Файли з ваших особистих папок, призначені іграм, не видалятимуться.",
+    deleteUnusedDownloadedTracks: "Видалити невикористані завантаження",
+    deleteUnusedDownloadedTracksTitle: "Видалити невикористані завантажені файли?",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck видаляє лише файли, які він завантажив і які більше не призначені грі, фоновому треку або треку Store. Аудіофайли, вибрані з ваших папок, залишаються недоторканими.",
+    deletedUnusedDownloadedTracks: "Видалено невикористаних файлів: {files}.",
+    failedDeleteUnusedDownloadedTracks: "Не вдалося видалити невикористані завантаження",
     ffmpegNormalizedFor: "FFmpeg: нормалізовано для {game}",
     ffmpegUpmixedFor: "FFmpeg: upmix 7.1 для {game}",
     ffmpegNormalizedUpmixedFor: "FFmpeg: нормалізовано та upmix 7.1 для {game}",
@@ -2208,8 +2289,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "已清除环境音乐",
     savedStore: "已保存商店音乐",
     clearedStore: "已清除商店音乐",
+    deleteDownloadedTracks: "删除所有下载",
+    deleteDownloadedTracksTitle: "删除所有 ThemeDeck 下载？",
     confirmDeleteDownloadedTracks:
       "删除 ThemeDeck 下载的所有音频文件？从个人文件夹选择并分配给游戏的文件不会被删除。",
+    deleteUnusedDownloadedTracks: "删除未使用的下载",
+    deleteUnusedDownloadedTracksTitle: "删除未使用的已下载文件？",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck 只会删除由 ThemeDeck 下载且不再分配给游戏、环境曲目或商店曲目的文件。你从个人文件夹选择的音频文件不会被触碰。",
+    deletedUnusedDownloadedTracks: "已删除 {files} 个未使用文件。",
+    failedDeleteUnusedDownloadedTracks: "无法删除未使用的下载",
     ffmpegNormalizedFor: "FFmpeg：已为 {game} 标准化",
     ffmpegUpmixedFor: "FFmpeg：已为 {game} upmix 到 7.1",
     ffmpegNormalizedUpmixedFor: "FFmpeg：已为 {game} 标准化并 upmix 到 7.1",
@@ -2260,8 +2349,16 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     clearedGlobal: "環境音楽を削除しました",
     savedStore: "ストア音楽を保存しました",
     clearedStore: "ストア音楽を削除しました",
+    deleteDownloadedTracks: "すべてのダウンロードを削除",
+    deleteDownloadedTracksTitle: "ThemeDeck のすべてのダウンロードを削除しますか？",
     confirmDeleteDownloadedTracks:
       "ThemeDeck がダウンロードしたすべての音声ファイルを削除しますか？個人フォルダーから選択してゲームに割り当てたファイルは削除されません。",
+    deleteUnusedDownloadedTracks: "未使用のダウンロードを削除",
+    deleteUnusedDownloadedTracksTitle: "未使用のダウンロード済みファイルを削除しますか？",
+    confirmDeleteUnusedDownloadedTracks:
+      "ThemeDeck が削除するのは、ThemeDeck がダウンロードし、ゲーム、環境トラック、ストアトラックに割り当てられていないファイルだけです。個人フォルダーから選んだ音声ファイルには触れません。",
+    deletedUnusedDownloadedTracks: "{files} 個の未使用ファイルを削除しました。",
+    failedDeleteUnusedDownloadedTracks: "未使用のダウンロードを削除できませんでした",
     ffmpegNormalizedFor: "FFmpeg: {game} を正規化しました",
     ffmpegUpmixedFor: "FFmpeg: {game} を 7.1 にアップミックスしました",
     ffmpegNormalizedUpmixedFor: "FFmpeg: {game} を正規化し 7.1 にアップミックスしました",
@@ -2566,6 +2663,10 @@ let autoPlaybackStoreProbeInFlight = false;
 let externalMediaPollInterval: number | null = null;
 let externalMediaProbeInFlight = false;
 let externalMediaActive = false;
+let lastSteamCdpMediaProbeAt = 0;
+let lastSteamCdpMediaActive = false;
+let lastLegacyExternalMediaProbeAt = 0;
+let lastLegacyExternalMediaActive = false;
 let storeContextActive = false;
 let playInvocationCounter = 0;
 let playInFlightSignature: string | null = null;
@@ -3105,6 +3206,10 @@ const playTrack = async (track: GameTrack, reason: PlaybackReason) => {
     return;
   }
   if (externalMediaActive) {
+    return;
+  }
+  if (await detectAudibleSteamMedia()) {
+    setExternalMediaActive(true);
     return;
   }
 
@@ -5018,6 +5123,95 @@ const readNowPlayingState = async (): Promise<ExternalMediaState | null> => {
   }
 };
 
+const collectKnownSteamDocuments = (): Document[] => {
+  const documents: Document[] = [];
+  const addDocument = (candidate: Document | null | undefined) => {
+    try {
+      if (candidate?.documentElement && !documents.includes(candidate)) {
+        documents.push(candidate);
+      }
+    } catch {}
+  };
+  const addWindowDocument = (candidate: any) => {
+    if (!candidate) return;
+    try { addDocument(candidate.document); } catch {}
+    try { addDocument(candidate.window?.document); } catch {}
+    try { addDocument(candidate.m_Window?.document); } catch {}
+    try { addDocument(candidate.m_popup?.document); } catch {}
+    try { addDocument(candidate.BrowserWindow?.document); } catch {}
+    try { addDocument(candidate.GetWindow?.()?.document); } catch {}
+  };
+
+  addDocument(document);
+  try { addDocument(window.top?.document); } catch {}
+  try { addDocument(window.parent?.document); } catch {}
+  try { addDocument(window.opener?.document); } catch {}
+
+  const store = (Router as any)?.WindowStore;
+  addWindowDocument(store?.GamepadUIMainWindowInstance);
+  if (Array.isArray(store?.SteamUIWindows)) {
+    store.SteamUIWindows.forEach(addWindowDocument);
+  }
+  return documents;
+};
+
+const collectSteamMediaElements = (): HTMLMediaElement[] => {
+  const media: HTMLMediaElement[] = [];
+  const addFromRoot = (root: ParentNode | Document | ShadowRoot | null | undefined) => {
+    if (!root) return;
+    try {
+      root.querySelectorAll<HTMLMediaElement>("video, audio").forEach((node) => {
+        if (!media.includes(node)) {
+          media.push(node);
+        }
+      });
+      root.querySelectorAll<HTMLIFrameElement>("iframe").forEach((frame) => {
+        try { addFromRoot(frame.contentDocument); } catch {}
+      });
+    } catch {}
+  };
+
+  collectKnownSteamDocuments().forEach(addFromRoot);
+  return media;
+};
+
+const isVisibleSteamMediaElement = (media: HTMLMediaElement): boolean => {
+  try {
+    if (media.classList.contains("trailerhero-video") || media.closest(".trailerhero-host")) {
+      return false;
+    }
+    const style = window.getComputedStyle(media);
+    const rect = media.getBoundingClientRect();
+    const hasSize =
+      rect.width >= 24 ||
+      rect.height >= 24 ||
+      Number((media as HTMLVideoElement).videoWidth || 0) >= 24 ||
+      Number((media as HTMLVideoElement).videoHeight || 0) >= 24;
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      Number(style.opacity || "1") > 0 &&
+      hasSize
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isPlayingSteamMediaElement = (media: HTMLMediaElement): boolean =>
+  !media.paused && !media.ended && media.readyState >= 2;
+
+const isPlayingSteamVideoElement = (media: HTMLMediaElement): boolean =>
+  media.tagName.toLowerCase() === "video" &&
+  isVisibleSteamMediaElement(media) &&
+  isPlayingSteamMediaElement(media);
+
+const isAudibleSteamMediaElement = (media: HTMLMediaElement): boolean =>
+  isVisibleSteamMediaElement(media) &&
+  isPlayingSteamMediaElement(media) &&
+  !media.muted &&
+  media.volume > 0.01;
+
 const audibleMediaProbeCode = `
   (() => {
     try {
@@ -5036,19 +5230,27 @@ const audibleMediaProbeCode = `
           } catch {}
         });
       }
-      const nativePlaying = Array.from(document.querySelectorAll('video, audio')).some((node) => {
-        const media = node;
+      const isVisibleMedia = (media) => {
         if (media.classList?.contains('trailerhero-video') || media.closest?.('.trailerhero-host')) return false;
         const style = window.getComputedStyle(media);
-        const visible = style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0;
-        return visible && !media.paused && !media.ended && !media.muted && Number(media.volume || 0) > 0.01 && media.readyState >= 2;
+        const rect = media.getBoundingClientRect?.();
+        const hasSize = !rect || rect.width >= 24 || rect.height >= 24 || Number(media.videoWidth || 0) >= 24 || Number(media.videoHeight || 0) >= 24;
+        return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0 && hasSize;
+      };
+      const steamVideoPlaying = Array.from(document.querySelectorAll('video')).some((node) => {
+        const media = node;
+        return isVisibleMedia(media) && !media.paused && !media.ended && media.readyState >= 2;
+      });
+      const nativePlaying = Array.from(document.querySelectorAll('video, audio')).some((node) => {
+        const media = node;
+        return isVisibleMedia(media) && !media.paused && !media.ended && !media.muted && Number(media.volume || 0) > 0.01 && media.readyState >= 2;
       });
       const youtubeFrames = Array.from(document.querySelectorAll('iframe')).filter((frame) => {
         if (frame.classList?.contains('trailerhero-video') || frame.closest?.('.trailerhero-host')) return false;
         return /(?:youtube\.com|youtube-nocookie\.com|youtu\.be)/i.test(String(frame.src || ''));
       });
       if (youtubeFrames.length === 0) window.__themedeckYouTubePlaying = false;
-      return nativePlaying || (youtubeFrames.length > 0 && window.__themedeckYouTubePlaying === true);
+      return steamVideoPlaying || nativePlaying || (youtubeFrames.length > 0 && window.__themedeckYouTubePlaying === true);
     } catch {
       return false;
     }
@@ -5057,25 +5259,11 @@ const audibleMediaProbeCode = `
 
 const detectAudibleSteamMedia = async (): Promise<boolean> => {
   try {
-    const localMedia = Array.from(document.querySelectorAll<HTMLMediaElement>("video, audio"));
-    if (
-      localMedia.some((media) => {
-        if (media.classList.contains("trailerhero-video") || media.closest(".trailerhero-host")) {
-          return false;
-        }
-        const style = window.getComputedStyle(media);
-        return (
-          style.display !== "none" &&
-          style.visibility !== "hidden" &&
-          Number(style.opacity || "1") > 0 &&
-          !media.paused &&
-          !media.ended &&
-          !media.muted &&
-          media.volume > 0.01 &&
-          media.readyState >= 2
-        );
-      })
-    ) {
+    const localMedia = collectSteamMediaElements();
+    if (localMedia.some(isPlayingSteamVideoElement)) {
+      return true;
+    }
+    if (localMedia.some(isAudibleSteamMediaElement)) {
       return true;
     }
   } catch {
@@ -5132,18 +5320,38 @@ const refreshExternalMediaState = async () => {
   }
   externalMediaProbeInFlight = true;
   try {
-    const [nowPlayingState, steamMediaActive, steamCdpState] = await Promise.all([
-      readNowPlayingState(),
-      detectAudibleSteamMedia(),
-      getSteamMediaState().catch(() => ({ active: false, player: "" })),
-    ]);
-    if (steamMediaActive || steamCdpState?.active || nowPlayingState?.active) {
+    if (await detectAudibleSteamMedia()) {
       setExternalMediaActive(true);
       return;
     }
+
+    const nowPlayingState = await readNowPlayingState();
+    if (nowPlayingState?.active) {
+      setExternalMediaActive(true);
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastSteamCdpMediaProbeAt >= STEAM_CDP_MEDIA_POLL_MS) {
+      lastSteamCdpMediaProbeAt = now;
+      const steamCdpState = await getSteamMediaState().catch(() => ({
+        active: false,
+        player: "",
+      }));
+      lastSteamCdpMediaActive = Boolean(steamCdpState?.active);
+    }
+    if (lastSteamCdpMediaActive) {
+      setExternalMediaActive(true);
+      return;
+    }
+
     // Compatibility with Now Playing 1.x and other Windows media sessions.
-    const legacyState = await getExternalMediaState();
-    setExternalMediaActive(Boolean(legacyState?.active));
+    if (now - lastLegacyExternalMediaProbeAt >= LEGACY_EXTERNAL_MEDIA_POLL_MS) {
+      lastLegacyExternalMediaProbeAt = now;
+      const legacyState = await getExternalMediaState();
+      lastLegacyExternalMediaActive = Boolean(legacyState?.active);
+    }
+    setExternalMediaActive(lastLegacyExternalMediaActive);
   } catch (error) {
     console.error("[ThemeDeck] external media probe failed", error);
     setExternalMediaActive(false);
@@ -5523,6 +5731,10 @@ const stopAutoPlaybackCoordinator = () => {
   }
   externalMediaActive = false;
   externalMediaProbeInFlight = false;
+  lastSteamCdpMediaProbeAt = 0;
+  lastSteamCdpMediaActive = false;
+  lastLegacyExternalMediaProbeAt = 0;
+  lastLegacyExternalMediaActive = false;
   activeDetailRouteAppId = null;
   activeDetailBridgeCount = 0;
   lastDetailRouteAppId = null;
@@ -6712,6 +6924,56 @@ const Content = () => {
     );
   };
 
+  const handleDeleteUnusedDownloadedTracks = useCallback(() => {
+    let confirmModal: ReturnType<typeof showModal> | null = null;
+    const closeConfirm = () => confirmModal?.Close();
+
+    const runCleanup = async () => {
+      closeConfirm();
+      try {
+        const result = await deleteUnusedTracks();
+        clearAudioCache(undefined, { preservePinned: true });
+        window.dispatchEvent(new Event(TRACKS_UPDATED_EVENT));
+        await refreshTracks();
+        scheduleAutoPlaybackFromContext();
+
+        const removedFiles = result.removed_files ?? result.removed ?? 0;
+        const failedCount = Array.isArray(result.failed) ? result.failed.length : 0;
+        toaster.toast({
+          title: "ThemeDeck",
+          body:
+            result.ok === false || failedCount > 0
+              ? t("failedDeleteUnusedDownloadedTracks")
+              : t("deletedUnusedDownloadedTracks", { files: removedFiles }),
+        });
+      } catch (error) {
+        console.error("[ThemeDeck] delete unused downloads failed", error);
+        toaster.toast({
+          title: "ThemeDeck",
+          body: `${t("failedDeleteUnusedDownloadedTracks")}: ${getErrorMessage(
+            error,
+            t("unknownError")
+          )}`,
+        });
+      }
+    };
+
+    confirmModal = showModal(
+      <ConfirmModal
+        strTitle={t("deleteUnusedDownloadedTracksTitle")}
+        strDescription={t("confirmDeleteUnusedDownloadedTracks")}
+        strOKButtonText={t("yes")}
+        strCancelButtonText={t("no")}
+        bDestructiveWarning
+        onOK={() => void runCleanup()}
+        onCancel={closeConfirm}
+        closeModal={closeConfirm}
+      />,
+      undefined,
+      { strTitle: t("deleteUnusedDownloadedTracksTitle") }
+    );
+  }, [refreshTracks]);
+
   const handleStopBulkAssign = useCallback(() => {
     if (!bulkAssign.running) {
       return;
@@ -7442,6 +7704,7 @@ const Content = () => {
           <Focusable flow-children="vertical" style={{ display: "grid", gap: 6, marginTop: 10 }}>
             <FocusableButton className="DialogButton" disabled={ytDlpBusy} onClick={handleUpdateYtDlp}>{ytDlpBusy ? t("updating") : t("updateYtdlp")}</FocusableButton>
             <FocusableButton className="DialogButton" onClick={handleDeleteDownloadedTracks}>{t("deleteDownloadedTracks")}</FocusableButton>
+            <FocusableButton className="DialogButton" onClick={handleDeleteUnusedDownloadedTracks}>{t("deleteUnusedDownloadedTracks")}</FocusableButton>
           </Focusable>
         </section>
       </Focusable>
@@ -7825,6 +8088,20 @@ const Content = () => {
                 }}
               >
                 {t("deleteDownloadedTracks")}
+              </FocusableButton>
+              <FocusableButton
+                className="DialogButton themedeck-fit themedeck-wrap"
+                onClick={handleDeleteUnusedDownloadedTracks}
+                style={{
+                  textAlign: "left",
+                  fontSize: "0.92rem",
+                  paddingRight: "0.65rem",
+                  paddingLeft: "0.65rem",
+                  color: "#ffc766",
+                  border: "1px solid rgba(255, 199, 102, 0.62)",
+                }}
+              >
+                {t("deleteUnusedDownloadedTracks")}
               </FocusableButton>
             </div>
           </PanelSectionRow>
@@ -8390,35 +8667,7 @@ const THEMEDECK_EDITOR_CHROME_SELECTORS = [
 ];
 
 const themeDeckEditorDocuments = (): Document[] => {
-  const documents: Document[] = [];
-  const addDocument = (candidate: Document | null | undefined) => {
-    try {
-      if (candidate?.documentElement && !documents.includes(candidate)) {
-        documents.push(candidate);
-      }
-    } catch {}
-  };
-  const addWindowDocument = (candidate: any) => {
-    if (!candidate) return;
-    try { addDocument(candidate.document); } catch {}
-    try { addDocument(candidate.window?.document); } catch {}
-    try { addDocument(candidate.m_Window?.document); } catch {}
-    try { addDocument(candidate.m_popup?.document); } catch {}
-    try { addDocument(candidate.BrowserWindow?.document); } catch {}
-    try { addDocument(candidate.GetWindow?.()?.document); } catch {}
-  };
-
-  addDocument(document);
-  try { addDocument(window.top?.document); } catch {}
-  try { addDocument(window.parent?.document); } catch {}
-  try { addDocument(window.opener?.document); } catch {}
-
-  const store = (Router as any)?.WindowStore;
-  addWindowDocument(store?.GamepadUIMainWindowInstance);
-  if (Array.isArray(store?.SteamUIWindows)) {
-    store.SteamUIWindows.forEach(addWindowDocument);
-  }
-  return documents;
+  return collectKnownSteamDocuments();
 };
 
 const markThemeDeckEditorChrome = () => {

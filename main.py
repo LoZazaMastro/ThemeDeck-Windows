@@ -1676,35 +1676,71 @@ class Plugin:
                 "durationMs": round((time.monotonic() - started) * 1000),
             }
 
-        media_targets = [
+        debuggable_targets = [
             target
             for target in targets if isinstance(target, dict)
             and str(target.get("type") or "").lower() in {"iframe", "page"}
-            and re.search(
-                r"(?:youtube\.com|youtube-nocookie\.com|youtu\.be|store\.steampowered\.com|steamcommunity\.com)",
-                str(target.get("url") or target.get("title") or ""),
-                flags=re.IGNORECASE,
-            )
             and str(target.get("webSocketDebuggerUrl") or "").startswith("ws://")
         ]
 
+        def media_target_priority(target: dict[str, Any]) -> int:
+            text = str(target.get("url") or target.get("title") or "").lower()
+            if any(
+                marker in text
+                for marker in (
+                    "settings",
+                    "personalization",
+                    "personalisation",
+                    "startup",
+                    "boot",
+                    "movie",
+                    "bigpicture",
+                    "steamui",
+                    "gamepadui",
+                )
+            ):
+                return 0
+            if re.search(
+                r"(?:youtube\.com|youtube-nocookie\.com|youtu\.be|store\.steampowered\.com|steamcommunity\.com)",
+                text,
+                flags=re.IGNORECASE,
+            ):
+                return 1
+            return 2
+
+        media_targets = sorted(debuggable_targets, key=media_target_priority)[:12]
+
         expression = """(() => {
           const media = Array.from(document.querySelectorAll('video, audio'));
-          const audible = media.find((node) =>
-            !node.paused && !node.ended && !node.muted && Number(node.volume || 0) > 0.01 && node.readyState >= 2
-          );
-          if (!audible) return { active: false, found: media.length > 0, mediaCount: media.length };
+          const isVisible = (node) => {
+            try {
+              if (node.classList?.contains('trailerhero-video') || node.closest?.('.trailerhero-host')) return false;
+              const style = window.getComputedStyle(node);
+              const rect = node.getBoundingClientRect?.();
+              const hasSize = !rect || rect.width >= 24 || rect.height >= 24 || Number(node.videoWidth || 0) >= 24 || Number(node.videoHeight || 0) >= 24;
+              return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0 && hasSize;
+            } catch {
+              return false;
+            }
+          };
+          const activeMedia = media.find((node) => {
+            const playing = !node.paused && !node.ended && node.readyState >= 2;
+            if (!playing) return false;
+            if (String(node.tagName || '').toLowerCase() === 'video' && isVisible(node)) return true;
+            return isVisible(node) && !node.muted && Number(node.volume || 0) > 0.01;
+          });
+          if (!activeMedia) return { active: false, found: media.length > 0, mediaCount: media.length };
           return {
             active: true,
             found: true,
             mediaCount: media.length,
-            tag: audible.tagName,
-            paused: Boolean(audible.paused),
-            ended: Boolean(audible.ended),
-            muted: Boolean(audible.muted),
-            volume: Number(audible.volume || 0),
-            readyState: Number(audible.readyState || 0),
-            currentTime: Number(audible.currentTime || 0)
+            tag: activeMedia.tagName,
+            paused: Boolean(activeMedia.paused),
+            ended: Boolean(activeMedia.ended),
+            muted: Boolean(activeMedia.muted),
+            volume: Number(activeMedia.volume || 0),
+            readyState: Number(activeMedia.readyState || 0),
+            currentTime: Number(activeMedia.currentTime || 0)
           };
         })()"""
 
@@ -1712,7 +1748,7 @@ class Plugin:
         for target in media_targets[:8]:
             try:
                 state = self._cdp_evaluate_sync(
-                    str(target.get("webSocketDebuggerUrl")), expression, timeout=0.48
+                    str(target.get("webSocketDebuggerUrl")), expression, timeout=0.32
                 )
                 if not isinstance(state, dict):
                     continue

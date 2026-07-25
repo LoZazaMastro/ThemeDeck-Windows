@@ -21,10 +21,13 @@ It lets you add music to Steam game pages in Gaming Mode, with optional ambient 
 - Lets you exclude selected games from automatic track assignment.
 - Keeps automatic YouTube assignments under 15 minutes per track.
 - Pauses its music while Now Playing is playing local or integrated Spotify
-  audio, or while an audible Steam Community, news, or Store video is playing.
+  audio, or while a visible Steam startup, Community, news, or Store video is
+  playing.
 - Ignores muted TrailerHero playback.
-- Can clear downloaded tracks, including downloaded tracks that are no longer
-  assigned anywhere.
+- Can clear all ThemeDeck downloads, while leaving user-picked local files
+  untouched.
+- Can clear only unused ThemeDeck downloads that are no longer assigned
+  anywhere.
 - Detects the Decky/Steam language and translates the UI automatically.
 
 ## Languages
@@ -70,6 +73,8 @@ No. The repository is called **ThemeDeck Windows**, but the plugin still appears
 ### Does it change my PC volume?
 
 No. ThemeDeck only changes the volume of audio played by ThemeDeck itself.
+When a Steam startup movie or startup-movie preview is playing, Steam's video
+audio can still be heard; ThemeDeck only keeps its own ambient music silent.
 
 ### Does YouTube search cost anything?
 
@@ -80,6 +85,13 @@ No. It uses `yt-dlp`. Availability depends on YouTube and `yt-dlp`, so updating 
 When ThemeDeck replaces an ambient or Store track downloaded through its search, the previous file is
 deleted only if ThemeDeck downloaded and manages it. A local file selected from
 your computer is never deleted.
+
+### What do the cleanup buttons delete?
+
+Delete all downloads removes files under ThemeDeck's managed download folder and
+clears assignments that point to those files. Delete unused downloads removes
+only managed download files that are not assigned to a game, the Ambient track,
+or the Store track. Files selected from your own folders are not touched.
 
 ### Can I still use local files?
 
