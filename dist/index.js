@@ -2,7 +2,7 @@
 // @ts-ignore
 
 // Prevents it from being duplicated in output.
-const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"},"version":"3.3.0"};
+const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"},"version":"3.3.1"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 // Initialize
@@ -245,6 +245,9 @@ const RUNNING_APP_POLL_MS = 3000;
 const EXTERNAL_MEDIA_POLL_MS = 500;
 const STEAM_CDP_MEDIA_POLL_MS = 3000;
 const LEGACY_EXTERNAL_MEDIA_POLL_MS = 1500;
+const NOW_PLAYING_ACTIVITY_EVENT = "playhub:now-playing-activity";
+const NOW_PLAYING_ACTIVITY_GLOBAL = "__playhubNowPlayingActivity";
+const NOW_PLAYING_ACTIVITY_MAX_AGE_MS = 6500;
 const STORE_CONTEXT_POLL_MS = 1500;
 const LAUNCH_FINISH_FALLBACK_MS = 8000;
 const DETAIL_ROUTE_GRACE_MS = 0;
@@ -4442,19 +4445,55 @@ const withTimeout = async (promise, timeoutMs) => Promise.race([
     promise,
     new Promise((resolve) => window.setTimeout(() => resolve(null), timeoutMs)),
 ]);
+const readPublishedNowPlayingState = () => {
+    try {
+        const signal = window[NOW_PLAYING_ACTIVITY_GLOBAL];
+        const updatedAt = Number(signal?.updatedAt || 0);
+        if (!signal || !updatedAt || Date.now() - updatedAt > NOW_PLAYING_ACTIVITY_MAX_AGE_MS) {
+            return null;
+        }
+        const status = String(signal.status || "").toLowerCase();
+        return {
+            active: signal.active === true && status === "playing",
+            player: String(signal.player || ""),
+            source: "now-playing-signal",
+        };
+    }
+    catch {
+        return null;
+    }
+};
 const readNowPlayingState = async () => {
+    const published = readPublishedNowPlayingState();
+    if (published)
+        return published;
     const api = getNowPlayingPluginApi();
     if (!api?.call)
         return null;
     try {
+        try {
+            const activity = await withTimeout(Promise.resolve(api.call("get_playback_activity")), 800);
+            if (activity && typeof activity === "object") {
+                const status = String(activity.status || "").toLowerCase();
+                return {
+                    active: activity.active === true && status === "playing",
+                    player: String(activity.player || ""),
+                    source: "now-playing-activity",
+                };
+            }
+        }
+        catch {
+            // Now Playing 2.2.0+ exposes the lightweight method. Older releases use
+            // the snapshot compatibility path below.
+        }
         const snapshot = await withTimeout(Promise.resolve(api.call("get_snapshot")), 1100);
         if (!snapshot)
             return null;
-        const candidates = [
-            snapshot.selected,
-            ...(Array.isArray(snapshot.players) ? snapshot.players : []),
-        ].filter(Boolean);
-        const playing = candidates.find((player) => String(player.status || "").toLowerCase() === "playing");
+        const current = snapshot.selected ??
+            (Array.isArray(snapshot.players) ? snapshot.players[0] : null);
+        const playing = current && String(current.status || "").toLowerCase() === "playing"
+            ? current
+            : null;
         return {
             active: Boolean(playing),
             player: String(playing?.name || playing?.id || ""),
@@ -4676,11 +4715,33 @@ const refreshStoreContext = async () => {
     }
 };
 const setExternalMediaActive = (active) => {
+    window.__themedeckExternalMediaState = {
+        active,
+        updatedAt: Date.now(),
+    };
     if (externalMediaActive === active) {
         return;
     }
     externalMediaActive = active;
     scheduleAutoPlaybackFromContext();
+};
+const handleNowPlayingActivity = (event) => {
+    const detail = event instanceof CustomEvent
+        ? event.detail
+        : undefined;
+    const status = String(detail?.status || "").toLowerCase();
+    const active = detail?.active === true && status === "playing";
+    if (active) {
+        setExternalMediaActive(true);
+        return;
+    }
+    // A pause or stop must release ThemeDeck immediately. The asynchronous
+    // probes below can still re-assert another genuinely audible Steam source.
+    lastSteamCdpMediaActive = false;
+    lastSteamCdpMediaProbeAt = 0;
+    lastLegacyExternalMediaActive = false;
+    setExternalMediaActive(detectAudibleSteamMediaLocal());
+    void refreshExternalMediaState();
 };
 const refreshExternalMediaState = async () => {
     if (externalMediaProbeInFlight) {
@@ -4711,7 +4772,8 @@ const refreshExternalMediaState = async () => {
             return;
         }
         // Compatibility with Now Playing 1.x and other Windows media sessions.
-        if (now - lastLegacyExternalMediaProbeAt >= LEGACY_EXTERNAL_MEDIA_POLL_MS) {
+        if (!["now-playing-signal", "now-playing-activity"].includes(String(nowPlayingState?.source || "")) &&
+            now - lastLegacyExternalMediaProbeAt >= LEGACY_EXTERNAL_MEDIA_POLL_MS) {
             lastLegacyExternalMediaProbeAt = now;
             const legacyState = await getExternalMediaState();
             lastLegacyExternalMediaActive = Boolean(legacyState?.active);
@@ -4989,6 +5051,7 @@ const startAutoPlaybackCoordinator = () => {
     window.addEventListener(AMBIENT_INTERRUPTION_MODE_EVENT, scheduleAutoPlaybackFromContext);
     window.addEventListener(LAUNCH_STOP_MODE_EVENT, handleLaunchStopModeChanged);
     window.addEventListener(TRACKS_UPDATED_EVENT, refreshAutoPlaybackTrackCache);
+    window.addEventListener(NOW_PLAYING_ACTIVITY_EVENT, handleNowPlayingActivity);
     refreshStoreContext();
     autoPlaybackRouteInterval = window.setInterval(() => {
         scheduleAutoPlaybackFromContext();
@@ -5013,6 +5076,7 @@ const stopAutoPlaybackCoordinator = () => {
     window.removeEventListener(AMBIENT_INTERRUPTION_MODE_EVENT, scheduleAutoPlaybackFromContext);
     window.removeEventListener(LAUNCH_STOP_MODE_EVENT, handleLaunchStopModeChanged);
     window.removeEventListener(TRACKS_UPDATED_EVENT, refreshAutoPlaybackTrackCache);
+    window.removeEventListener(NOW_PLAYING_ACTIVITY_EVENT, handleNowPlayingActivity);
     stopDesktopModeWatcher();
     if (autoPlaybackRouteInterval) {
         window.clearInterval(autoPlaybackRouteInterval);
