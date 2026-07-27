@@ -1726,7 +1726,11 @@ class Plugin:
           const activeMedia = media.find((node) => {
             const playing = !node.paused && !node.ended && node.readyState >= 2;
             if (!playing) return false;
-            if (String(node.tagName || '').toLowerCase() === 'video' && isVisible(node)) return true;
+            // Audio-aware only: a video counts as active media just when it is
+            // visible AND not muted AND has volume. Muted Store trailers and
+            // silent SteamGridDB animated artwork are videos too and must NOT
+            // pause the music (and must not keep the state 'active' after the
+            // Store, which delayed the Home track).
             return isVisible(node) && !node.muted && Number(node.volume || 0) > 0.01;
           });
           if (!activeMedia) return { active: false, found: media.length > 0, mediaCount: media.length };
@@ -2136,7 +2140,12 @@ class Plugin:
         normalize_audio: bool = True,
         upmix_audio: bool = True,
     ) -> Path:
-        if not normalize_audio and not upmix_audio:
+        # Surround upmix is now performed in real time by the WebAudio graph in
+        # the frontend (works for every track and respects the QAM toggle), so
+        # FFmpeg no longer needs to re-encode to 8 channels here. Only run FFmpeg
+        # when loudness normalization is requested; this also removes the slow
+        # 7.1 re-encode from the download path.
+        if not normalize_audio:
             return input_path
 
         invocation = self._resolve_ffmpeg_invocation()
@@ -2174,8 +2183,6 @@ class Plugin:
                 "48000",
             ]
         )
-        if upmix_audio:
-            command.extend(["-ac", "8"])
         command.append(str(temp_path))
         result = await self._run_command(command, timeout=900, env=invocation["env"])
         if result.returncode != 0:

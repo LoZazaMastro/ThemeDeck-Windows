@@ -2,7 +2,7 @@
 // @ts-ignore
 
 // Prevents it from being duplicated in output.
-const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"},"version":"3.2.0"};
+const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, ZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"},"version":"3.3.0"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 // Initialize
@@ -276,7 +276,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set([
     228980, // Steamworks Common Redistributables
 ]);
 const EN_STRINGS = {
-    introVersion: "ThemeDeck 3.2.0",
+    introVersion: "ThemeDeck 3.3.0",
     introAssign: "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
     autoPlayLabel: "Auto play on game page",
     autoPlayDesc: "",
@@ -1432,7 +1432,7 @@ const getDetectedLocale = () => {
 const ACTIVE_LOCALE = getDetectedLocale();
 const LOCALIZED_UI_OVERRIDES = {
     it: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         autoPlayDesc: "",
         gameMusicVolumeDesc: "",
         stopMusicAfterPlayDesc: "",
@@ -1484,7 +1484,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
     },
     fr: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
         autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
         autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1540,7 +1540,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
     },
     es: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
         autoAssignExclusionsTitle: "Exclusiones de asignación automática",
         autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1596,7 +1596,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
     },
     pt: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
         autoAssignExclusionsTitle: "Exclusões da atribuição automática",
         autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -1652,7 +1652,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     "pt-br": {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
         autoAssignExclusionsTitle: "Exclusões da atribuição automática",
         autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -1708,7 +1708,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     de: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
         autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
         autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -1764,7 +1764,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
     },
     nl: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
         autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
         autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -1820,7 +1820,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
     },
     uk: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
         autoAssignExclusionsTitle: "Виключення автоматичного призначення",
         autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -1876,7 +1876,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
     },
     zh: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "从自动分配中排除游戏",
         autoAssignExclusionsTitle: "自动分配排除项",
         autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -1932,7 +1932,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "环境曲目中断行为",
     },
     ja: {
-        introVersion: "ThemeDeck 3.2.0",
+        introVersion: "ThemeDeck 3.3.0",
         chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
         autoAssignExclusionsTitle: "自動割り当ての除外設定",
         autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -2388,18 +2388,195 @@ const notifyPlayback = (next) => {
     });
 };
 const ensureAudio = () => {
-    const sharedFromWindow = window.__themedeckSharedAudio;
+    let sharedFromWindow = window.__themedeckSharedAudio;
+    const existingGraph = getAudioGraph();
+    if (existingGraph && existingGraph.version !== 2) {
+        try {
+            sharedFromWindow?.pause();
+            sharedFromWindow?.removeAttribute("src");
+            sharedFromWindow?.load();
+        }
+        catch (_ignored) {
+            // Ignore cleanup errors from a graph created by an older bundle.
+        }
+        void existingGraph.context.close().catch(() => { });
+        delete window.__themedeckAudioGraph;
+        delete window.__themedeckSharedAudio;
+        sharedFromWindow = undefined;
+        sharedAudio = null;
+    }
     if (sharedFromWindow && sharedAudio !== sharedFromWindow) {
         sharedAudio = sharedFromWindow;
     }
     if (!sharedAudio) {
         sharedAudio = new Audio();
+        // The audio server is localhost while Steam UI runs on steamloopback.host.
+        // WebAudio outputs silence for cross-origin media unless CORS is requested
+        // before src is assigned; the backend already returns ACAO for audio/ranges.
+        sharedAudio.crossOrigin = "anonymous";
         sharedAudio.loop = true;
         sharedAudio.preload = "auto";
         window.__themedeckSharedAudio = sharedAudio;
     }
     return sharedAudio;
 };
+let audioGraphSetupPromise = null;
+const getAudioGraph = () => window.__themedeckAudioGraph ??
+    null;
+const applyAudioUpmixRouting = () => {
+    const graph = getAudioGraph();
+    if (!graph) {
+        return;
+    }
+    const { context, source } = graph;
+    try {
+        source.disconnect();
+    }
+    catch (_ignored) {
+        // not connected yet
+    }
+    for (const node of graph.nodes) {
+        try {
+            node.disconnect();
+        }
+        catch (_ignored) {
+            // ignore
+        }
+    }
+    graph.nodes = [];
+    const destination = context.destination;
+    const maxChannels = Number(destination.maxChannelCount || 2);
+    if (readAudioUpmixSetting() && maxChannels >= 6) {
+        const channels = Math.min(8, maxChannels);
+        try {
+            destination.channelCount = channels;
+            destination.channelCountMode = "explicit";
+            destination.channelInterpretation = "discrete";
+        }
+        catch (_ignored) {
+            // device may reject an explicit layout
+        }
+        const splitter = context.createChannelSplitter(2);
+        const merger = context.createChannelMerger(channels);
+        source.connect(splitter);
+        const route = (input, output, base) => {
+            const gain = context.createGain();
+            gain.gain.value = base;
+            splitter.connect(gain, input, 0);
+            gain.connect(merger, 0, output);
+            graph.nodes.push(gain);
+        };
+        route(0, 0, 1); // Front Left  = L
+        route(1, 1, 1); // Front Right = R
+        route(0, 2, 0.5);
+        route(1, 2, 0.5); // Center = (L + R) / 2
+        route(0, 3, 0.35);
+        route(1, 3, 0.35); // LFE = (L + R) attenuated
+        route(0, 4, 0.9);
+        route(1, 5, 0.9); // Side Left / Side Right
+        if (channels >= 8) {
+            route(0, 6, 0.75);
+            route(1, 7, 0.75); // Back Left / Back Right
+        }
+        merger.connect(destination);
+        graph.nodes.push(splitter, merger);
+    }
+    else {
+        try {
+            destination.channelCount = Math.min(2, maxChannels);
+        }
+        catch (_ignored) {
+            // ignore
+        }
+        source.connect(destination);
+    }
+};
+const resumeAudioGraph = async () => {
+    const graph = getAudioGraph();
+    if (!graph) {
+        return false;
+    }
+    if (graph.context.state === "suspended") {
+        try {
+            await graph.context.resume();
+        }
+        catch (_ignored) {
+            return false;
+        }
+    }
+    return graph.context.state === "running";
+};
+const ensureAudioGraph = async (audio) => {
+    if (!readAudioUpmixSetting()) {
+        return false;
+    }
+    if (getAudioGraph()) {
+        return resumeAudioGraph();
+    }
+    if (audioGraphSetupPromise) {
+        return audioGraphSetupPromise;
+    }
+    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+    if (typeof AudioContextConstructor !== "function") {
+        return false;
+    }
+    audioGraphSetupPromise = (async () => {
+        let context = null;
+        try {
+            context = new AudioContextConstructor();
+            const maxChannels = Number(context.destination.maxChannelCount || 2);
+            if (maxChannels < 6) {
+                await context.close().catch(() => { });
+                return false;
+            }
+            if (context.state === "suspended") {
+                await context.resume();
+            }
+            if (context.state !== "running") {
+                await context.close().catch(() => { });
+                return false;
+            }
+            // Only bind the media element after the context is known to be running.
+            // Once createMediaElementSource succeeds the element no longer has a
+            // direct output path, so binding it to a suspended context would mute all
+            // ThemeDeck playback.
+            const source = context.createMediaElementSource(audio);
+            window.__themedeckAudioGraph = {
+                version: 2,
+                context,
+                source,
+                nodes: [],
+            };
+            applyAudioUpmixRouting();
+            return true;
+        }
+        catch (error) {
+            if (context && !getAudioGraph()) {
+                await context.close().catch(() => { });
+            }
+            console.warn("[ThemeDeck] surround upmix graph unavailable", error);
+            return false;
+        }
+        finally {
+            audioGraphSetupPromise = null;
+        }
+    })();
+    return audioGraphSetupPromise;
+};
+if (typeof window !== "undefined" &&
+    !window.__themedeckUpmixListenerBound) {
+    window.__themedeckUpmixListenerBound = true;
+    window.addEventListener(AUDIO_UPMIX_EVENT, () => {
+        const audio = ensureAudio();
+        if (readAudioUpmixSetting()) {
+            void ensureAudioGraph(audio);
+        }
+        else if (getAudioGraph()) {
+            applyAudioUpmixRouting();
+            void resumeAudioGraph();
+        }
+    });
+}
 const getPinnedAudioCachePaths = () => {
     const pinned = new Set();
     if (latestGlobalTrackForAutoPlay?.path) {
@@ -2639,8 +2816,11 @@ const isIgnorablePlaybackError = (error) => {
 };
 const playTrack = async (track, reason) => {
     stopPlaybackToken += 1;
-    const inDesktopMode = await refreshDesktopModeState();
-    if (inDesktopMode) {
+    // Use the cached UI-mode value so playback is not delayed by an await; a
+    // UI-mode subscription and a 2 s poll keep desktopModeActive current, and we
+    // refresh in the background for the next call.
+    void refreshDesktopModeState();
+    if (desktopModeActive) {
         return;
     }
     if (runningGameAppId !== null) {
@@ -2649,7 +2829,9 @@ const playTrack = async (track, reason) => {
     if (externalMediaActive) {
         return;
     }
-    if (await detectAudibleSteamMedia()) {
+    // Fast local-only check so playback is not delayed by the slow tab probes.
+    // The 500 ms polling loop still catches audible media in other Steam tabs.
+    if (detectAudibleSteamMediaLocal()) {
         setExternalMediaActive(true);
         return;
     }
@@ -2703,6 +2885,14 @@ const playTrack = async (track, reason) => {
             return;
         }
         await audio.play();
+        // Keep the element on its native stereo path until a running multichannel
+        // AudioContext is available. This preserves playback if WebAudio is blocked.
+        if (readAudioUpmixSetting()) {
+            void ensureAudioGraph(audio);
+        }
+        else if (getAudioGraph()) {
+            void resumeAudioGraph();
+        }
         if (offset > 0 && !seekApplied) {
             await seekAudioToOffset(audio, offset);
         }
@@ -4378,13 +4568,22 @@ const isVisibleSteamMediaElement = (media) => {
     }
 };
 const isPlayingSteamMediaElement = (media) => !media.paused && !media.ended && media.readyState >= 2;
-const isPlayingSteamVideoElement = (media) => media.tagName.toLowerCase() === "video" &&
-    isVisibleSteamMediaElement(media) &&
-    isPlayingSteamMediaElement(media);
 const isAudibleSteamMediaElement = (media) => isVisibleSteamMediaElement(media) &&
     isPlayingSteamMediaElement(media) &&
     !media.muted &&
     media.volume > 0.01;
+// Fast, synchronous local-only audible check (no cross-process tab RPC), so
+// starting a track is not delayed by the ~650 ms tab probes. The polling loop
+// (refreshExternalMediaState) still runs the full async probe to catch media in
+// other Steam tabs shortly after.
+const detectAudibleSteamMediaLocal = () => {
+    try {
+        return collectSteamMediaElements().some(isAudibleSteamMediaElement);
+    }
+    catch {
+        return false;
+    }
+};
 const audibleMediaProbeCode = `
   (() => {
     try {
@@ -4410,10 +4609,9 @@ const audibleMediaProbeCode = `
         const hasSize = !rect || rect.width >= 24 || rect.height >= 24 || Number(media.videoWidth || 0) >= 24 || Number(media.videoHeight || 0) >= 24;
         return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0 && hasSize;
       };
-      const steamVideoPlaying = Array.from(document.querySelectorAll('video')).some((node) => {
-        const media = node;
-        return isVisibleMedia(media) && !media.paused && !media.ended && media.readyState >= 2;
-      });
+      // Audio-aware only: a video counts as external media just when it is
+      // playing AND not muted AND has volume. Muted store trailers and silent
+      // SteamGridDB animated artwork must not pause the music.
       const nativePlaying = Array.from(document.querySelectorAll('video, audio')).some((node) => {
         const media = node;
         return isVisibleMedia(media) && !media.paused && !media.ended && !media.muted && Number(media.volume || 0) > 0.01 && media.readyState >= 2;
@@ -4423,7 +4621,7 @@ const audibleMediaProbeCode = `
         return /(?:youtube\.com|youtube-nocookie\.com|youtu\.be)/i.test(String(frame.src || ''));
       });
       if (youtubeFrames.length === 0) window.__themedeckYouTubePlaying = false;
-      return steamVideoPlaying || nativePlaying || (youtubeFrames.length > 0 && window.__themedeckYouTubePlaying === true);
+      return nativePlaying || (youtubeFrames.length > 0 && window.__themedeckYouTubePlaying === true);
     } catch {
       return false;
     }
@@ -4432,9 +4630,9 @@ const audibleMediaProbeCode = `
 const detectAudibleSteamMedia = async () => {
     try {
         const localMedia = collectSteamMediaElements();
-        if (localMedia.some(isPlayingSteamVideoElement)) {
-            return true;
-        }
+        // Only treat a Steam video as external media when it is actually AUDIBLE
+        // (playing, not muted, volume > 0). Muted store trailers and silent
+        // SteamGridDB animated artwork are videos too, and must NOT pause the music.
         if (localMedia.some(isAudibleSteamMediaElement)) {
             return true;
         }
