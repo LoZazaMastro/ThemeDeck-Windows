@@ -204,6 +204,14 @@ type YtDlpStatus = {
   version?: string;
 };
 
+type YtDlpUpdateProgress = {
+  running: boolean;
+  progress: number;
+  phase: string;
+  version?: string;
+  error?: string;
+};
+
 type ExternalMediaState = {
   active: boolean;
   player?: string;
@@ -384,6 +392,9 @@ const playYouTubePreview = async (audio: HTMLAudioElement, response: YouTubePrev
 };
 const getYtDlpStatus = callable<[], YtDlpStatus>("get_yt_dlp_status");
 const updateYtDlp = callable<[], YtDlpStatus>("update_yt_dlp");
+const getYtDlpUpdateProgress = callable<[], YtDlpUpdateProgress>(
+  "get_yt_dlp_update_progress"
+);
 const getAudioNormalizationStatus = callable<[], AudioNormalizationStatus>(
   "get_audio_normalization_status"
 );
@@ -489,7 +500,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set<number>([
 ]);
 
 const EN_STRINGS = {
-  introVersion: "ThemeDeck 3.3.0",
+  introVersion: "ThemeDeck 3.3.2",
   introAssign:
     "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
   autoPlayLabel: "Auto play on game page",
@@ -1785,7 +1796,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
   Record<string, Partial<Record<I18nKey, string>>>
 > = {
   it: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     autoPlayDesc: "",
     gameMusicVolumeDesc: "",
     stopMusicAfterPlayDesc: "",
@@ -1839,7 +1850,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
   },
   fr: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
     autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
     autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1899,7 +1910,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
   },
   es: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
     autoAssignExclusionsTitle: "Exclusiones de asignación automática",
     autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1959,7 +1970,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
   },
   pt: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -2019,7 +2030,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   "pt-br": {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -2079,7 +2090,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   de: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
     autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
     autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -2139,7 +2150,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
   },
   nl: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
     autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
     autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -2199,7 +2210,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
   },
   uk: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
     autoAssignExclusionsTitle: "Виключення автоматичного призначення",
     autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -2259,7 +2270,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
   },
   zh: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "从自动分配中排除游戏",
     autoAssignExclusionsTitle: "自动分配排除项",
     autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -2319,7 +2330,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "环境曲目中断行为",
   },
   ja: {
-    introVersion: "ThemeDeck 3.3.0",
+    introVersion: "ThemeDeck 3.3.2",
     chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
     autoAssignExclusionsTitle: "自動割り当ての除外設定",
     autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -6631,6 +6642,13 @@ const Content = () => {
     installed: false,
   });
   const [ytDlpBusy, setYtDlpBusy] = useState(false);
+  const [ytDlpUpdateProgress, setYtDlpUpdateProgress] =
+    useState<YtDlpUpdateProgress>({
+      running: false,
+      progress: 0,
+      phase: "idle",
+    });
+  const [ytDlpUpdateFeedback, setYtDlpUpdateFeedback] = useState("");
   const [bulkAssign, setBulkAssign] = useState<BulkAssignStatus>({
     running: false,
     stopRequested: false,
@@ -7126,6 +7144,25 @@ const Content = () => {
   }, [refreshYtDlpStatus]);
 
   useEffect(() => {
+    if (!ytDlpBusy) return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const progress = await getYtDlpUpdateProgress();
+        if (!cancelled) setYtDlpUpdateProgress(progress);
+      } catch (error) {
+        console.error("[ThemeDeck] yt-dlp update progress failed", error);
+      }
+    };
+    void refresh();
+    const intervalId = window.setInterval(() => void refresh(), 200);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [ytDlpBusy]);
+
+  useEffect(() => {
     let cancelled = false;
     const refresh = async () => {
       try {
@@ -7148,15 +7185,27 @@ const Content = () => {
     if (!confirmed) {
       return;
     }
+    setYtDlpUpdateFeedback("");
+    setYtDlpUpdateProgress({ running: true, progress: 2, phase: "starting" });
     setYtDlpBusy(true);
     try {
       const status = await updateYtDlp();
       setYtDlpStatus(status);
+      setYtDlpUpdateProgress({
+        running: false,
+        progress: 100,
+        phase: "completed",
+        version: status.version,
+      });
+      setYtDlpUpdateFeedback(
+        t("ytdlpReady", { version: status.version || "latest" })
+      );
       toaster.toast({
         title: "ThemeDeck",
         body: t("ytdlpReady", { version: status.version || "latest" }),
       });
     } catch (error) {
+      setYtDlpUpdateFeedback("");
       console.error("[ThemeDeck] update yt-dlp failed", error);
       toaster.toast({
         title: "ThemeDeck",
@@ -8359,6 +8408,32 @@ const Content = () => {
               >
                 {ytDlpBusy ? t("updating") : t("updateYtdlp")}
               </FocusableButton>
+              {ytDlpBusy ? (
+                <div
+                  aria-label={`${Math.round(ytDlpUpdateProgress.progress)}%`}
+                  style={{
+                    width: "100%",
+                    height: "0.42rem",
+                    overflow: "hidden",
+                    borderRadius: "0.22rem",
+                    background: "rgba(255,255,255,0.14)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.max(2, ytDlpUpdateProgress.progress)}%`,
+                      height: "100%",
+                      borderRadius: "inherit",
+                      background: "#ff6b6b",
+                      transition: "width 180ms linear",
+                    }}
+                  />
+                </div>
+              ) : ytDlpUpdateFeedback ? (
+                <div style={{ color: "#68d391", fontSize: "0.84rem", fontWeight: 600 }}>
+                  {ytDlpUpdateFeedback}
+                </div>
+              ) : null}
             </div>
           </PanelSectionRow>
           <PanelSectionRow>
