@@ -500,7 +500,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set<number>([
 ]);
 
 const EN_STRINGS = {
-  introVersion: "ThemeDeck 3.3.2",
+  introVersion: "ThemeDeck 3.3.3",
   introAssign:
     "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
   autoPlayLabel: "Auto play on game page",
@@ -1796,7 +1796,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
   Record<string, Partial<Record<I18nKey, string>>>
 > = {
   it: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     autoPlayDesc: "",
     gameMusicVolumeDesc: "",
     stopMusicAfterPlayDesc: "",
@@ -1850,7 +1850,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
   },
   fr: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
     autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
     autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1910,7 +1910,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
   },
   es: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
     autoAssignExclusionsTitle: "Exclusiones de asignación automática",
     autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1970,7 +1970,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
   },
   pt: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -2030,7 +2030,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   "pt-br": {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -2090,7 +2090,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   de: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
     autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
     autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -2150,7 +2150,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
   },
   nl: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
     autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
     autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -2210,7 +2210,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
   },
   uk: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
     autoAssignExclusionsTitle: "Виключення автоматичного призначення",
     autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -2270,7 +2270,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
   },
   zh: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "从自动分配中排除游戏",
     autoAssignExclusionsTitle: "自动分配排除项",
     autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -2330,7 +2330,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "环境曲目中断行为",
   },
   ja: {
-    introVersion: "ThemeDeck 3.3.2",
+    introVersion: "ThemeDeck 3.3.3",
     chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
     autoAssignExclusionsTitle: "自動割り当ての除外設定",
     autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -5056,7 +5056,8 @@ const getStoreRouteCandidates = (): string[] => {
 
 const looksLikeStoreSignal = (value: unknown): boolean => {
   if (typeof value !== "string") return false;
-  const text = value.toLowerCase();
+  const text = value.trim().toLowerCase();
+  if (!text) return false;
   if (
     text.includes("/settings") ||
     text.includes("#/settings") ||
@@ -5065,13 +5066,46 @@ const looksLikeStoreSignal = (value: unknown): boolean => {
   ) {
     return false;
   }
+  // TrailerHero resolves official Steam movies through Store API/static asset
+  // URLs. Those URLs are media resources, not proof that the user navigated to
+  // the Store. Treating every string containing "/store" as a Store route made
+  // the Store track replace the game-page context as soon as a trailer started.
+  if (
+    text.includes("/store_item_assets/") ||
+    text.includes("%2fstore_item_assets%2f") ||
+    text.includes("store.steampowered.com/api/") ||
+    text.includes("store%2esteampowered%2ecom%2fapi%2f") ||
+    /\.(?:mp4|webm|m3u8|mpd)(?:[?#]|$)/i.test(text)
+  ) {
+    return false;
+  }
+
+  const hasStoreHost =
+    /(?:^|[^a-z0-9.-])store\.steampowered\.com(?::\d+)?(?:[/?#]|$)/i.test(
+      text
+    ) || text.includes("store%2esteampowered%2ecom");
+
+  let hasStoreRoute = false;
+  try {
+    const parsed = new URL(text, "https://themedeck.invalid");
+    const pathname = String(parsed.pathname || "").toLowerCase();
+    const hash = String(parsed.hash || "").toLowerCase();
+    hasStoreRoute =
+      /^\/store(?:[/?#]|$)/.test(pathname) ||
+      /^#\/store(?:[/?#]|$)/.test(hash) ||
+      (parsed.protocol !== "http:" &&
+        parsed.protocol !== "https:" &&
+        parsed.hostname.toLowerCase() === "store");
+  } catch {
+    // Fall through to the route-text checks below.
+  }
+
   return (
-    text.includes("/store") ||
-    text.includes("#/store") ||
+    hasStoreHost ||
+    hasStoreRoute ||
     text.includes("storehome") ||
-    text.includes("store.steampowered.com") ||
-    text.includes("store%2esteampowered%2ecom") ||
-    (text.includes("openurl") && text.includes("store"))
+    /(?:^|#)\/store(?:[/?#]|$)/.test(text) ||
+    /^store(?:[/?#]|$)/.test(text)
   );
 };
 
@@ -5112,13 +5146,13 @@ const isStoreRoute = (route: string): boolean => {
 };
 
 const detectStoreFromWindowState = (): boolean => {
+  const windowStore = (Router as any)?.WindowStore;
   const focusedCandidates = [
     (window as any).SteamUIStore?.GetFocusedWindowInstance?.(),
-    (Router as any)?.WindowStore?.GetFocusedWindowInstance?.(),
-    (Router as any)?.WindowStore?.m_FocusedWindowInstance,
-    (Router as any)?.WindowStore?.m_FocusedWindow,
-    (Router as any)?.WindowStore,
-    (window as any).SteamUIStore,
+    windowStore?.GetFocusedWindowInstance?.(),
+    windowStore?.m_FocusedWindowInstance,
+    windowStore?.m_FocusedWindow,
+    windowStore?.GamepadUIMainWindowInstance,
   ];
   for (const candidate of focusedCandidates) {
     if (!candidate) continue;
@@ -5158,7 +5192,7 @@ const detectStoreFromWindowState = (): boolean => {
       for (const [key, value] of Object.entries(objectValue)) {
         if (
           typeof value === "string" &&
-          /url|href|path|route|uri|src|title|name|location/i.test(key) &&
+          /url|href|path|pathname|route|uri|location/i.test(key) &&
           looksLikeStoreSignal(value)
         ) {
           return true;
@@ -5171,6 +5205,12 @@ const detectStoreFromWindowState = (): boolean => {
   }
   return false;
 };
+
+const hasActiveGameDetailContext = (): boolean =>
+  readAppIdFromLocation() !== null ||
+  (activeDetailBridgeCount > 0 &&
+    activeDetailRouteAppId !== null &&
+    activeDetailRouteAppId > 0);
 
 const isThemeDeckRouteActive = (): boolean => {
   const candidates = getStoreRouteCandidates();
@@ -5229,17 +5269,37 @@ const isGamepadContextMenuVisible = (): boolean => {
 };
 
 const isStorePathSync = (): boolean => {
-  if (getStoreRouteCandidates().some((route) => isStoreRoute(route))) {
+  const explicitStoreRoute = getStoreRouteCandidates().some((route) =>
+    isStoreRoute(route)
+  );
+  if (explicitStoreRoute) {
     return true;
+  }
+  // A mounted game-details route is authoritative. TrailerHero can briefly
+  // move Steam's focused browser/media object away from the library route, but
+  // that must never promote the Store track while the game page is still open.
+  if (hasActiveGameDetailContext()) {
+    return false;
   }
   if (detectStoreFromWindowState()) {
     return true;
   }
   try {
-    const hasStoreFrame =
-      document.querySelector(
-        "iframe[src*='store.steampowered.com'], webview[src*='store.steampowered.com'], a[href*='store.steampowered.com']"
-      ) !== null;
+    const hasStoreFrame = Array.from(
+      document.querySelectorAll<HTMLIFrameElement | HTMLElement>(
+        "iframe[src], webview[src]"
+      )
+    ).some((frame) => {
+      if (
+        frame.classList?.contains("trailerhero-video") ||
+        frame.closest?.(".trailerhero-host")
+      ) {
+        return false;
+      }
+      const source =
+        (frame as HTMLIFrameElement).src || frame.getAttribute?.("src") || "";
+      return isStoreRoute(String(source));
+    });
     if (hasStoreFrame) {
       return true;
     }
@@ -5249,24 +5309,68 @@ const isStorePathSync = (): boolean => {
   return false;
 };
 
-const isStorePath = (): boolean => storeContextActive || isStorePathSync();
+const isStorePath = (): boolean => {
+  const explicitStoreRoute = getStoreRouteCandidates().some((route) =>
+    isStoreRoute(route)
+  );
+  if (explicitStoreRoute) {
+    return true;
+  }
+  if (hasActiveGameDetailContext()) {
+    return false;
+  }
+  return storeContextActive || isStorePathSync();
+};
 
 const detectStoreFromTabs = async (): Promise<boolean> => {
   const probeCode = `
     (() => {
       try {
+        const isStoreRoute = (value) => {
+          let text = String(value || '').trim().toLowerCase();
+          if (!text) return false;
+          try {
+            const decoded = decodeURIComponent(text);
+            if (decoded && decoded !== text) text = decoded.toLowerCase();
+          } catch {}
+          if (
+            text.includes('/settings') ||
+            text.includes('#/settings') ||
+            text.includes('steamsettings') ||
+            text.includes('/store_item_assets/') ||
+            text.includes('store.steampowered.com/api/') ||
+            /\\.(?:mp4|webm|m3u8|mpd)(?:[?#]|$)/i.test(text)
+          ) {
+            return false;
+          }
+          const hasStoreHost = /(?:^|[^a-z0-9.-])store\\.steampowered\\.com(?::\\d+)?(?:[/?#]|$)/i.test(text);
+          let hasStoreRoute = false;
+          try {
+            const parsed = new URL(text, 'https://themedeck.invalid');
+            const pathname = String(parsed.pathname || '').toLowerCase();
+            const hash = String(parsed.hash || '').toLowerCase();
+            hasStoreRoute = /^\\/store(?:[/?#]|$)/.test(pathname) || /^#\\/store(?:[/?#]|$)/.test(hash) || ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') && parsed.hostname.toLowerCase() === 'store');
+          } catch {}
+          return hasStoreHost || hasStoreRoute || text.includes('storehome') || /(?:^|#)\\/store(?:[/?#]|$)/.test(text) || /^store(?:[/?#]|$)/.test(text);
+        };
         const href = String(window.location?.href || "").toLowerCase();
         const path = String(window.location?.pathname || "").toLowerCase();
         const hash = String(window.location?.hash || "").toLowerCase();
         const search = String(window.location?.search || "").toLowerCase();
         const full = href + " " + path + " " + hash + " " + search;
-        if (full.includes("/settings") || full.includes("#/settings") || full.includes("steamsettings")) {
+        if (
+          /(?:^|[\\s#])\\/library\\/(?:app|details)\\/\\d+(?:[/?#]|$)/.test(full) ||
+          /(?:^|[\\s#])\\/library\\/[^/?#]+\\/app\\/\\d+(?:[/?#]|$)/.test(full)
+        ) {
           return false;
         }
-        if (full.includes("store.steampowered.com") || full.includes("/store") || full.includes("#/store")) {
+        if ([href, path, hash, search].some(isStoreRoute)) {
           return true;
         }
-        const hasStoreFrame = !!document.querySelector("iframe[src*='store.steampowered.com'], webview[src*='store.steampowered.com'], a[href*='store.steampowered.com']");
+        const hasStoreFrame = Array.from(document.querySelectorAll('iframe[src], webview[src]')).some((frame) => {
+          if (frame.classList?.contains('trailerhero-video') || frame.closest?.('.trailerhero-host')) return false;
+          return isStoreRoute(frame.src || frame.getAttribute?.('src') || '');
+        });
         if (hasStoreFrame) {
           return true;
         }
@@ -5573,7 +5677,10 @@ const refreshStoreContext = async () => {
   autoPlaybackStoreProbeInFlight = true;
   try {
     const syncStore = isStorePathSync();
-    const tabStore = await detectStoreFromTabs();
+    const tabStore =
+      syncStore || hasActiveGameDetailContext()
+        ? false
+        : await detectStoreFromTabs();
     const next = syncStore || tabStore;
     if (next !== storeContextActive) {
       storeContextActive = next;
@@ -5691,7 +5798,9 @@ const resolveAutoTrackFromContext = (): GameTrack | null => {
     return null;
   }
 
-  const inStore = isStorePath();
+  // The active game page always wins over any incidental Store URL exposed by
+  // trailer metadata, media assets, or background Steam objects.
+  const inStore = !effectiveAppId && isStorePath();
   if (inStore && readStoreTrackEnabledSetting() && latestStoreTrackForAutoPlay) {
     return {
       appId: STORE_TRACK_APP_ID,

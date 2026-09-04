@@ -2410,7 +2410,7 @@ class Plugin:
                     url,
                     headers={
                         "Accept": "application/octet-stream",
-                        "User-Agent": "ThemeDeck/3.3.2 (+Decky Loader)",
+                        "User-Agent": "ThemeDeck/3.3.3 (+Decky Loader)",
                     },
                 )
                 with urllib.request.urlopen(request, timeout=90) as response:

@@ -1,6 +1,6 @@
 {
   "name": "themedeck",
-  "version": "3.3.2",
+  "version": "3.3.3",
   "description": "A Windows-friendly Decky Loader fork of ThemeDeck for game, ambient, and store music in Steam Gaming Mode.",
   "type": "module",
   "scripts": {
