@@ -1,71 +1,136 @@
-<div align="center">
+\# ThemeDeck for Windows
 
-<img src="assets/logo.png" width="220" alt="ThemeDeck" />
 
-# ThemeDeck per Windows
 
-### Ogni gioco ha il suo tema musicale.
+\### Every game has its own musical theme.
 
-Musica per le pagine dei giochi, l'interfaccia e lo Store di Steam, con ricerca, download e controlli pensati per Gaming Mode.
 
-[![Release](https://img.shields.io/github/v/release/LoZazaMastro/ThemeDeck-Windows?style=for-the-badge&label=Release&labelColor=111111&color=ffffff)](https://github.com/LoZazaMastro/ThemeDeck-Windows/releases/latest)
-[![Licenza BSD-3-Clause](https://img.shields.io/badge/Licenza-BSD--3--Clause-ffffff?style=for-the-badge&labelColor=111111)](LICENSE)
+
+Music for your Steam game pages, interface, and Store, with search, download, and control features designed for Gaming Mode.
+
+
+
+\[!\[Release](https://img.shields.io/github/v/release/LoZazaMastro/ThemeDeck-Windows?style=for-the-badge\&label=Release\&labelColor=111111\&color=ffffff)](https://github.com/LoZazaMastro/ThemeDeck-Windows/releases/latest)
+
+\[!\[Licenza BSD-3-Clause](https://img.shields.io/badge/Licenza-BSD--3--Clause-ffffff?style=for-the-badge\&labelColor=111111)](LICENSE)
+
+
 
 </div>
 
-## La colonna sonora della tua libreria
 
-ThemeDeck per Windows è un fork di [ThemeDeck](https://github.com/BrenticusMaximus/ThemeDeck) adattato a Decky Loader su Windows. Il plugin continua a chiamarsi **ThemeDeck** dentro Decky.
 
-- riproduzione automatica di un tema nella pagina del gioco;
-- scelta di file locali o ricerca YouTube tramite `yt-dlp`;
-- anteprima, download e assegnazione dei risultati;
-- volume, punto di inizio e loop separati per gioco;
-- volume generale dedicato ai temi dei giochi;
-- brano ambientale per l'interfaccia e brano separato per lo Store;
-- assegnazione automatica dei temi mancanti con esclusioni per gioco;
-- durata massima di 15 minuti per le assegnazioni automatiche da YouTube;
-- pulizia di tutti i download gestiti o soltanto di quelli non più assegnati;
-- arresto automatico quando un gioco viene avviato.
+\## The soundtrack of your library
 
-ThemeDeck mette in pausa la propria musica mentre Now Playing riproduce audio integrato o locale e quando Steam mostra un video udibile di avvio, Community, notizie o Store. La riproduzione muta di TrailerHero viene ignorata.
 
-## File locali e download
 
-Quando sostituisci un tema ambientale o dello Store scaricato dal plugin, il vecchio file viene eliminato soltanto se era gestito da ThemeDeck. I file selezionati dalle tue cartelle non vengono mai cancellati.
+ThemeDeck for Windows is a fork of \[ThemeDeck](https://github.com/BrenticusMaximus/ThemeDeck) adapted for Decky Loader on Windows. The plugin continues to be named \*\*ThemeDeck\*\* inside Decky.
 
-**Elimina tutti i download** rimuove la cartella gestita e le relative assegnazioni. **Elimina download inutilizzati** tocca soltanto i file non assegnati a un gioco, all'ambiente o allo Store.
 
-## Lingue
 
-La lingua segue automaticamente Steam. Sono incluse traduzioni per inglese, italiano, francese, spagnolo, portoghese, portoghese brasiliano, tedesco, olandese, ucraino, cinese e giapponese.
+\- automatic playback of a theme on the game page;
 
-## Installazione
+\- choice of local files or YouTube search via `yt-dlp`;
 
-Puoi installare e aggiornare ThemeDeck dal Plugin Store di [Playhub](https://github.com/LoZazaMastro/Playhub), oppure manualmente:
+\- preview, download, and assignment of results;
 
-1. scarica lo ZIP dall'[ultima release](https://github.com/LoZazaMastro/ThemeDeck-Windows/releases/latest);
-2. abilita la modalità sviluppatore di Decky;
-3. scegli **Decky → Impostazioni → Sviluppatore → Installa plugin da ZIP**;
-4. apri le opzioni di un gioco e scegli ThemeDeck per assegnargli un brano.
+\- separate volume, start point, and loop settings per game;
 
-La release Windows include `yt-dlp.exe`, `ffmpeg.exe` e `ffprobe.exe`; se YouTube cambia comportamento, l'aggiornamento di `yt-dlp` dalle impostazioni può ripristinare ricerca e download.
+\- dedicated master volume for game themes;
 
-## Sviluppo
+\- ambient track for the interface and a separate track for the Store;
+
+\- automatic assignment of missing themes with per-game exclusions;
+
+\- maximum duration of 15 minutes for automatic assignments from YouTube;
+
+\- cleanup of all managed downloads or only those no longer assigned;
+
+\- automatic playback stop when a game is launched.
+
+
+
+ThemeDeck pauses its music while Now Playing reproduces integrated or local audio and when Steam plays an audible video from Startup, Community, News, or the Store. Silent playback from TrailerHero is ignored.
+
+
+
+\## Local files and downloads
+
+
+
+When you replace an ambient or Store theme downloaded by the plugin, the old file is only deleted if it was managed by ThemeDeck. Files selected from your personal folders are never deleted.
+
+
+
+\*\*Delete all downloads\*\* removes the managed folder and its corresponding assignments. \*\*Delete unused downloads\*\* only affects files that are not assigned to a game, the interface, or the Store.
+
+
+
+\## Languages
+
+
+
+The language automatically follows Steam. Translations are included for English, Italian, French, Spanish, Portuguese, Brazilian Portuguese, German, Dutch, Ukrainian, Chinese, and Japanese.
+
+
+
+\## Installation
+
+
+
+You can install and update ThemeDeck from the \[Playhub](https://github.com/LoZazaMastro/Playhub) Plugin Store, or manually:
+
+
+
+1\. download the ZIP from the \[latest release](https://github.com/LoZazaMastro/ThemeDeck-Windows/releases/latest);
+
+2\. enable Decky's developer mode;
+
+3\. choose \*\*Decky → Settings → Developer → Install plugin from ZIP\*\*;
+
+4\. open any game's options and choose ThemeDeck to assign a track to it.
+
+
+
+The Windows release includes `yt-dlp.exe`, `ffmpeg.exe`, and `ffprobe.exe`; if YouTube changes its behavior, updating `yt-dlp` from the settings can restore search and download functionality.
+
+
+
+\## Development
+
+
 
 ```powershell
+
 pnpm install
+
 pnpm run build
-python -m py_compile main.py
-.\package-win.ps1
+
+python -m py\_compile main.py
+
+.\\package-win.ps1
+
 ```
 
-## Licenza e riconoscimenti
 
-ThemeDeck è stato creato da [BrenticusMaximus](https://github.com/BrenticusMaximus). Questo fork per Windows è mantenuto da [LoZazaMastro](https://github.com/LoZazaMastro) e conserva la licenza originale [BSD 3-Clause](LICENSE). Dipendenze e binari inclusi sono documentati in [NOTICE](NOTICE) e [FFMPEG-README.txt](FFMPEG-README.txt).
+
+\## License and credits
+
+
+
+ThemeDeck was originally created by \[BrenticusMaximus](https://github.com/BrenticusMaximus). This Windows fork is maintained by \[LoZazaMastro](https://github.com/LoZazaMastro) and retains the original \[BSD 3-Clause](LICENSE) license. Dependencies and included binaries are documented in \[NOTICE](NOTICE) and \[FFMPEG-README.txt](FFMPEG-README.txt).
+
+
 
 <div align="center">
 
-Fork per Windows creato e mantenuto da **[LoZazaMastro](https://github.com/LoZazaMastro)**.
+
+
+Windows fork created and maintained by \*\*\[LoZazaMastro](https://github.com/LoZazaMastro)\*\*.
+
+
 
 </div>
+
+
+
