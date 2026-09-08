@@ -205,11 +205,13 @@ type YtDlpStatus = {
 };
 
 type YtDlpUpdateProgress = {
+  jobId?: string;
   running: boolean;
   progress: number;
   phase: string;
   version?: string;
   error?: string;
+  result?: YtDlpStatus;
 };
 
 type ExternalMediaState = {
@@ -223,7 +225,8 @@ type DiscoverDownloadProgress = {
   running: boolean;
   status: "starting" | "downloading" | "completed" | "failed" | "missing";
   progress: number;
-  target?: "ambient" | "store";
+  target?: "ambient" | "store" | "game";
+  result?: YouTubeDownloadResponse;
   filename?: string;
   error?: string;
 };
@@ -349,6 +352,10 @@ const startDiscoverDownload = callable<
   [target: "ambient" | "store", videoUrl: string, normalizeAudio?: boolean, upmixAudio?: boolean],
   DiscoverDownloadProgress
 >("start_discover_download");
+const startGameDownload = callable<
+  [appId: number, videoUrl: string, normalizeAudio?: boolean, upmixAudio?: boolean],
+  DiscoverDownloadProgress
+>("start_game_download");
 const getDiscoverDownloadProgress = callable<
   [jobId: string],
   DiscoverDownloadProgress
@@ -391,7 +398,7 @@ const playYouTubePreview = async (audio: HTMLAudioElement, response: YouTubePrev
   throw lastError;
 };
 const getYtDlpStatus = callable<[], YtDlpStatus>("get_yt_dlp_status");
-const updateYtDlp = callable<[], YtDlpStatus>("update_yt_dlp");
+const startYtDlpUpdate = callable<[], YtDlpUpdateProgress>("start_yt_dlp_update");
 const getYtDlpUpdateProgress = callable<[], YtDlpUpdateProgress>(
   "get_yt_dlp_update_progress"
 );
@@ -500,7 +507,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set<number>([
 ]);
 
 const EN_STRINGS = {
-  introVersion: "ThemeDeck 3.3.3",
+  introVersion: "ThemeDeck 3.3.4",
   introAssign:
     "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
   autoPlayLabel: "Auto play on game page",
@@ -1796,7 +1803,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
   Record<string, Partial<Record<I18nKey, string>>>
 > = {
   it: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     autoPlayDesc: "",
     gameMusicVolumeDesc: "",
     stopMusicAfterPlayDesc: "",
@@ -1850,7 +1857,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
   },
   fr: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
     autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
     autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1910,7 +1917,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
   },
   es: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
     autoAssignExclusionsTitle: "Exclusiones de asignación automática",
     autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1970,7 +1977,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
   },
   pt: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -2030,7 +2037,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   "pt-br": {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -2090,7 +2097,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   de: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
     autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
     autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -2150,7 +2157,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
   },
   nl: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
     autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
     autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -2210,7 +2217,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
   },
   uk: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
     autoAssignExclusionsTitle: "Виключення автоматичного призначення",
     autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -2270,7 +2277,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
   },
   zh: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "从自动分配中排除游戏",
     autoAssignExclusionsTitle: "自动分配排除项",
     autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -2330,7 +2337,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "环境曲目中断行为",
   },
   ja: {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
     autoAssignExclusionsTitle: "自動割り当ての除外設定",
     autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -6228,6 +6235,102 @@ const useTrackState = (options?: { silent?: boolean }) => {
   };
 };
 
+const DownloadProgressBar = ({ progress }: { progress: number }) => (
+  <div className="tdScopeDownloadProgress" role="progressbar" aria-label={t("downloading")}
+    aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}
+    style={{ gridColumn: "1 / -1", width: "100%", height: 7, borderRadius: 4, overflow: "hidden", background: "rgba(255,255,255,.15)" }}>
+    <div style={{ width: `${Math.max(0, Math.min(100, progress))}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" }} />
+  </div>
+);
+
+const YTDLP_CHECK_COPY: Record<string, [string, string]> = {
+  en: ["Checking nightly release...", "Verifying download..."],
+  it: ["Ricerca della versione nightly...", "Verifica del download..."],
+  fr: ["Recherche de la version nightly...", "Vérification du téléchargement..."],
+  es: ["Buscando la versión nightly...", "Verificando la descarga..."],
+  pt: ["A procurar a versão nightly...", "A verificar a transferência..."],
+  "pt-br": ["Buscando a versão nightly...", "Verificando o download..."],
+  de: ["Nightly-Version wird gesucht...", "Download wird überprüft..."],
+  nl: ["Nightly-versie zoeken...", "Download controleren..."],
+  uk: ["Пошук nightly-версії...", "Перевірка завантаження..."],
+  zh: ["正在检查 nightly 版本...", "正在验证下载..."],
+  ja: ["nightly バージョンを確認中...", "ダウンロードを検証中..."],
+};
+
+const YtDlpUpdateModal = ({ closeModal, onUpdated, onClosed }: {
+  closeModal?: () => void; onUpdated: (status: YtDlpStatus) => void; onClosed?: () => void;
+}) => {
+  const [progress, setProgress] = useState<YtDlpUpdateProgress>({ running: false, progress: 0, phase: "idle" });
+  const [busy, setBusy] = useState(false);
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+  const follow = async (initial: YtDlpUpdateProgress) => {
+    let next = initial;
+    const jobId = initial.jobId;
+    while (mounted.current) {
+      if (next.jobId !== jobId) throw new Error(t("unknownUpdateError"));
+      setProgress(next);
+      if (!next.running) {
+        if (next.phase === "completed" && next.result) onUpdated(next.result);
+        return;
+      }
+      await new Promise(resolve => window.setTimeout(resolve, 500));
+      if (!mounted.current) return;
+      next = await getYtDlpUpdateProgress();
+    }
+  };
+  const run = async (resume = false) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    try {
+      if (resume) {
+        const current = await getYtDlpUpdateProgress();
+        if (current.running) await follow(current);
+      } else {
+        setProgress({ running: true, progress: 2, phase: "starting" });
+        await follow(await startYtDlpUpdate());
+      }
+    } catch (error) {
+      if (mounted.current) setProgress(current => ({ ...current, running: false, phase: "failed", error: getErrorMessage(error, t("unknownUpdateError")) }));
+    } finally {
+      inFlight.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  };
+  useEffect(() => { mounted.current = true; void run(true); return () => { mounted.current = false; onClosed?.(); }; }, []);
+  const copy = YTDLP_CHECK_COPY[ACTIVE_LOCALE] || YTDLP_CHECK_COPY.en;
+  const message = progress.phase === "completed" ? t("ytdlpReady", { version: progress.version || "" })
+    : progress.phase === "failed" ? t("failedInstallYtdlp", { error: progress.error || t("unknownUpdateError") })
+    : progress.phase === "checking" ? copy[0] : progress.phase === "verifying" ? copy[1]
+    : progress.phase === "downloading" ? t("downloading") : progress.phase === "installing" ? t("installing")
+    : progress.phase === "idle" ? t("confirmUpdateYtdlp") : t("updating");
+  return <ModalRoot closeModal={closeModal}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", minWidth: 0 }}>
+      <div style={{ fontSize: "1.15rem", fontWeight: 700 }}>{t("updateYtdlp")}</div>
+      <div role={progress.phase === "failed" ? "alert" : "status"} aria-live="polite" style={{ fontSize: ".9rem", overflowWrap: "anywhere", color: progress.phase === "failed" ? "#ff8f8f" : undefined }}>{message}</div>
+      {progress.phase !== "idle" && <><DownloadProgressBar progress={progress.progress} /><div>{Math.round(progress.progress)}%</div></>}
+      <Focusable flow-children="horizontal" style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+        <FocusableButton className="DialogButton" onClick={closeModal}>{t("close")}</FocusableButton>
+        {!busy && progress.phase !== "completed" && <FocusableButton className="DialogButton" onClick={() => void run()}>{t("updateYtdlp")}</FocusableButton>}
+      </Focusable>
+    </div>
+  </ModalRoot>;
+};
+
+let ytDlpDialog: Promise<YtDlpStatus | undefined> | null = null;
+const openYtDlpUpdate = (): Promise<YtDlpStatus | undefined> => {
+  if (ytDlpDialog) return ytDlpDialog;
+  ytDlpDialog = new Promise(resolve => {
+    let updated: YtDlpStatus | undefined;
+    let modal: ReturnType<typeof showModal>;
+    const settle = () => { ytDlpDialog = null; resolve(updated); };
+    const close = () => { modal?.Close(); settle(); };
+    modal = showModal(<YtDlpUpdateModal closeModal={close} onClosed={settle} onUpdated={status => { updated = status; }} />);
+  });
+  return ytDlpDialog;
+};
+
 const DeleteDownloadedTracksProgressModal = ({
   closeModal,
   onFinished,
@@ -7290,15 +7393,12 @@ const Content = () => {
   }, []);
 
   const handleUpdateYtDlp = async () => {
-    const confirmed = window.confirm(t("confirmUpdateYtdlp"));
-    if (!confirmed) {
-      return;
-    }
     setYtDlpUpdateFeedback("");
     setYtDlpUpdateProgress({ running: true, progress: 2, phase: "starting" });
     setYtDlpBusy(true);
     try {
-      const status = await updateYtDlp();
+      const status = await openYtDlpUpdate();
+      if (!status) return;
       setYtDlpStatus(status);
       setYtDlpUpdateProgress({
         running: false,
@@ -7318,10 +7418,7 @@ const Content = () => {
       console.error("[ThemeDeck] update yt-dlp failed", error);
       toaster.toast({
         title: "ThemeDeck",
-        body: `Failed to update yt-dlp: ${getErrorMessage(
-          error,
-          t("unknownUpdateError")
-        )}`,
+        body: t("failedInstallYtdlp", { error: getErrorMessage(error, t("unknownUpdateError")) }),
       });
     } finally {
       setYtDlpBusy(false);
@@ -9300,6 +9397,7 @@ const ChangeTheme = () => {
   const [youtubeResults, setYoutubeResults] = useState<YouTubeSearchResult[]>([]);
   const [youtubeError, setYoutubeError] = useState("");
   const [downloadingVideoId, setDownloadingVideoId] = useState<string | null>(null);
+  const [gameDownloadProgress, setGameDownloadProgress] = useState(0);
   const [routePathname, setRoutePathname] = useState<string>(
     window.location.pathname || ""
   );
@@ -9525,15 +9623,25 @@ const ChangeTheme = () => {
   };
 
   const handleYouTubeDownload = async (result: YouTubeSearchResult) => {
-    if (!appId) return;
+    if (!appId || downloadingVideoId) return;
     setDownloadingVideoId(result.id);
+    setGameDownloadProgress(4);
     try {
-      const response = await downloadYouTubeAudio(
+      const started = await startGameDownload(
         appId,
         result.webpage_url,
         readAudioNormalizationSetting(),
         readAudioUpmixSetting()
       );
+      let current = started;
+      while (current.running) {
+        setGameDownloadProgress(value => Math.min(92, Math.max(value + 1, Number(current.progress || 0))));
+        await new Promise(resolve => window.setTimeout(resolve, 300));
+        current = await getDiscoverDownloadProgress(started.jobId);
+      }
+      if (current.status !== "completed" || !current.result) throw new Error(current.error || t("unknownError"));
+      const response = current.result;
+      setGameDownloadProgress(100);
       const ffmpegError =
         response.ffmpeg_error ?? response.normalization_error ?? null;
       const normalized = normalizeTracks(response?.tracks);
@@ -9562,7 +9670,7 @@ const ChangeTheme = () => {
         body: t("youtubeDownloadFailed", { error: message }),
       });
     } finally {
-      setDownloadingVideoId(null);
+      window.setTimeout(() => { setDownloadingVideoId(null); setGameDownloadProgress(0); }, 450);
       refreshYtDlpStatus(true);
     }
   };
@@ -9750,7 +9858,7 @@ const ChangeTheme = () => {
           {!ytDlpStatus.installed ? (
             <FocusableButton className="DialogButton" disabled={ytDlpBusy} onClick={async () => {
               setYtDlpBusy(true);
-              try { setYtDlpStatus(await updateYtDlp()); } catch (error) { toaster.toast({ title: "ThemeDeck", body: getErrorMessage(error, t("unknownUpdateError")) }); }
+              try { const status = await openYtDlpUpdate(); if (status) setYtDlpStatus(status); } catch (error) { toaster.toast({ title: "ThemeDeck", body: getErrorMessage(error, t("unknownUpdateError")) }); }
               finally { setYtDlpBusy(false); void refreshYtDlpStatus(true); }
             }} style={{ marginTop: 12 }}>{ytDlpBusy ? t("installing") : t("installYtdlp")}</FocusableButton>
           ) : null}
@@ -9771,6 +9879,7 @@ const ChangeTheme = () => {
                     </div>
                     <FocusableButton className="DialogButton tdGameIconButton" title={previewingVideoId === result.id ? t("stopPreview") : t("playPreview")} onClick={() => void handleYouTubePreview(result)} disabled={previewLoadingVideoId !== null || downloadingVideoId !== null} style={compactIconButton}>{previewLoadingVideoId === result.id ? <Spinner /> : previewingVideoId === result.id ? <FaPause /> : <FaPlay />}</FocusableButton>
                     <FocusableButton className="DialogButton tdGameIconButton" title={t("downloadAssign")} onClick={() => void handleYouTubeDownload(result)} disabled={downloadingVideoId !== null} style={compactIconButton}>{downloadingVideoId === result.id ? <Spinner /> : <FaDownload />}</FocusableButton>
+                    {downloadingVideoId === result.id && <DownloadProgressBar progress={gameDownloadProgress} />}
                   </Focusable>
                 );
               })}
@@ -9920,7 +10029,8 @@ const ChangeTheme = () => {
                 onClick={async () => {
                   setYtDlpBusy(true);
                   try {
-                    const status = await updateYtDlp();
+                    const status = await openYtDlpUpdate();
+                    if (!status) return;
                     setYtDlpStatus(status);
                     toaster.toast({
                       title: "ThemeDeck",
@@ -10073,6 +10183,7 @@ const ChangeTheme = () => {
                     >
                       {downloadingVideoId === result.id ? <Spinner /> : <FaDownload />}
                     </FocusableButton>
+                    {downloadingVideoId === result.id && <DownloadProgressBar progress={gameDownloadProgress} />}
                   </Focusable>
                 );
               })}
@@ -10862,7 +10973,7 @@ const ScopedThemeEditor = ({ target }: { target: "ambient" | "store" }) => {
                   </div>
                   <FocusableButton className="DialogButton tdScopeIcon" title={previewingId === result.id ? t("stopPreview") : t("playPreview")} onClick={() => void togglePreview(result)}>{previewingId === result.id ? <FaPause /> : <FaPlay />}</FocusableButton>
                   <FocusableButton className="DialogButton tdScopeIcon" title={t("downloadAssign")} disabled={Boolean(downloadingId)} onClick={() => void download(result)}>{downloadingId === result.id ? <Spinner /> : <FaDownload />}</FocusableButton>
-                  {downloadingId === result.id ? <div className="tdScopeDownloadProgress"><div style={{ width: `${downloadProgress}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" }} /></div> : null}
+                  {downloadingId === result.id ? <DownloadProgressBar progress={downloadProgress} /> : null}
                 </Focusable>
               ))}
             </Focusable>

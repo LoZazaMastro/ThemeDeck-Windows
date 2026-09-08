@@ -1,13 +1,13 @@
 {
   "name": "themedeck",
-  "version": "3.3.3",
+  "version": "3.3.4",
   "description": "A Windows-friendly Decky Loader fork of ThemeDeck for game, ambient, and store music in Steam Gaming Mode.",
   "type": "module",
   "scripts": {
     "stamp": "node scripts/stamp-build.mjs",
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc --noEmit && python -B -m unittest discover -s tests && node --test tests/*.test.mjs"
   },
   "repository": {
     "type": "git",

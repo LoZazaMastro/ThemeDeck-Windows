@@ -39,6 +39,7 @@ YTDLP_RELEASE_URLS = (
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp_linux",
     )
 )
+YTDLP_RELEASE_API = "https://api.github.com/repos/yt-dlp/yt-dlp-nightly-builds/releases/latest"
 NOW_PLAYING_SNAPSHOT_URL = "http://127.0.0.1:38947/snapshot"
 NOW_PLAYING_IGNORE_TOKENS = ("steam", "steamwebhelper", "decky", "themedeck", "theme deck")
 
@@ -77,6 +78,7 @@ class Plugin:
             "version": "",
             "error": "",
         }
+        self._yt_dlp_update_task: asyncio.Task[Any] | None = None
         self._downloads_dir = self._settings_dir / "downloads"
         self._discover_download_jobs: dict[str, dict[str, Any]] = {}
         self._delete_downloaded_tracks_task: asyncio.Task[Any] | None = None
@@ -98,6 +100,8 @@ class Plugin:
         decky.logger.info("ThemeDeck backend ready")
 
     async def _unload(self) -> None:
+        if self._yt_dlp_update_task and not self._yt_dlp_update_task.done():
+            await asyncio.shield(self._yt_dlp_update_task)
         await asyncio.to_thread(self._stop_audio_server)
         decky.logger.info("ThemeDeck backend unloaded")
 
@@ -115,7 +119,12 @@ class Plugin:
         video_url: str,
         normalize_audio: bool = False,
         upmix_audio: bool = False,
+        app_id: int | None = None,
     ) -> dict[str, Any]:
+        if target not in {"ambient", "store", "game"}:
+            raise ValueError("Invalid download target")
+        if target == "game" and (type(app_id) is not int or app_id <= 0):
+            raise ValueError("Invalid app id")
         job_id = secrets.token_hex(8)
         self._discover_download_jobs[job_id] = {
             "jobId": job_id,
@@ -128,10 +137,14 @@ class Plugin:
         }
         asyncio.create_task(
             self._run_discover_download_job(
-                job_id, target, video_url, normalize_audio, upmix_audio
+                job_id, target, video_url, normalize_audio, upmix_audio, app_id
             )
         )
         return dict(self._discover_download_jobs[job_id])
+
+    async def start_game_download(self, app_id: int, video_url: str,
+                                  normalize_audio: bool = False, upmix_audio: bool = False) -> dict[str, Any]:
+        return await self.start_discover_download("game", video_url, normalize_audio, upmix_audio, app_id)
 
     async def get_discover_download_progress(self, job_id: str) -> dict[str, Any]:
         job = self._discover_download_jobs.get(str(job_id or ""))
@@ -152,13 +165,15 @@ class Plugin:
         video_url: str,
         normalize_audio: bool,
         upmix_audio: bool,
+        app_id: int | None = None,
     ) -> None:
         job = self._discover_download_jobs[job_id]
         try:
             job.update(status="downloading", progress=18)
-            result = await self.download_discover_audio(
-                target, video_url, normalize_audio, upmix_audio
-            )
+            if target == "game":
+                result = await self.download_youtube_audio(app_id, video_url, normalize_audio, upmix_audio)
+            else:
+                result = await self.download_discover_audio(target, video_url, normalize_audio, upmix_audio)
             job.update(
                 running=False,
                 status="completed",
@@ -837,19 +852,39 @@ class Plugin:
     async def get_yt_dlp_update_progress(self) -> dict[str, Any]:
         return dict(self._yt_dlp_update_progress)
 
-    async def update_yt_dlp(self) -> dict[str, Any]:
-        if self._yt_dlp_update_progress.get("running"):
-            raise RuntimeError("yt-dlp update is already running")
+    async def start_yt_dlp_update(self) -> dict[str, Any]:
+        if self._yt_dlp_update_task and not self._yt_dlp_update_task.done():
+            return dict(self._yt_dlp_update_progress)
         self._yt_dlp_update_progress = {
+            "jobId": secrets.token_hex(8),
             "running": True,
             "progress": 2,
             "phase": "starting",
             "version": "",
             "error": "",
         }
+        self._yt_dlp_update_task = asyncio.create_task(self._run_yt_dlp_update())
+        return dict(self._yt_dlp_update_progress)
+
+    async def _run_yt_dlp_update(self) -> None:
+        try:
+            status = await self._perform_yt_dlp_update()
+            self._yt_dlp_update_progress.update(running=False, phase="completed", progress=100, result=status)
+        except Exception as error:
+            self._yt_dlp_update_progress.update(running=False, phase="failed", error=str(error))
+            decky.logger.error(f"yt-dlp update failed: {error}")
+
+    async def update_yt_dlp(self) -> dict[str, Any]:
+        await self.start_yt_dlp_update()
+        await asyncio.shield(self._yt_dlp_update_task)
+        if self._yt_dlp_update_progress["phase"] != "completed":
+            raise RuntimeError(self._yt_dlp_update_progress.get("error") or "yt-dlp update failed")
+        return dict(self._yt_dlp_update_progress["result"])
+
+    async def _perform_yt_dlp_update(self) -> dict[str, Any]:
         self._bin_dir.mkdir(parents=True, exist_ok=True)
         venv_error = None if IS_WINDOWS else await self._install_yt_dlp_in_venv()
-        status = await self.get_yt_dlp_status()
+        status = {} if IS_WINDOWS else await self.get_yt_dlp_status()
         if (
             not IS_WINDOWS
             and status.get("installed")
@@ -878,8 +913,9 @@ class Plugin:
         os.close(file_descriptor)
         temp_path = Path(temp_name)
         backup_path = self._yt_dlp_path.with_suffix(self._yt_dlp_path.suffix + ".bak")
+        promoted = False
         try:
-            await self._download_yt_dlp_binary(temp_path)
+            release_version = await self._download_yt_dlp_binary(temp_path)
             self._set_yt_dlp_update_progress(90, "verifying")
             temp_path.chmod(0o755)
             version = await self._get_yt_dlp_version(
@@ -888,18 +924,19 @@ class Plugin:
                     "env": None,
                 }
             )
-            if not version:
+            if not version or version != release_version:
                 raise RuntimeError(
-                    f"Downloaded file is not executable: {temp_path}"
+                    "Downloaded yt-dlp version does not match the selected nightly release"
                 )
 
             self._set_yt_dlp_update_progress(95, "installing", version=version)
             if backup_path.exists():
                 backup_path.unlink()
             if self._yt_dlp_path.exists():
-                self._yt_dlp_path.replace(backup_path)
+                shutil.copy2(self._yt_dlp_path, backup_path)
             try:
                 temp_path.replace(self._yt_dlp_path)
+                promoted = True
             except Exception:
                 if backup_path.exists() and not self._yt_dlp_path.exists():
                     backup_path.replace(self._yt_dlp_path)
@@ -912,14 +949,24 @@ class Plugin:
                 }
             )
             if installed_version != version:
-                self._yt_dlp_path.unlink(missing_ok=True)
-                if backup_path.exists():
-                    backup_path.replace(self._yt_dlp_path)
                 raise RuntimeError("Installed yt-dlp did not pass version verification")
-            backup_path.unlink(missing_ok=True)
-            self._set_yt_dlp_update_progress(100, "completed", version=version)
+            status = await self.get_yt_dlp_status()
+            if status.get("source") != "local" or status.get("version") != version:
+                raise RuntimeError("ThemeDeck is not using the updated yt-dlp executable")
+            try:
+                backup_path.unlink(missing_ok=True)
+            except OSError:
+                decky.logger.warning("yt-dlp installed; the previous backup could not be removed")
             decky.logger.info(f"yt-dlp updated successfully ({version})")
         except Exception as error:
+            if promoted:
+                try:
+                    if backup_path.exists():
+                        backup_path.replace(self._yt_dlp_path)
+                    else:
+                        self._yt_dlp_path.unlink(missing_ok=True)
+                except OSError as restore_error:
+                    raise RuntimeError(f"yt-dlp verification failed: {error}; rollback failed: {restore_error}") from error
             self._yt_dlp_update_progress.update(
                 {
                     "running": False,
@@ -928,6 +975,8 @@ class Plugin:
                 }
             )
             decky.logger.error(f"Failed to update yt-dlp: {error}")
+            if IS_WINDOWS:
+                raise RuntimeError(f"Failed to update yt-dlp: {error}") from error
             pip_error = None if IS_WINDOWS else await self._try_install_yt_dlp_with_pip()
             status = await self.get_yt_dlp_status()
             if status.get("installed"):
@@ -2396,54 +2445,71 @@ class Plugin:
             return None
         return max(audio_files, key=lambda path: path.stat().st_mtime)
 
-    async def _download_yt_dlp_binary(self, target_path: Path) -> None:
-        self._set_yt_dlp_update_progress(5, "downloading")
-        await asyncio.to_thread(self._download_yt_dlp_binary_sync, target_path)
+    async def _download_yt_dlp_binary(self, target_path: Path) -> str:
+        self._set_yt_dlp_update_progress(3, "checking")
+        return await asyncio.to_thread(self._download_yt_dlp_binary_sync, target_path)
 
-    def _download_yt_dlp_binary_sync(self, target_path: Path) -> None:
-        errors: list[str] = []
+    def _download_yt_dlp_binary_sync(self, target_path: Path) -> str:
+        headers = {"User-Agent": "ThemeDeck/3.3.4 (+Decky Loader)", "Cache-Control": "no-cache"}
+        request = urllib.request.Request(YTDLP_RELEASE_API, headers={**headers, "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            data = response.read(2 * 1024 * 1024 + 1)
+        if len(data) > 2 * 1024 * 1024:
+            raise RuntimeError("Nightly release metadata exceeded the size limit")
+        release = json.loads(data)
+        tag = release.get("tag_name", "")
+        if not re.fullmatch(r"\d{4}\.\d{2}\.\d{2}\.\d{6}", tag):
+            raise RuntimeError("Invalid nightly release version")
+        asset_name = "yt-dlp.exe" if IS_WINDOWS else "yt-dlp"
+        asset = next((a for a in release.get("assets", []) if a.get("name") == asset_name), None)
+        if not asset:
+            raise RuntimeError("The nightly release does not contain the required executable")
+        base = f"https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/{tag}/"
+        url = asset.get("browser_download_url")
+        if url != base + asset_name:
+            raise RuntimeError("Unexpected nightly executable URL")
+        digest = asset.get("digest") or ""
+        if not re.fullmatch(r"sha256:[a-fA-F0-9]{64}", digest):
+            checksum_asset = next((a for a in release.get("assets", []) if a.get("name") == "SHA2-256SUMS"), {})
+            if checksum_asset.get("browser_download_url") != base + "SHA2-256SUMS":
+                raise RuntimeError("Nightly release has no SHA-256 checksum")
+            with urllib.request.urlopen(urllib.request.Request(base + "SHA2-256SUMS", headers=headers), timeout=30) as response:
+                checksums = response.read(65537)
+            if len(checksums) > 65536:
+                raise RuntimeError("Checksum file exceeded the size limit")
+            match = re.search(r"^([a-fA-F0-9]{64})\s+\*?" + re.escape(asset_name) + r"\s*$", checksums.decode("utf-8"), re.MULTILINE)
+            if not match:
+                raise RuntimeError("Executable checksum is missing")
+            digest = "sha256:" + match[1]
         maximum_size = 100 * 1024 * 1024
-
-        for url in YTDLP_RELEASE_URLS:
-            try:
-                request = urllib.request.Request(
-                    url,
-                    headers={
-                        "Accept": "application/octet-stream",
-                        "User-Agent": "ThemeDeck/3.3.3 (+Decky Loader)",
-                    },
-                )
-                with urllib.request.urlopen(request, timeout=90) as response:
-                    content_length = int(response.headers.get("Content-Length", "0") or 0)
-                    if content_length > maximum_size:
-                        raise RuntimeError("nightly binary is unexpectedly large")
-                    with target_path.open("wb") as destination:
-                        downloaded = 0
-                        while True:
-                            chunk = response.read(1024 * 1024)
-                            if not chunk:
-                                break
-                            downloaded += len(chunk)
-                            if downloaded > maximum_size:
-                                raise RuntimeError("nightly binary exceeded the size limit")
-                            destination.write(chunk)
-                            if content_length > 0:
-                                fraction = min(1.0, downloaded / content_length)
-                                self._set_yt_dlp_update_progress(
-                                    5 + int(fraction * 80), "downloading"
-                                )
-                if not self._is_valid_yt_dlp_binary(target_path):
-                    raise RuntimeError("downloaded file was not a valid yt-dlp binary")
-                return
-            except Exception as error:
-                errors.append(f"{url}: {error}")
-                try:
-                    target_path.unlink(missing_ok=True)
-                except OSError:
-                    pass
-
-        error_summary = "; ".join(errors) if errors else "unknown download error"
-        raise RuntimeError(self._trim_message(error_summary, 280))
+        expected_size = asset.get("size")
+        if type(expected_size) is not int or not 0 < expected_size <= maximum_size:
+            raise RuntimeError("Invalid nightly executable size")
+        self._set_yt_dlp_update_progress(5, "downloading")
+        sha256 = hashlib.sha256()
+        deadline = time.monotonic() + 180
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30) as response:
+            with target_path.open("wb") as destination:
+                downloaded = 0
+                while True:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError("Nightly executable download timed out")
+                    chunk = response.read(256 * 1024)
+                    if not chunk:
+                        break
+                    downloaded += len(chunk)
+                    if downloaded > expected_size:
+                        raise RuntimeError("Nightly executable exceeded the declared size")
+                    destination.write(chunk)
+                    sha256.update(chunk)
+                    self._set_yt_dlp_update_progress(5 + int(downloaded / expected_size * 80), "downloading")
+                destination.flush()
+                os.fsync(destination.fileno())
+        if downloaded != expected_size or sha256.hexdigest() != digest[7:].lower():
+            raise RuntimeError("Nightly executable failed SHA-256 or size verification")
+        if not self._is_valid_yt_dlp_binary(target_path):
+            raise RuntimeError("Downloaded file is not a valid yt-dlp executable")
+        return tag
 
     def _set_yt_dlp_update_progress(
         self, progress: int, phase: str, version: str = ""

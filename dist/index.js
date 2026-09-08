@@ -2,7 +2,7 @@
 // @ts-ignore
 
 // Prevents it from being duplicated in output.
-const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, LoZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"},"version":"3.3.3"};
+const manifest = {"name":"ThemeDeck","author":"BrenticusMaximus, LoZazaMastro","flags":[],"api_version":1,"publish":{"tags":["music","theme","library"],"description":"Add custom game, ambient, and Store music to Steam Gaming Mode on Windows, with local files, yt-dlp, and Now Playing awareness.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"},"version":"3.3.4"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 // Initialize
@@ -170,6 +170,7 @@ const getTrackAudioUrl = callable("get_track_audio_url");
 const searchYouTube = callable("search_youtube");
 const downloadYouTubeAudio = callable("download_youtube_audio");
 const startDiscoverDownload = callable("start_discover_download");
+const startGameDownload = callable("start_game_download");
 const getDiscoverDownloadProgress = callable("get_discover_download_progress");
 const getYouTubePreviewStream = callable("get_youtube_preview_stream");
 const playYouTubePreview = async (audio, response) => {
@@ -208,7 +209,7 @@ const playYouTubePreview = async (audio, response) => {
     throw lastError;
 };
 const getYtDlpStatus = callable("get_yt_dlp_status");
-const updateYtDlp = callable("update_yt_dlp");
+const startYtDlpUpdate = callable("start_yt_dlp_update");
 const getYtDlpUpdateProgress = callable("get_yt_dlp_update_progress");
 const getAudioNormalizationStatus = callable("get_audio_normalization_status");
 const getExternalMediaState = callable("get_external_media_state");
@@ -280,7 +281,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set([
     228980, // Steamworks Common Redistributables
 ]);
 const EN_STRINGS = {
-    introVersion: "ThemeDeck 3.3.3",
+    introVersion: "ThemeDeck 3.3.4",
     introAssign: "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
     autoPlayLabel: "Auto play on game page",
     autoPlayDesc: "",
@@ -1436,7 +1437,7 @@ const getDetectedLocale = () => {
 const ACTIVE_LOCALE = getDetectedLocale();
 const LOCALIZED_UI_OVERRIDES = {
     it: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         autoPlayDesc: "",
         gameMusicVolumeDesc: "",
         stopMusicAfterPlayDesc: "",
@@ -1488,7 +1489,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
     },
     fr: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
         autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
         autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1544,7 +1545,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
     },
     es: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
         autoAssignExclusionsTitle: "Exclusiones de asignación automática",
         autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1600,7 +1601,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
     },
     pt: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
         autoAssignExclusionsTitle: "Exclusões da atribuição automática",
         autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -1656,7 +1657,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     "pt-br": {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
         autoAssignExclusionsTitle: "Exclusões da atribuição automática",
         autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -1712,7 +1713,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
     },
     de: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
         autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
         autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -1768,7 +1769,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
     },
     nl: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
         autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
         autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -1824,7 +1825,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
     },
     uk: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
         autoAssignExclusionsTitle: "Виключення автоматичного призначення",
         autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -1880,7 +1881,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
     },
     zh: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "从自动分配中排除游戏",
         autoAssignExclusionsTitle: "自动分配排除项",
         autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -1936,7 +1937,7 @@ const LOCALIZED_UI_OVERRIDES = {
         globalAmbientBehaviorAria: "环境曲目中断行为",
     },
     ja: {
-        introVersion: "ThemeDeck 3.3.3",
+        introVersion: "ThemeDeck 3.3.4",
         chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
         autoAssignExclusionsTitle: "自動割り当ての除外設定",
         autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -4229,11 +4230,12 @@ const looksLikeStoreSignal = (value) => {
         const parsed = new URL(text, "https://themedeck.invalid");
         const pathname = String(parsed.pathname || "").toLowerCase();
         const hash = String(parsed.hash || "").toLowerCase();
-        hasStoreRoute = /^\/store(?:[/?#]|$)/.test(pathname) ||
-            /^#\/store(?:[/?#]|$)/.test(hash) ||
-            (parsed.protocol !== "http:" &&
-                parsed.protocol !== "https:" &&
-                parsed.hostname.toLowerCase() === "store");
+        hasStoreRoute =
+            /^\/store(?:[/?#]|$)/.test(pathname) ||
+                /^#\/store(?:[/?#]|$)/.test(hash) ||
+                (parsed.protocol !== "http:" &&
+                    parsed.protocol !== "https:" &&
+                    parsed.hostname.toLowerCase() === "store");
     }
     catch {
         // Fall through to the route-text checks below.
@@ -5251,6 +5253,103 @@ const useTrackState = (options) => {
         refreshTracks,
     };
 };
+const DownloadProgressBar = ({ progress }) => (window.SP_REACT.createElement("div", { className: "tdScopeDownloadProgress", role: "progressbar", "aria-label": t("downloading"), "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": Math.round(progress), style: { gridColumn: "1 / -1", width: "100%", height: 7, borderRadius: 4, overflow: "hidden", background: "rgba(255,255,255,.15)" } },
+    window.SP_REACT.createElement("div", { style: { width: `${Math.max(0, Math.min(100, progress))}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" } })));
+const YTDLP_CHECK_COPY = {
+    en: ["Checking nightly release...", "Verifying download..."],
+    it: ["Ricerca della versione nightly...", "Verifica del download..."],
+    fr: ["Recherche de la version nightly...", "Vérification du téléchargement..."],
+    es: ["Buscando la versión nightly...", "Verificando la descarga..."],
+    pt: ["A procurar a versão nightly...", "A verificar a transferência..."],
+    "pt-br": ["Buscando a versão nightly...", "Verificando o download..."],
+    de: ["Nightly-Version wird gesucht...", "Download wird überprüft..."],
+    nl: ["Nightly-versie zoeken...", "Download controleren..."],
+    uk: ["Пошук nightly-версії...", "Перевірка завантаження..."],
+    zh: ["正在检查 nightly 版本...", "正在验证下载..."],
+    ja: ["nightly バージョンを確認中...", "ダウンロードを検証中..."],
+};
+const YtDlpUpdateModal = ({ closeModal, onUpdated, onClosed }) => {
+    const [progress, setProgress] = SP_REACT.useState({ running: false, progress: 0, phase: "idle" });
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(true);
+    const inFlight = SP_REACT.useRef(false);
+    const follow = async (initial) => {
+        let next = initial;
+        const jobId = initial.jobId;
+        while (mounted.current) {
+            if (next.jobId !== jobId)
+                throw new Error(t("unknownUpdateError"));
+            setProgress(next);
+            if (!next.running) {
+                if (next.phase === "completed" && next.result)
+                    onUpdated(next.result);
+                return;
+            }
+            await new Promise(resolve => window.setTimeout(resolve, 500));
+            if (!mounted.current)
+                return;
+            next = await getYtDlpUpdateProgress();
+        }
+    };
+    const run = async (resume = false) => {
+        if (inFlight.current)
+            return;
+        inFlight.current = true;
+        setBusy(true);
+        try {
+            if (resume) {
+                const current = await getYtDlpUpdateProgress();
+                if (current.running)
+                    await follow(current);
+            }
+            else {
+                setProgress({ running: true, progress: 2, phase: "starting" });
+                await follow(await startYtDlpUpdate());
+            }
+        }
+        catch (error) {
+            if (mounted.current)
+                setProgress(current => ({ ...current, running: false, phase: "failed", error: getErrorMessage(error, t("unknownUpdateError")) }));
+        }
+        finally {
+            inFlight.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    SP_REACT.useEffect(() => { mounted.current = true; void run(true); return () => { mounted.current = false; onClosed?.(); }; }, []);
+    const copy = YTDLP_CHECK_COPY[ACTIVE_LOCALE] || YTDLP_CHECK_COPY.en;
+    const message = progress.phase === "completed" ? t("ytdlpReady", { version: progress.version || "" })
+        : progress.phase === "failed" ? t("failedInstallYtdlp", { error: progress.error || t("unknownUpdateError") })
+            : progress.phase === "checking" ? copy[0] : progress.phase === "verifying" ? copy[1]
+                : progress.phase === "downloading" ? t("downloading") : progress.phase === "installing" ? t("installing")
+                    : progress.phase === "idle" ? t("confirmUpdateYtdlp") : t("updating");
+    return window.SP_REACT.createElement(DFL.ModalRoot, { closeModal: closeModal },
+        window.SP_REACT.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "0.75rem", minWidth: 0 } },
+            window.SP_REACT.createElement("div", { style: { fontSize: "1.15rem", fontWeight: 700 } }, t("updateYtdlp")),
+            window.SP_REACT.createElement("div", { role: progress.phase === "failed" ? "alert" : "status", "aria-live": "polite", style: { fontSize: ".9rem", overflowWrap: "anywhere", color: progress.phase === "failed" ? "#ff8f8f" : undefined } }, message),
+            progress.phase !== "idle" && window.SP_REACT.createElement(window.SP_REACT.Fragment, null,
+                window.SP_REACT.createElement(DownloadProgressBar, { progress: progress.progress }),
+                window.SP_REACT.createElement("div", null,
+                    Math.round(progress.progress),
+                    "%")),
+            window.SP_REACT.createElement(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 12, justifyContent: "flex-end" } },
+                window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: closeModal }, t("close")),
+                !busy && progress.phase !== "completed" && window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", onClick: () => void run() }, t("updateYtdlp")))));
+};
+let ytDlpDialog = null;
+const openYtDlpUpdate = () => {
+    if (ytDlpDialog)
+        return ytDlpDialog;
+    ytDlpDialog = new Promise(resolve => {
+        let updated;
+        let modal;
+        const settle = () => { ytDlpDialog = null; resolve(updated); };
+        const close = () => { modal?.Close(); settle(); };
+        modal = DFL.showModal(window.SP_REACT.createElement(YtDlpUpdateModal, { closeModal: close, onClosed: settle, onUpdated: status => { updated = status; } }));
+    });
+    return ytDlpDialog;
+};
 const DeleteDownloadedTracksProgressModal = ({ closeModal, onFinished, }) => {
     const [progress, setProgress] = SP_REACT.useState({
         running: true,
@@ -6050,15 +6149,13 @@ const Content = () => {
         };
     }, []);
     const handleUpdateYtDlp = async () => {
-        const confirmed = window.confirm(t("confirmUpdateYtdlp"));
-        if (!confirmed) {
-            return;
-        }
         setYtDlpUpdateFeedback("");
         setYtDlpUpdateProgress({ running: true, progress: 2, phase: "starting" });
         setYtDlpBusy(true);
         try {
-            const status = await updateYtDlp();
+            const status = await openYtDlpUpdate();
+            if (!status)
+                return;
             setYtDlpStatus(status);
             setYtDlpUpdateProgress({
                 running: false,
@@ -6077,7 +6174,7 @@ const Content = () => {
             console.error("[ThemeDeck] update yt-dlp failed", error);
             toaster.toast({
                 title: "ThemeDeck",
-                body: `Failed to update yt-dlp: ${getErrorMessage(error, t("unknownUpdateError"))}`,
+                body: t("failedInstallYtdlp", { error: getErrorMessage(error, t("unknownUpdateError")) }),
             });
         }
         finally {
@@ -6970,6 +7067,7 @@ const ChangeTheme = () => {
     const [youtubeResults, setYoutubeResults] = SP_REACT.useState([]);
     const [youtubeError, setYoutubeError] = SP_REACT.useState("");
     const [downloadingVideoId, setDownloadingVideoId] = SP_REACT.useState(null);
+    const [gameDownloadProgress, setGameDownloadProgress] = SP_REACT.useState(0);
     const [routePathname, setRoutePathname] = SP_REACT.useState(window.location.pathname || "");
     const topFocusRef = SP_REACT.useRef(null);
     const assignedVideoId = SP_REACT.useMemo(() => {
@@ -7176,11 +7274,22 @@ const ChangeTheme = () => {
         }
     };
     const handleYouTubeDownload = async (result) => {
-        if (!appId)
+        if (!appId || downloadingVideoId)
             return;
         setDownloadingVideoId(result.id);
+        setGameDownloadProgress(4);
         try {
-            const response = await downloadYouTubeAudio(appId, result.webpage_url, readAudioNormalizationSetting(), readAudioUpmixSetting());
+            const started = await startGameDownload(appId, result.webpage_url, readAudioNormalizationSetting(), readAudioUpmixSetting());
+            let current = started;
+            while (current.running) {
+                setGameDownloadProgress(value => Math.min(92, Math.max(value + 1, Number(current.progress || 0))));
+                await new Promise(resolve => window.setTimeout(resolve, 300));
+                current = await getDiscoverDownloadProgress(started.jobId);
+            }
+            if (current.status !== "completed" || !current.result)
+                throw new Error(current.error || t("unknownError"));
+            const response = current.result;
+            setGameDownloadProgress(100);
             const ffmpegError = response.ffmpeg_error ?? response.normalization_error ?? null;
             const normalized = normalizeTracks(response?.tracks);
             setTrack(normalized[appId] ?? null);
@@ -7210,7 +7319,7 @@ const ChangeTheme = () => {
             });
         }
         finally {
-            setDownloadingVideoId(null);
+            window.setTimeout(() => { setDownloadingVideoId(null); setGameDownloadProgress(0); }, 450);
             refreshYtDlpStatus(true);
         }
     };
@@ -7363,7 +7472,9 @@ const ChangeTheme = () => {
                 !ytDlpStatus.installed ? (window.SP_REACT.createElement(FocusableButton, { className: "DialogButton", disabled: ytDlpBusy, onClick: async () => {
                         setYtDlpBusy(true);
                         try {
-                            setYtDlpStatus(await updateYtDlp());
+                            const status = await openYtDlpUpdate();
+                            if (status)
+                                setYtDlpStatus(status);
                         }
                         catch (error) {
                             toaster.toast({ title: "ThemeDeck", body: getErrorMessage(error, t("unknownUpdateError")) });
@@ -7385,7 +7496,8 @@ const ChangeTheme = () => {
                             window.SP_REACT.createElement("div", { style: { fontSize: 14, fontWeight: 650, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, result.title),
                             window.SP_REACT.createElement("div", { style: { marginTop: 3, fontSize: 12, opacity: .55, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, [result.uploader || "YouTube", formatDuration(result.duration)].filter(Boolean).join(" · "))),
                         window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdGameIconButton", title: previewingVideoId === result.id ? t("stopPreview") : t("playPreview"), onClick: () => void handleYouTubePreview(result), disabled: previewLoadingVideoId !== null || downloadingVideoId !== null, style: compactIconButton }, previewLoadingVideoId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : previewingVideoId === result.id ? window.SP_REACT.createElement(FaPause, null) : window.SP_REACT.createElement(FaPlay, null)),
-                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdGameIconButton", title: t("downloadAssign"), onClick: () => void handleYouTubeDownload(result), disabled: downloadingVideoId !== null, style: compactIconButton }, downloadingVideoId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : window.SP_REACT.createElement(FaDownload, null))));
+                        window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdGameIconButton", title: t("downloadAssign"), onClick: () => void handleYouTubeDownload(result), disabled: downloadingVideoId !== null, style: compactIconButton }, downloadingVideoId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : window.SP_REACT.createElement(FaDownload, null)),
+                        downloadingVideoId === result.id && window.SP_REACT.createElement(DownloadProgressBar, { progress: gameDownloadProgress })));
                 }))))));
 };
 const ScopedThemeEditor = ({ target }) => {
@@ -7598,8 +7710,7 @@ const ScopedThemeEditor = ({ target }) => {
                         window.SP_REACT.createElement("div", { style: { opacity: .62, fontSize: 12, marginTop: 4 } }, [result.uploader || "YouTube", formatDuration(result.duration)].filter(Boolean).join(" · "))),
                     window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: previewingId === result.id ? t("stopPreview") : t("playPreview"), onClick: () => void togglePreview(result) }, previewingId === result.id ? window.SP_REACT.createElement(FaPause, null) : window.SP_REACT.createElement(FaPlay, null)),
                     window.SP_REACT.createElement(FocusableButton, { className: "DialogButton tdScopeIcon", title: t("downloadAssign"), disabled: Boolean(downloadingId), onClick: () => void download(result) }, downloadingId === result.id ? window.SP_REACT.createElement(DFL.Spinner, null) : window.SP_REACT.createElement(FaDownload, null)),
-                    downloadingId === result.id ? window.SP_REACT.createElement("div", { className: "tdScopeDownloadProgress" },
-                        window.SP_REACT.createElement("div", { style: { width: `${downloadProgress}%`, height: "100%", background: "#f0b429", transition: "width .25s linear" } })) : null))))))));
+                    downloadingId === result.id ? window.SP_REACT.createElement(DownloadProgressBar, { progress: downloadProgress }) : null))))))));
 };
 var index = definePlugin(() => {
     startLocationWatcher();
