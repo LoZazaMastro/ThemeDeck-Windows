@@ -17,8 +17,6 @@ import {
   useParams,
   afterPatch,
   findInReactTree,
-  createReactTreePatcher,
-  appDetailsClasses,
   gamepadContextMenuClasses,
   fakeRenderComponent,
   findModuleByExport,
@@ -269,7 +267,7 @@ const DETAIL_PATTERNS = GAME_DETAIL_ROUTES.map((route) => {
     .replace(/\//g, "\\/")
     .replace(":collection", "[^\\/]+")
     .replace(":appid", "(\\d+)");
-  return new RegExp(`^${pattern}`);
+  return new RegExp(`^${pattern}(?:/|$)`);
 });
 
 const fetchTracks = callable<[], RawTrackMap>("get_tracks");
@@ -507,7 +505,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set<number>([
 ]);
 
 const EN_STRINGS = {
-  introVersion: "ThemeDeck 3.3.4",
+  introVersion: "ThemeDeck 3.3.5",
   introAssign:
     "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
   autoPlayLabel: "Auto play on game page",
@@ -1803,7 +1801,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
   Record<string, Partial<Record<I18nKey, string>>>
 > = {
   it: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     autoPlayDesc: "",
     gameMusicVolumeDesc: "",
     stopMusicAfterPlayDesc: "",
@@ -1857,7 +1855,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
   },
   fr: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
     autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
     autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1917,7 +1915,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
   },
   es: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
     autoAssignExclusionsTitle: "Exclusiones de asignación automática",
     autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1977,7 +1975,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
   },
   pt: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -2037,7 +2035,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   "pt-br": {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -2097,7 +2095,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   de: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
     autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
     autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -2157,7 +2155,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
   },
   nl: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
     autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
     autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -2217,7 +2215,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
   },
   uk: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
     autoAssignExclusionsTitle: "Виключення автоматичного призначення",
     autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -2277,7 +2275,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
   },
   zh: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "从自动分配中排除游戏",
     autoAssignExclusionsTitle: "自动分配排除项",
     autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -2337,7 +2335,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "环境曲目中断行为",
   },
   ja: {
-    introVersion: "ThemeDeck 3.3.4",
+    introVersion: "ThemeDeck 3.3.5",
     chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
     autoAssignExclusionsTitle: "自動割り当ての除外設定",
     autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -2685,6 +2683,7 @@ let contextMenuActiveAppId: number | null = null;
 let activeContextMenuCloser: (() => void) | null = null;
 let autoPlaybackTick: number | null = null;
 let autoPlaybackStarted = false;
+let pluginDisposed = false;
 let stopAutoPlaybackSubscription: (() => void) | null = null;
 let autoPlaybackTrackRefreshInFlight = false;
 let autoPlaybackRouteInterval: number | null = null;
@@ -3129,21 +3128,28 @@ const ensureAudioGraph = async (audio: HTMLAudioElement): Promise<boolean> => {
   return audioGraphSetupPromise;
 };
 
-if (
-  typeof window !== "undefined" &&
-  !(window as any).__themedeckUpmixListenerBound
-) {
-  (window as any).__themedeckUpmixListenerBound = true;
-  window.addEventListener(AUDIO_UPMIX_EVENT, () => {
+const bindAudioUpmixListener = () => {
+  const previous = (window as any).__themedeckUpmixListener;
+  if (typeof previous === "function") window.removeEventListener(AUDIO_UPMIX_EVENT, previous);
+  const handler = () => {
+    if (pluginDisposed) return;
     const audio = ensureAudio();
-    if (readAudioUpmixSetting()) {
-      void ensureAudioGraph(audio);
-    } else if (getAudioGraph()) {
+    if (readAudioUpmixSetting()) void ensureAudioGraph(audio);
+    else if (getAudioGraph()) {
       applyAudioUpmixRouting();
       void resumeAudioGraph();
     }
-  });
-}
+  };
+  (window as any).__themedeckUpmixListener = handler;
+  window.addEventListener(AUDIO_UPMIX_EVENT, handler);
+  return () => {
+    window.removeEventListener(AUDIO_UPMIX_EVENT, handler);
+    if ((window as any).__themedeckUpmixListener === handler) {
+      delete (window as any).__themedeckUpmixListener;
+      delete (window as any).__themedeckUpmixListenerBound;
+    }
+  };
+};
 
 const getPinnedAudioCachePaths = () => {
   const pinned = new Set<string>();
@@ -3216,25 +3222,31 @@ const clearAudioCache = (
 };
 
 const verifyStreamAudioUrl = async (url: string) => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 3000);
   try {
     const response = await fetch(url, {
       method: "HEAD",
       cache: "no-store",
+      signal: controller.signal,
     });
     return response.ok;
-  } catch (error) {
-    console.warn("[ThemeDeck] audio stream URL verification failed", error);
+  } catch {
+    // A cached loopback port can become stale after a backend reload.
     return false;
+  } finally {
+    window.clearTimeout(timeout);
   }
 };
 
 const resolveAudioUrl = async (track: GameTrack) => {
   const cached = audioCache.get(track.path);
-  if (cached) {
+  if (cached && await verifyStreamAudioUrl(cached.url)) {
     cached.lastUsedAt = Date.now();
     cached.pinned = isPinnedAudioCachePath(track.path);
     return cached.url;
   }
+  if (cached) revokeCacheEntry(track.path);
 
   const streamPayload = await getTrackAudioUrl(track.path);
   if (!streamPayload?.url) {
@@ -3372,6 +3384,9 @@ const seekAudioToOffset = async (
 };
 
 const stopPlayback = (_fade: boolean) => {
+  // Invalidate pending URL/seek work as well as the currently playing element.
+  playInvocationCounter += 1;
+  playInFlightSignature = null;
   const token = ++stopPlaybackToken;
   const audio = sharedAudio;
   if (!audio) {
@@ -3420,6 +3435,7 @@ const isIgnorablePlaybackError = (error: unknown): boolean => {
 };
 
 const playTrack = async (track: GameTrack, reason: PlaybackReason) => {
+  if (pluginDisposed) return;
   stopPlaybackToken += 1;
   // Use the cached UI-mode value so playback is not delayed by an await; a
   // UI-mode subscription and a 2 s poll keep desktopModeActive current, and we
@@ -3493,6 +3509,7 @@ const playTrack = async (track: GameTrack, reason: PlaybackReason) => {
     if (externalMediaActive) {
       return;
     }
+    if (invocationId !== playInvocationCounter || pluginDisposed || desktopModeActive) return;
     await audio.play();
     // Keep the element on its native stereo path until a running multichannel
     // AudioContext is available. This preserves playback if WebAudio is blocked.
@@ -3523,6 +3540,7 @@ const playTrack = async (track: GameTrack, reason: PlaybackReason) => {
       console.warn("[ThemeDeck] playback interrupted", error);
       return;
     }
+    revokeCacheEntry(track.path);
     console.error("[ThemeDeck] failed to play", error);
     const message =
       error instanceof Error && error.message
@@ -3664,18 +3682,23 @@ const dismissActiveContextMenu = () => {
 };
 
 const getLibraryPath = (): string => {
+  const stores = [(window as any).SteamUIStore?.WindowStore, (Router as any)?.WindowStore];
+  // Popups can be focused while the gamepad main window still owns the route.
+  // Prefer that window, and fall back without assuming one store layout.
+  const windows = stores.map((store) => store?.GamepadUIMainWindowInstance?.BrowserWindow);
   try {
-    const focusedWindow =
-      window.SteamUIStore?.GetFocusedWindowInstance?.() ??
-      Router.WindowStore?.GamepadUIMainWindowInstance;
-    const browserWindow =
-      focusedWindow?.BrowserWindow ??
-      Router.WindowStore?.GamepadUIMainWindowInstance?.BrowserWindow;
-    return browserWindow?.location?.pathname ?? "";
-  } catch (error) {
-    console.error("[ThemeDeck] unable to read library window", error);
-    return "";
+    windows.push(window.SteamUIStore?.GetFocusedWindowInstance?.()?.BrowserWindow);
+  } catch { /* Steam can dispose a focused popup during navigation. */ }
+  windows.push(window);
+  for (const browserWindow of windows) {
+    try {
+      const location = browserWindow?.location;
+      const hashPath = String(location?.hash ?? "").replace(/^#/, "");
+      const pathname = hashPath.startsWith("/") ? hashPath.split("?", 1)[0] : String(location?.pathname ?? "");
+      if (pathname && pathname !== "/" && !/\.html$/i.test(pathname)) return pathname;
+    } catch { /* Ignore cross-origin or destroyed windows. */ }
   }
+  return "";
 };
 
 const readAppIdFromLocation = (): number | null => {
@@ -3761,25 +3784,16 @@ const stopLocationWatcher = () => {
 };
 
 const extractAppId = (...candidates: any[]): number | null => {
-  for (const candidate of candidates) {
-    if (typeof candidate === "number" && !Number.isNaN(candidate) && candidate > 0) {
-      return candidate;
+  for (let candidate of candidates) {
+    if (candidate && typeof candidate === "object") {
+      candidate = candidate.appid ?? candidate.app_id ?? candidate.unAppID ?? candidate.nAppID ?? candidate.id;
     }
     if (typeof candidate === "string") {
-      const parsed = Number.parseInt(candidate, 10);
-      if (!Number.isNaN(parsed)) return parsed;
+      if (!/^\d+$/.test(candidate.trim())) continue;
+      candidate = Number(candidate);
     }
-    if (candidate && typeof candidate === "object") {
-      const possible =
-        candidate.appid ??
-        candidate.app_id ??
-        candidate.unAppID ??
-        candidate.nAppID ??
-        candidate.id;
-      if (possible) {
-        const parsed = Number.parseInt(possible, 10);
-        if (!Number.isNaN(parsed)) return parsed;
-      }
+    if (typeof candidate === "number" && Number.isSafeInteger(candidate) && candidate > 0 && candidate <= 0xffffffff) {
+      return candidate;
     }
   }
   return null;
@@ -3955,41 +3969,36 @@ const stopDesktopModeWatcher = () => {
 };
 
 const startSteamAppWatchers = () => {
+  if (steamAppSubscriptions.length) return true;
   const apps = (window as any)?.SteamClient?.Apps;
-  if (!apps) {
-    if (steamAppRetry) return;
-    steamAppRetry = window.setInterval(() => {
-      if (startSteamAppWatchers()) {
-        window.clearInterval(steamAppRetry!);
-        steamAppRetry = null;
-      }
-    }, 2000);
+  if (typeof apps?.RegisterForAppOverviewChanges !== "function") {
+    if (!steamAppRetry) {
+      steamAppRetry = window.setInterval(() => {
+        if (startSteamAppWatchers()) {
+          window.clearInterval(steamAppRetry!);
+          steamAppRetry = null;
+        }
+      }, 2000);
+    }
     return false;
   }
-
-  const handlers = [
-    apps.RegisterForAppDetails?.bind(apps),
-    apps.RegisterForAppOverviewChanges?.bind(apps),
-  ].filter(Boolean);
-
-  handlers.forEach((registerFn) => {
-    try {
-      const unsub = registerFn!((...args: any[]) => {
-        const candidate = extractAppId(...args);
-        if (candidate) {
-          notifyFocus(candidate);
-        }
-      });
-      const cleaner = wrapUnsubscribe(unsub);
-      if (cleaner) {
-        steamAppSubscriptions.push(cleaner);
+  try {
+    // RegisterForAppDetails requires (appId, callback), not just a callback.
+    // Overview changes are global, but must NOT select an unrelated game.
+    const token = apps.RegisterForAppOverviewChanges(() => {
+      scheduleRunningGameRefresh();
+      const visibleAppId = readAppIdFromLocation();
+      if (visibleAppId) {
+        markDetailRouteSeen(visibleAppId);
+        notifyFocus(visibleAppId);
       }
-    } catch (error) {
-      console.error("[ThemeDeck] steam app watcher failed", error);
-    }
-  });
-
-  return handlers.length > 0;
+    });
+    steamAppSubscriptions.push(wrapUnsubscribe(token) ?? (() => {}));
+    return true;
+  } catch (error) {
+    console.error("[ThemeDeck] steam app watcher failed", error);
+    return false;
+  }
 };
 
 const stopSteamAppWatchers = () => {
@@ -4057,7 +4066,7 @@ const hasStartedMarker = (candidate: any): boolean => {
     stateText.includes("in_game") ||
     stateText.includes("ingame") ||
     stateText.includes("playing") ||
-    stateText.includes("active") ||
+    stateText === "active" ||
     stateText === "running"
   ) {
     return true;
@@ -4383,10 +4392,7 @@ const startRunningGameWatcher = () => {
     "RegisterForGameExited",
   ];
 
-  const fallbackRegisterMethods = [
-    "RegisterForAppDetails",
-    "RegisterForAppOverviewChanges",
-  ];
+  const fallbackRegisterMethods = ["RegisterForAppOverviewChanges"];
 
   const preferredMethod = preferredRegisterMethods.find(
     (method) => typeof apps?.[method] === "function"
@@ -4395,8 +4401,10 @@ const startRunningGameWatcher = () => {
     (method) => typeof apps?.[method] === "function"
   );
   const registerMethods = preferredMethod
-    ? [preferredMethod]
-    : fallbackMethod
+    ? preferredMethod === "RegisterForGameActionStart" && typeof apps.RegisterForGameActionEnd === "function"
+      ? [preferredMethod, "RegisterForGameActionEnd"]
+      : [preferredMethod]
+    : fallbackMethod && !steamAppSubscriptions.length
       ? [fallbackMethod]
       : [];
 
@@ -4450,19 +4458,27 @@ const stopRunningGameWatcher = () => {
 
 const resolveLibraryContextMenu = () => {
   try {
-    const module = findModuleByExport(
-      (exported: Export) =>
-        exported?.toString && exported.toString().includes("().LibraryContextMenu")
+    const module = findModuleByExport((exported: Export) =>
+      typeof exported === "function" && /\.LibraryContextMenu\b/.test(exported.toString())
     );
-    const candidate = Object.values(module ?? {}).find((sibling: any) =>
-      sibling?.toString?.().includes("navigator:")
-    );
-    const component = fakeRenderComponent(candidate as any);
-    return component?.type ?? candidate ?? null;
-  } catch (error) {
-    console.error("[ThemeDeck] unable to resolve context menu", error);
-    return null;
-  }
+    for (const candidate of Object.values(module ?? {}) as any[]) {
+      if (typeof candidate !== "function") continue;
+      if (typeof candidate.prototype?.GetTargetApps === "function" &&
+          typeof candidate.prototype?.render === "function") return candidate;
+      // Steam's September 2026 wrapper passes navigator + window instance to
+      // the library menu class. Never execute arbitrary exports or CSS modules.
+      const source = candidate.toString();
+      if (!/navigator\s*:/.test(source)) continue;
+      try {
+        const rendered = fakeRenderComponent(candidate);
+        const component = rendered?.type?.type ?? rendered?.type;
+        if (typeof component?.prototype?.render === "function" &&
+            (typeof component.prototype.GetTargetApps === "function" ||
+             component.prototype.render.toString().includes("AppProperties"))) return component;
+      } catch { /* Try the next recognized wrapper. */ }
+    }
+  } catch { /* A Steam chunk may not be loaded yet. */ }
+  return null;
 };
 
 const extractAppIdFromTree = (node: any): number | null => {
@@ -4504,11 +4520,8 @@ const coerceMenuChildren = (children: any): any[] | null => {
 const pruneThemeDeckMenu = (children: any) => {
   const list = coerceMenuChildren(children);
   if (!Array.isArray(list)) return;
-  const existing = list.findIndex(
-    (entry) => entry?.key === "themedeck-change-music"
-  );
-  if (existing !== -1) {
-    list.splice(existing, 1);
+  for (let index = list.length - 1; index >= 0; index -= 1) {
+    if (list[index]?.key === "themedeck-change-music") list.splice(index, 1);
   }
 };
 
@@ -4685,181 +4698,120 @@ const patchMenuItems = (
   return derivedAppId;
 };
 
+const patchLibraryMenuTree = (node: any, appId: number, depth = 0): any => {
+  if (!node || depth > 24) return node;
+  if (Array.isArray(node)) return node.map((child) => patchLibraryMenuTree(child, appId, depth + 1));
+  if (!window.SP_REACT.isValidElement(node)) return node;
+  const children = (node.props as any)?.children;
+  if (Array.isArray(children) && (isGameContextMenu(children) || isLibraryAppContextMenu(children))) {
+    const next = [...children];
+    insertThemeDeckMenu(next, appId);
+    return window.SP_REACT.cloneElement(node, undefined, next);
+  }
+  if (children == null) return node;
+  const next = patchLibraryMenuTree(children, appId, depth + 1);
+  return next === children ? node : window.SP_REACT.cloneElement(node, undefined, next);
+};
+
 const patchContextMenuFocus = () => {
-  const MenuComponent = resolveLibraryContextMenu();
-  if (!MenuComponent?.prototype) {
-    return null;
-  }
+  const patches: Patch[] = [];
+  let retry: number | null = null;
+  let disposed = false;
+  let attempts = 0;
+  let activeInstance: any = null;
 
-  const state: { appId: number | null } = { appId: null };
-
-  const patches: {
-    outer?: Patch;
-    inner?: Patch;
-    unmount?: Patch;
-  } = {};
-
-  if (typeof MenuComponent.prototype.componentWillUnmount === "function") {
-    patches.unmount = afterPatch(
-      MenuComponent.prototype,
-      "componentWillUnmount",
-      () => {
-        setContextMenuActiveAppId(null);
-        activeContextMenuCloser = null;
-      }
-    );
-  }
-
-  patches.outer = afterPatch(
-    MenuComponent.prototype,
-    "render",
-    function (this: any, _args: Record<string, unknown>[], component: any) {
-      const instance = this as any;
-      const closeMenu =
-        typeof instance?.HideMenu === "function"
-          ? () => instance.HideMenu()
-          : typeof instance?.HideIfSubmenu === "function"
-            ? () => instance.HideIfSubmenu()
-            : typeof instance?.props?.onCancel === "function"
-              ? () => instance.props.onCancel()
-              : null;
-      if (closeMenu) {
-        activeContextMenuCloser = closeMenu;
-      }
-      let appId =
-        extractAppId(component?._owner?.pendingProps?.overview?.appid) ?? null;
-      if (!appId) {
-        const fallback = findInTree(
-          component?.props?.children,
-          (node) => node?.app?.appid,
-          { walkable: ["props", "children"] }
-        );
-        if (fallback?.app?.appid) {
-          appId = extractAppId(fallback.app.appid);
-        }
-      }
-      if (appId) {
-        state.appId = appId;
-        setContextMenuActiveAppId(appId);
-        // Do not broadcast context-menu app focus into playback state.
-        // Autoplay should react only to actual game detail routes.
-      }
-
-      if (!patches.inner) {
-        patches.inner = afterPatch(
-          component,
-          "type",
-          (_innerArgs: Record<string, unknown>[], rendered: any) => {
-            afterPatch(
-              rendered.type.prototype,
-              "render",
-              (_renderArgs: Record<string, unknown>[], node: any) => {
-                const menuItems =
-                  node?.props?.children?.[0] ?? node?.props?.children;
-                const fallbackAppId =
-                  extractAppIdFromTree(node) ?? state.appId;
-                const patched = patchMenuItems(menuItems, fallbackAppId);
-                if (patched) {
-                  state.appId = patched;
-                  setContextMenuActiveAppId(patched);
-                }
-                return node;
-              }
-            );
-            afterPatch(
-              rendered.type.prototype,
-              "shouldComponentUpdate",
-              ([nextProps]: any, shouldUpdate: any) => {
-                if (shouldUpdate === true) {
-                  const fallbackAppId =
-                    extractAppIdFromTree(nextProps?.children) ?? state.appId;
-                  const patched = patchMenuItems(
-                    nextProps?.children,
-                    fallbackAppId
-                  );
-                  if (patched) {
-                    state.appId = patched;
-                    setContextMenuActiveAppId(patched);
-                  }
-                }
-                return shouldUpdate;
-              }
-            );
-            return rendered;
-          }
-        );
-      } else if (appId) {
-        const patched = patchMenuItems(component?.props?.children, appId);
-        if (patched) {
-          state.appId = patched;
-          setContextMenuActiveAppId(patched);
-        }
-      }
-
-      return component;
+  const install = () => {
+    if (disposed) return;
+    const MenuComponent = resolveLibraryContextMenu();
+    if (!MenuComponent?.prototype) {
+      retry = window.setTimeout(install, ++attempts < 30 ? 2000 : 10000);
+      return;
     }
-  );
-
+    try {
+      patches.push(afterPatch(MenuComponent.prototype, "render", function (this: any, _args: any[], result: any) {
+        if (disposed) return result;
+        try {
+          const targets = typeof this.GetTargetApps === "function" ? this.GetTargetApps() : null;
+          if (targets && targets.length !== 1) return result;
+          const appId = extractAppId(this.props?.overview, targets?.[0], this.props?.app) ??
+            extractAppIdFromTree(result);
+          if (!appId) return result;
+          const patched = patchLibraryMenuTree(result, appId);
+          activeInstance = this;
+          setContextMenuActiveAppId(appId);
+          activeContextMenuCloser = typeof this.HideMenu === "function" ? () => this.HideMenu() :
+            typeof this.props?.onCancel === "function" ? () => this.props.onCancel() : null;
+          return patched;
+        } catch (error) {
+          console.warn("[ThemeDeck] context menu integration skipped", error);
+          return result;
+        }
+      }));
+      if (typeof MenuComponent.prototype.componentWillUnmount === "function") {
+        patches.push(afterPatch(MenuComponent.prototype, "componentWillUnmount", function (this: any) {
+          if (activeInstance === this) {
+            activeInstance = null;
+            setContextMenuActiveAppId(null);
+            activeContextMenuCloser = null;
+          }
+        }));
+      }
+    } catch (error) {
+      patches.splice(0).reverse().forEach((patch) => { try { patch.unpatch(); } catch {} });
+      console.warn("[ThemeDeck] context menu patch unavailable", error);
+    }
+  };
+  install();
   return () => {
-    patches.outer?.unpatch();
-    patches.inner?.unpatch();
-    patches.unmount?.unpatch();
+    disposed = true;
+    if (retry !== null) window.clearTimeout(retry);
+    patches.splice(0).reverse().forEach((patch) => { try { patch.unpatch(); } catch {} });
+    activeInstance = null;
     setContextMenuActiveAppId(null);
     activeContextMenuCloser = null;
   };
 };
 
-const injectBridgeIntoRoute = (routePattern: string) =>
-  routerHook.addPatch(routePattern, (tree: any) => {
-    const routeProps = findInReactTree(tree, (node) => node?.renderFunc);
-    if (!routeProps) {
-      return tree;
-    }
-
-    const handler = createReactTreePatcher(
-      [
-        (input) =>
-          findInReactTree(
-            input,
-            (x: any) => x?.props?.children?.props?.overview
-          )?.props?.children,
-      ],
-      (_: Array<Record<string, unknown>>, ret?: ReactElement) => {
-        const container = findInReactTree(
-          ret,
-          (x: any) =>
-            Array.isArray(x?.props?.children) &&
-            typeof x?.props?.className === "string" &&
-            x.props.className.includes(appDetailsClasses.InnerContainer)
-        );
-
-        if (
-          !container ||
-          !Array.isArray(container.props.children) ||
-          container.props.children.some(
-            (child: any) => child?.key === "themedeck-bridge"
-          )
-        ) {
-          return ret;
-        }
-
-        container.props.children = [
-          ...container.props.children,
-          <GameFocusBridge key="themedeck-bridge" />,
-        ];
-
-        return ret;
+const injectBridgeIntoRoute = (routePattern: string): (() => void) => {
+  const renderPatches: Patch[] = [];
+  const patchedProps = new WeakSet<object>();
+  let disposed = false;
+  let routePatch: any;
+  try {
+    routePatch = routerHook.addPatch(routePattern, (tree: any) => {
+      if (disposed) return tree;
+      const routeProps = findInReactTree(tree, (node) => typeof node?.renderFunc === "function");
+      if (!routeProps || patchedProps.has(routeProps)) return tree;
+      try {
+        // Render alongside the route, not inside a CSS-class-dependent child.
+        // A Fragment adds no layout nodes and never rewrites React element.type.
+        const patch = afterPatch(routeProps, "renderFunc", (_args: any[], result: any) => {
+          if (disposed || result == null) return result;
+          return <>{result}<GameFocusBridge key="themedeck-bridge" /></>;
+        });
+        renderPatches.push(patch);
+        patchedProps.add(routeProps);
+      } catch (error) {
+        console.warn("[ThemeDeck] route bridge unavailable; location watcher remains active", error);
       }
-    );
-
-    afterPatch(routeProps, "renderFunc", handler);
-    return tree;
-  });
+      return tree;
+    });
+  } catch (error) {
+    console.warn("[ThemeDeck] route registration unavailable; location watcher remains active", error);
+  }
+  return () => {
+    disposed = true;
+    renderPatches.splice(0).reverse().forEach((patch) => { try { patch.unpatch(); } catch {} });
+    if (routePatch !== undefined) {
+      try { routerHook.removePatch(routePattern, routePatch); }
+      catch (error) { console.warn("[ThemeDeck] remove route patch failed", error); }
+    }
+  };
+};
 
 const GameFocusBridge = () => {
   const params = useParams<{ appid?: string }>();
-  const parsed = params?.appid ? Number.parseInt(params.appid, 10) : NaN;
-  const appId = Number.isNaN(parsed) ? null : parsed;
+  const appId = extractAppId(params?.appid);
 
   useEffect(() => {
     activeDetailBridgeCount += 1;
@@ -5390,12 +5342,7 @@ const detectStoreFromTabs = async (): Promise<boolean> => {
   const results = await Promise.all(
     SP_TAB_CANDIDATES.map(async (tab) => {
       try {
-        const result = await Promise.race([
-          executeInTab(tab, true, probeCode),
-          new Promise<null>((resolve) => {
-            window.setTimeout(() => resolve(null), 1000);
-          }),
-        ]);
+        const result = await withTimeout(executeInTab(tab, true, probeCode), 1000);
         const value =
           result && typeof result === "object" && "result" in result
             ? (result as { result?: unknown }).result
@@ -5429,11 +5376,19 @@ const getNowPlayingPluginApi = () => {
   return nowPlayingPluginApi;
 };
 
-const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T | null> =>
-  Promise.race([
-    promise,
-    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), timeoutMs)),
-  ]);
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T | null> => {
+  let timer: number | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timer = window.setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) window.clearTimeout(timer);
+  }
+};
 
 const readPublishedNowPlayingState = (): ExternalMediaState | null => {
   try {
@@ -5688,6 +5643,7 @@ const refreshStoreContext = async () => {
       syncStore || hasActiveGameDetailContext()
         ? false
         : await detectStoreFromTabs();
+    if (pluginDisposed) return;
     const next = syncStore || tabStore;
     if (next !== storeContextActive) {
       storeContextActive = next;
@@ -5734,17 +5690,20 @@ const handleNowPlayingActivity = (event: Event) => {
 };
 
 const refreshExternalMediaState = async () => {
-  if (externalMediaProbeInFlight) {
+  if (pluginDisposed || externalMediaProbeInFlight) {
     return;
   }
   externalMediaProbeInFlight = true;
   try {
-    if (await detectAudibleSteamMedia()) {
+    const steamMediaActive = await detectAudibleSteamMedia();
+    if (pluginDisposed) return;
+    if (steamMediaActive) {
       setExternalMediaActive(true);
       return;
     }
 
     const nowPlayingState = await readNowPlayingState();
+    if (pluginDisposed) return;
     if (nowPlayingState?.active) {
       setExternalMediaActive(true);
       return;
@@ -5888,6 +5847,7 @@ const resolveAutoTrackFromContext = (): GameTrack | null => {
 };
 
 const applyAutoPlaybackFromContext = () => {
+  if (!autoPlaybackStarted || pluginDisposed) return;
   if (desktopModeActive) {
     if (playbackState.status === "playing") {
       stopPlayback(true);
@@ -6028,6 +5988,7 @@ const applyAutoPlaybackFromContext = () => {
 };
 
 const scheduleAutoPlaybackFromContext = () => {
+  if (!autoPlaybackStarted || pluginDisposed) return;
   if (autoPlaybackTick) {
     window.clearTimeout(autoPlaybackTick);
   }
@@ -6122,6 +6083,10 @@ const stopAutoPlaybackCoordinator = () => {
     return;
   }
   autoPlaybackStarted = false;
+  if (autoPlaybackTick !== null) {
+    window.clearTimeout(autoPlaybackTick);
+    autoPlaybackTick = null;
+  }
   stopRunningGameWatcher();
   stopAutoPlaybackSubscription?.();
   stopAutoPlaybackSubscription = null;
@@ -10988,6 +10953,8 @@ const ScopedThemeEditor = ({ target }: { target: "ambient" | "store" }) => {
 
 
 export default definePlugin(() => {
+  pluginDisposed = false;
+  const unbindAudioUpmix = bindAudioUpmixListener();
   startLocationWatcher();
   startSteamAppWatchers();
   startAutoPlaybackCoordinator();
@@ -11025,19 +10992,15 @@ export default definePlugin(() => {
     icon: <FaCompactDisc />,
     content: <Content />,
     onDismount() {
+      pluginDisposed = true;
+      unbindAudioUpmix();
       stopLocationWatcher();
       stopSteamAppWatchers();
       stopAutoPlaybackCoordinator();
       stopPlayback(false);
       clearAudioCache();
       contextMenuUnpatch?.();
-      gamePatches.forEach((patch, index) => {
-        try {
-          routerHook.removePatch(GAME_DETAIL_ROUTES[index], patch);
-        } catch (error) {
-          console.error("[ThemeDeck] remove patch failed", error);
-        }
-      });
+      gamePatches.forEach((dispose) => dispose());
       try {
         routerHook.removeRoute("/themedeck/:appid");
       } catch (error) {

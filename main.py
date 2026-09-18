@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import hashlib
+import errno
 import html as html_lib
 import json
 import os
@@ -21,7 +22,6 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import zlib
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +50,225 @@ def clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
 
 def clamp_seconds(value: float, minimum: float = 0.0, maximum: float = 30.0) -> float:
     return max(minimum, min(maximum, value))
+
+
+class _AudioRequest:
+    """Small, bounded HTTP/1.x adapter; no http.server/socketserver dependency.
+
+    Decky's frozen Windows runtime does not always ship those optional modules.
+    Only one request is accepted per connection, always with Connection: close.
+    """
+
+    MAX_HEADERS = 16 * 1024
+    _REASONS = {
+        200: "OK", 204: "No Content", 206: "Partial Content",
+        400: "Bad Request", 403: "Forbidden", 404: "Not Found",
+        405: "Method Not Allowed", 408: "Request Timeout",
+        416: "Range Not Satisfiable", 431: "Request Header Fields Too Large",
+        500: "Internal Server Error", 503: "Service Unavailable",
+    }
+
+    def __init__(self, connection: socket.socket) -> None:
+        self.connection = connection
+        self.path = ""
+        self.method = ""
+        self.headers: dict[str, str] = {}
+        self.headers_sent = False
+        self._response: list[str] = []
+        self.wfile = self
+
+    def read_headers(self) -> bool:
+        data = bytearray()
+        while b"\r\n\r\n" not in data:
+            block = self.connection.recv(min(4096, self.MAX_HEADERS + 1 - len(data)))
+            if not block:
+                return False
+            data.extend(block)
+            if len(data) > self.MAX_HEADERS:
+                self.send_error(431)
+                return False
+        lines = bytes(data).split(b"\r\n\r\n", 1)[0].decode("iso-8859-1").split("\r\n")
+        parts = lines[0].split(" ")
+        if len(parts) != 3 or parts[2] not in {"HTTP/1.0", "HTTP/1.1"}:
+            self.send_error(400)
+            return False
+        self.method, self.path, _version = parts
+        if not self.path.startswith("/") or any(ord(c) < 32 for c in self.path):
+            self.send_error(400)
+            return False
+        for line in lines[1:]:
+            name, separator, value = line.partition(":")
+            if (not separator or not re.fullmatch(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+", name)
+                    or any(ord(c) < 32 and c != "\t" for c in value)):
+                self.send_error(400)
+                return False
+            name = name.lower()
+            if name in self.headers:
+                self.send_error(400)
+                return False
+            self.headers[name] = value.strip()
+        return True
+
+    def send_response(self, status: int) -> None:
+        if self.headers_sent:
+            raise RuntimeError("Audio response headers already sent")
+        self._response = [f"HTTP/1.1 {status} {self._REASONS.get(status, 'Error')}",
+                          "Server: ThemeDeckAudio/2.0", "Connection: close"]
+
+    def send_header(self, name: str, value: str) -> None:
+        if "\r" in name + value or "\n" in name + value:
+            raise ValueError("Invalid response header")
+        self._response.append(f"{name}: {value}")
+
+    def end_headers(self) -> None:
+        data = ("\r\n".join(self._response) + "\r\n\r\n").encode("iso-8859-1")
+        self.headers_sent = True
+        self.connection.sendall(data)
+
+    def send_error(self, status: int) -> None:
+        if self.headers_sent:
+            return
+        self.send_response(status)
+        self.send_header("Content-Length", "0")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
+    def write(self, data: bytes) -> None:
+        self.connection.sendall(data)
+
+
+class _AudioStreamServer:
+    """Loopback-only audio server with bounded workers and deterministic teardown."""
+
+    MAX_CLIENTS = 16
+
+    def __init__(self, plugin: Any) -> None:
+        self._plugin = plugin
+        self._stopped = threading.Event()
+        self._lock = threading.Lock()
+        self._clients: set[socket.socket] = set()
+        self._workers: set[threading.Thread] = set()
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            if IS_WINDOWS and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+                self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            self._socket.bind(("127.0.0.1", 0))
+            self._socket.listen(self.MAX_CLIENTS)
+            self._socket.settimeout(0.25)
+            self.server_address = self._socket.getsockname()
+        except BaseException:
+            self._socket.close()
+            raise
+
+    def serve_forever(self) -> None:
+        while not self._stopped.is_set():
+            try:
+                connection, _address = self._socket.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                if not self._stopped.is_set():
+                    decky.logger.exception("ThemeDeck audio listener failed")
+                break
+            with self._lock:
+                if self._stopped.is_set() or len(self._clients) >= self.MAX_CLIENTS:
+                    connection.close()
+                    continue
+                self._clients.add(connection)
+                worker = threading.Thread(target=self._serve_client, args=(connection,),
+                                          name="ThemeDeckAudioClient", daemon=True)
+                self._workers.add(worker)
+                try:
+                    worker.start()
+                except BaseException:
+                    self._workers.discard(worker)
+                    self._clients.discard(connection)
+                    connection.close()
+                    raise
+
+    def _serve_client(self, connection: socket.socket) -> None:
+        request = _AudioRequest(connection)
+        try:
+            connection.settimeout(10.0)
+            if not request.read_headers():
+                return
+            connection.settimeout(30.0)
+            if request.method == "OPTIONS":
+                if urllib.parse.urlsplit(request.path).path != "/audio":
+                    request.send_error(404)
+                    return
+                request.send_response(204)
+                request.send_header("Content-Length", "0")
+                request.send_header("Access-Control-Allow-Origin", "*")
+                request.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                request.send_header("Access-Control-Allow-Headers", "Range")
+                if request.headers.get("access-control-request-private-network") == "true":
+                    request.send_header("Access-Control-Allow-Private-Network", "true")
+                request.end_headers()
+            elif request.method in {"GET", "HEAD"}:
+                self._plugin._handle_audio_stream_request(request, request.method == "HEAD")
+            else:
+                request.send_error(405)
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, socket.timeout):
+            # Browsers cancel old requests during seeking, navigation and reloads.
+            pass
+        except OSError as error:
+            if not self._stopped.is_set() and not _is_expected_connection_close(error):
+                decky.logger.error(f"ThemeDeck audio connection failed: {error}")
+        except Exception:
+            decky.logger.exception("ThemeDeck audio request failed")
+            try:
+                request.send_error(500)
+            except OSError:
+                pass
+        finally:
+            connection.close()
+            with self._lock:
+                self._clients.discard(connection)
+                self._workers.discard(threading.current_thread())
+
+    def shutdown(self) -> None:
+        self._stopped.set()
+        self._socket.close()
+        with self._lock:
+            clients = list(self._clients)
+            workers = list(self._workers)
+        for connection in clients:
+            try:
+                connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            connection.close()
+        deadline = time.monotonic() + 1.5
+        for worker in workers:
+            if worker is not threading.current_thread():
+                worker.join(timeout=max(0.0, deadline - time.monotonic()))
+
+    def server_close(self) -> None:
+        self.shutdown()
+
+
+def _is_expected_connection_close(error: BaseException) -> bool:
+    return isinstance(error, OSError) and (
+        getattr(error, "winerror", None) in {64, 109, 232, 995, 10053, 10054}
+        or getattr(error, "errno", None) in {errno.ECONNRESET, errno.ECONNABORTED, errno.EPIPE}
+        or isinstance(error, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError))
+    )
+
+
+def _is_decky_local_socket_disconnect(error: BaseException) -> bool:
+    if not _is_expected_connection_close(error):
+        return False
+    tb = error.__traceback__
+    while tb is not None:
+        code = tb.tb_frame.f_code
+        filename = code.co_filename.replace("\\", "/").lower()
+        if (filename.endswith("decky_loader/localplatform/localsocket.py")
+                and code.co_name in {"_listen_for_method_call", "_read_single_line"}):
+            return True
+        tb = tb.tb_next
+    return False
 
 
 class Plugin:
@@ -86,24 +305,84 @@ class Plugin:
         self._delete_downloaded_tracks_progress = (
             self._new_delete_downloaded_tracks_progress("idle")
         )
-        self._audio_server: ThreadingHTTPServer | None = None
+        self._audio_server: _AudioStreamServer | None = None
         self._audio_server_thread: threading.Thread | None = None
         self._audio_server_port: int | None = None
         self._audio_server_token = secrets.token_urlsafe(24)
+        self._audio_server_lock = threading.RLock()
+        self._unloading = False
+        self._rpc_exception_loop: asyncio.AbstractEventLoop | None = None
+        self._rpc_exception_handler: Any = None
+        self._previous_exception_handler: Any = None
+        self._last_rpc_disconnect_log = 0.0
 
     async def _main(self) -> None:
-        self._settings_dir.mkdir(parents=True, exist_ok=True)
-        self._bin_dir.mkdir(parents=True, exist_ok=True)
-        self._downloads_dir.mkdir(parents=True, exist_ok=True)
-        self._load_tracks()
-        await asyncio.to_thread(self._start_audio_server)
+        self._unloading = False
+        self._install_rpc_disconnect_handler()
+        try:
+            self._settings_dir.mkdir(parents=True, exist_ok=True)
+            self._bin_dir.mkdir(parents=True, exist_ok=True)
+            self._downloads_dir.mkdir(parents=True, exist_ok=True)
+            self._load_tracks()
+            await asyncio.to_thread(self._start_audio_server)
+        except BaseException:
+            self._unloading = True
+            await asyncio.to_thread(self._stop_audio_server)
+            self._restore_rpc_disconnect_handler()
+            raise
         decky.logger.info("ThemeDeck backend ready")
 
     async def _unload(self) -> None:
-        if self._yt_dlp_update_task and not self._yt_dlp_update_task.done():
-            await asyncio.shield(self._yt_dlp_update_task)
-        await asyncio.to_thread(self._stop_audio_server)
+        self._unloading = True
+        try:
+            if self._yt_dlp_update_task and not self._yt_dlp_update_task.done():
+                await asyncio.shield(self._yt_dlp_update_task)
+        finally:
+            try:
+                await asyncio.to_thread(self._stop_audio_server)
+            finally:
+                self._restore_rpc_disconnect_handler()
         decky.logger.info("ThemeDeck backend unloaded")
+
+    def _install_rpc_disconnect_handler(self) -> None:
+        if self._rpc_exception_handler is not None:
+            return
+        loop = asyncio.get_running_loop()
+        previous = loop.get_exception_handler()
+        self._rpc_exception_loop = loop
+        self._previous_exception_handler = previous
+
+        def handler(active_loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
+            error = context.get("exception")
+            if (self._rpc_exception_handler is handler and isinstance(error, BaseException)
+                    and _is_decky_local_socket_disconnect(error)):
+                transport = context.get("transport")
+                if transport is not None:
+                    try:
+                        transport.close()
+                    except Exception:
+                        pass
+                now = time.monotonic()
+                if now - self._last_rpc_disconnect_log >= 5.0:
+                    self._last_rpc_disconnect_log = now
+                    decky.logger.info("Decky local RPC connection closed; listener remains available")
+                return
+            if previous is not None:
+                previous(active_loop, context)
+            else:
+                active_loop.default_exception_handler(context)
+
+        self._rpc_exception_handler = handler
+        loop.set_exception_handler(handler)
+
+    def _restore_rpc_disconnect_handler(self) -> None:
+        loop = self._rpc_exception_loop
+        handler = self._rpc_exception_handler
+        if loop is not None and not loop.is_closed() and loop.get_exception_handler() is handler:
+            loop.set_exception_handler(self._previous_exception_handler)
+        self._rpc_exception_handler = None
+        self._rpc_exception_loop = None
+        self._previous_exception_handler = None
 
     async def _migration(self) -> None:
         self._settings_dir.mkdir(parents=True, exist_ok=True)
@@ -371,85 +650,65 @@ class Plugin:
         return str(resolved) in self._known_audio_paths()
 
     def _start_audio_server(self) -> None:
-        if self._audio_server:
-            return
-
-        plugin = self
-
-        class ThemeDeckAudioRequestHandler(BaseHTTPRequestHandler):
-            server_version = "ThemeDeckAudio/1.0"
-
-            def do_OPTIONS(self) -> None:
-                self.send_response(204)
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-                self.send_header("Access-Control-Allow-Headers", "Range")
-                self.end_headers()
-
-            def do_HEAD(self) -> None:
-                plugin._handle_audio_stream_request(self, head_only=True)
-
-            def do_GET(self) -> None:
-                plugin._handle_audio_stream_request(self, head_only=False)
-
-            def log_message(self, _format: str, *_args: Any) -> None:
+        with self._audio_server_lock:
+            if self._unloading:
+                raise RuntimeError("ThemeDeck is unloading")
+            if self._audio_server and self._audio_server_thread and self._audio_server_thread.is_alive():
                 return
-
-        server = ThreadingHTTPServer(("127.0.0.1", 0), ThemeDeckAudioRequestHandler)
-        server.daemon_threads = True
-        thread = threading.Thread(
-            target=server.serve_forever,
-            name="ThemeDeckAudioServer",
-            daemon=True,
-        )
-        thread.start()
-        self._audio_server = server
-        self._audio_server_thread = thread
-        self._audio_server_port = int(server.server_address[1])
-        decky.logger.info(
-            f"ThemeDeck audio stream server listening on 127.0.0.1:{self._audio_server_port}"
-        )
+            if self._audio_server:
+                self._audio_server.shutdown()
+            server = _AudioStreamServer(self)
+            thread = threading.Thread(target=server.serve_forever,
+                                      name="ThemeDeckAudioServer", daemon=True)
+            try:
+                thread.start()
+            except BaseException:
+                server.server_close()
+                raise
+            self._audio_server = server
+            self._audio_server_thread = thread
+            self._audio_server_port = int(server.server_address[1])
+            decky.logger.info(
+                f"ThemeDeck audio stream server listening on 127.0.0.1:{self._audio_server_port}"
+            )
 
     def _stop_audio_server(self) -> None:
-        server = self._audio_server
-        if not server:
-            return
-        self._audio_server = None
-        self._audio_server_port = None
-        try:
-            server.shutdown()
-            server.server_close()
-        except Exception as error:
-            decky.logger.error(f"Failed to stop audio stream server: {error}")
-        thread = self._audio_server_thread
-        self._audio_server_thread = None
-        if thread and thread.is_alive():
-            thread.join(timeout=1)
+        with self._audio_server_lock:
+            server = self._audio_server
+            thread = self._audio_server_thread
+            self._audio_server = None
+            self._audio_server_port = None
+            self._audio_server_thread = None
+            if server is not None:
+                server.shutdown()
+            if thread and thread.is_alive() and thread is not threading.current_thread():
+                thread.join(timeout=1.0)
 
     def _get_track_audio_url_sync(self, path: str) -> dict[str, Any]:
-        resolved = Path(path).expanduser().resolve()
-        if not self._can_stream_audio_path(resolved):
-            raise PermissionError(f"Audio file is not assigned in ThemeDeck: {resolved}")
-        self._start_audio_server()
-        if not self._audio_server_port:
-            raise RuntimeError("ThemeDeck audio stream server is not available")
-        stats = resolved.stat()
-        query = urllib.parse.urlencode(
-            {
-                "token": self._audio_server_token,
-                "path": str(resolved),
-                "v": str(stats.st_mtime),
+        with self._audio_server_lock:
+            resolved = Path(path).expanduser().resolve()
+            if not self._can_stream_audio_path(resolved):
+                raise PermissionError(f"Audio file is not assigned in ThemeDeck: {resolved}")
+            self._start_audio_server()
+            if not self._audio_server_port:
+                raise RuntimeError("ThemeDeck audio stream server is not available")
+            stats = resolved.stat()
+            query = urllib.parse.urlencode(
+                {
+                    "token": self._audio_server_token,
+                    "path": str(resolved),
+                    "v": str(stats.st_mtime),
+                }
+            )
+            return {
+                "url": f"http://127.0.0.1:{self._audio_server_port}/audio?{query}",
+                "mime": self._mime_for_audio_path(resolved),
+                "mtime": stats.st_mtime,
+                "size": stats.st_size,
             }
-        )
-        return {
-            "url": f"http://127.0.0.1:{self._audio_server_port}/audio?{query}",
-            "mime": self._mime_for_audio_path(resolved),
-            "mtime": stats.st_mtime,
-            "size": stats.st_size,
-        }
 
     def _handle_audio_stream_request(
-        self, handler: BaseHTTPRequestHandler, head_only: bool
+        self, handler: _AudioRequest, head_only: bool
     ) -> None:
         try:
             parsed = urllib.parse.urlparse(handler.path)
@@ -459,7 +718,7 @@ class Plugin:
 
             params = urllib.parse.parse_qs(parsed.query)
             token = params.get("token", [""])[0]
-            if token != self._audio_server_token:
+            if not secrets.compare_digest(token.encode("utf-8"), self._audio_server_token.encode("ascii")):
                 handler.send_error(403)
                 return
 
@@ -481,11 +740,11 @@ class Plugin:
             start = 0
             end = file_size - 1
             status = 200
-            range_header = handler.headers.get("Range", "")
+            range_header = handler.headers.get("range", "")
             if range_header:
                 match = re.match(r"bytes=(\d*)-(\d*)$", range_header.strip())
-                if not match:
-                    handler.send_error(416)
+                if not match or not any(match.groups()):
+                    self._send_audio_range_error(handler, file_size)
                     return
                 start_text, end_text = match.groups()
                 if start_text:
@@ -496,10 +755,7 @@ class Plugin:
                     start = max(file_size - suffix_length, 0)
                     end = file_size - 1
                 if start < 0 or start >= file_size or end < start:
-                    handler.send_response(416)
-                    handler.send_header("Content-Range", f"bytes */{file_size}")
-                    handler.send_header("Access-Control-Allow-Origin", "*")
-                    handler.end_headers()
+                    self._send_audio_range_error(handler, file_size)
                     return
                 end = min(end, file_size - 1)
                 status = 206
@@ -508,6 +764,8 @@ class Plugin:
             handler.send_response(status)
             handler.send_header("Content-Type", self._mime_for_audio_path(resolved))
             handler.send_header("Accept-Ranges", "bytes")
+            handler.send_header("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges")
+            handler.send_header("X-Content-Type-Options", "nosniff")
             handler.send_header("Content-Length", str(content_length))
             handler.send_header("Access-Control-Allow-Origin", "*")
             handler.send_header("Cache-Control", "private, max-age=3600")
@@ -529,14 +787,30 @@ class Plugin:
                         break
                     handler.wfile.write(chunk)
                     remaining -= len(chunk)
-        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError, socket.timeout):
             return
+        except OSError as error:
+            if self._unloading or _is_expected_connection_close(error):
+                return
+            decky.logger.error(f"Audio stream file or socket error: {error}")
+            try:
+                handler.send_error(500)
+            except OSError:
+                pass
         except Exception as error:
             decky.logger.error(f"Audio stream request failed: {error}")
             try:
                 handler.send_error(500)
             except Exception:
                 pass
+
+    def _send_audio_range_error(self, handler: _AudioRequest, file_size: int) -> None:
+        handler.send_response(416)
+        handler.send_header("Content-Range", f"bytes */{file_size}")
+        handler.send_header("Content-Length", "0")
+        handler.send_header("Access-Control-Allow-Origin", "*")
+        handler.send_header("Cache-Control", "no-store")
+        handler.end_headers()
 
     async def set_volume(
         self, app_id: int, volume: float
