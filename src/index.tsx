@@ -1,3 +1,5 @@
+import * as DeckyUI from "@decky/ui";
+import { insertPluginSection, installMenuSectionFallback } from "./pluginMenuSection";
 import {
   PanelSection,
   PanelSectionRow,
@@ -4698,22 +4700,14 @@ const patchMenuItems = (
   return derivedAppId;
 };
 
-const patchLibraryMenuTree = (node: any, appId: number, depth = 0): any => {
-  if (!node || depth > 24) return node;
-  if (Array.isArray(node)) return node.map((child) => patchLibraryMenuTree(child, appId, depth + 1));
-  if (!window.SP_REACT.isValidElement(node)) return node;
-  const children = (node.props as any)?.children;
-  if (Array.isArray(children) && (isGameContextMenu(children) || isLibraryAppContextMenu(children))) {
-    const next = [...children];
-    insertThemeDeckMenu(next, appId);
-    return window.SP_REACT.cloneElement(node, undefined, next);
-  }
-  if (children == null) return node;
-  const next = patchLibraryMenuTree(children, appId, depth + 1);
-  return next === children ? node : window.SP_REACT.cloneElement(node, undefined, next);
+const patchLibraryMenuTree = (node: any, appId: number): any => {
+  const holder: any[] = [];
+  insertThemeDeckMenu(holder, appId);
+  return holder[0] ? insertPluginSection(window.SP_REACT, node, holder[0]) : node;
 };
 
 const patchContextMenuFocus = () => {
+  const stopFallback = installMenuSectionFallback(window.SP_REACT, DeckyUI, patchLibraryMenuTree);
   const patches: Patch[] = [];
   let retry: number | null = null;
   let disposed = false;
@@ -4766,6 +4760,7 @@ const patchContextMenuFocus = () => {
     disposed = true;
     if (retry !== null) window.clearTimeout(retry);
     patches.splice(0).reverse().forEach((patch) => { try { patch.unpatch(); } catch {} });
+    stopFallback();
     activeInstance = null;
     setContextMenuActiveAppId(null);
     activeContextMenuCloser = null;
