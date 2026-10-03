@@ -155,7 +155,8 @@ class _AudioStreamServer:
                 self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
             self._socket.bind(("127.0.0.1", 0))
             self._socket.listen(self.MAX_CLIENTS)
-            self._socket.settimeout(0.25)
+            # accept sleeps in the OS until a client connects; shutdown wakes it.
+            self._socket.settimeout(None)
             self.server_address = self._socket.getsockname()
         except BaseException:
             self._socket.close()
@@ -230,6 +231,10 @@ class _AudioStreamServer:
 
     def shutdown(self) -> None:
         self._stopped.set()
+        try:
+            self._socket.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
         self._socket.close()
         with self._lock:
             clients = list(self._clients)
@@ -274,6 +279,7 @@ def _is_decky_local_socket_disconnect(error: BaseException) -> bool:
 class Plugin:
     def __init__(self) -> None:
         self._tracks: dict[str, dict[str, Any]] = {}
+        self._tracks_revision = 0
         self._global_track_key = "__global__"
         self._store_track_key = "__store__"
         self._plugin_dir = Path(
@@ -300,6 +306,7 @@ class Plugin:
         self._yt_dlp_update_task: asyncio.Task[Any] | None = None
         self._downloads_dir = self._settings_dir / "downloads"
         self._discover_download_jobs: dict[str, dict[str, Any]] = {}
+        self._active_audio_downloads = 0
         self._delete_downloaded_tracks_task: asyncio.Task[Any] | None = None
         self._delete_downloaded_tracks_job_id = 0
         self._delete_downloaded_tracks_progress = (
@@ -972,6 +979,10 @@ class Plugin:
     async def delete_unused_tracks(self) -> dict[str, Any]:
         return await asyncio.to_thread(self._delete_unused_tracks_sync)
 
+    async def get_unused_tracks_plan(self) -> dict[str, Any]:
+        """Read-only preview: no track assignment or audio file is changed."""
+        return await asyncio.to_thread(self._unused_tracks_plan)
+
     async def start_delete_downloaded_tracks(self) -> dict[str, Any]:
         if (
             self._delete_downloaded_tracks_task
@@ -1414,6 +1425,19 @@ class Plugin:
         normalize_audio: bool = False,
         upmix_audio: bool = False,
     ) -> dict[str, Any]:
+        self._active_audio_downloads += 1
+        try:
+            return await self._download_youtube_audio_impl(app_id, video_url, normalize_audio, upmix_audio)
+        finally:
+            self._active_audio_downloads -= 1
+
+    async def _download_youtube_audio_impl(
+        self,
+        app_id: int,
+        video_url: str,
+        normalize_audio: bool = False,
+        upmix_audio: bool = False,
+    ) -> dict[str, Any]:
         if app_id <= 0:
             raise ValueError("Invalid app id")
 
@@ -1556,6 +1580,7 @@ class Plugin:
             self._tracks = {}
 
     def _save_tracks(self) -> None:
+        self._tracks_revision += 1
         try:
             with self._tracks_file.open("w", encoding="utf-8") as handle:
                 json.dump(self._tracks, handle, indent=2, ensure_ascii=False)
@@ -1608,21 +1633,47 @@ class Plugin:
         }
 
     def _delete_unused_tracks_sync(self) -> dict[str, Any]:
+        plan = self._unused_tracks_plan()
+        if not plan["ok"]:
+            return {**plan, "tracks": self._tracks, "removed_files": 0, "removed_tracks": 0}
         self._downloads_dir.mkdir(parents=True, exist_ok=True)
         downloads_root = self._downloads_dir.resolve()
-        assigned_paths = self._known_audio_paths()
         removed_files = 0
         removed_dirs = 0
+        removed_tracks = 0
         failed: list[str] = []
-
-        for child in list(downloads_root.rglob("*")):
+        # Revalidate assignments after the read-only scan: an editor may have
+        # changed a song while filesystem discovery ran on the worker thread.
+        for key, original in plan["orphan_tracks"].items():
+            if self._tracks.get(key) == original:
+                self._tracks.pop(key, None)
+                removed_tracks += 1
+        if removed_tracks:
+            temporary = self._tracks_file.with_suffix(".cleanup.tmp")
             try:
-                if not (child.is_symlink() or child.is_file()):
-                    continue
+                if self._tracks_file.exists():
+                    shutil.copy2(self._tracks_file, self._tracks_file.with_suffix(".cleanup.bak"))
+                temporary.write_text(json.dumps(self._tracks, indent=2, ensure_ascii=False), encoding="utf-8")
+                os.replace(temporary, self._tracks_file)
+                self._tracks_revision += 1
+            except Exception:
+                for key, original in plan["orphan_tracks"].items():
+                    self._tracks.setdefault(key, original)
+                raise
+            finally:
+                temporary.unlink(missing_ok=True)
+        known_revision = self._tracks_revision
+        known_paths = self._known_audio_paths()
+        for path in plan["files"]:
+            child = Path(path)
+            try:
                 resolved = child.expanduser().resolve()
                 if not self._is_path_within(resolved, downloads_root):
                     continue
-                if str(resolved) in assigned_paths:
+                if known_revision != self._tracks_revision:
+                    known_revision = self._tracks_revision
+                    known_paths = self._known_audio_paths()
+                if self._active_audio_downloads or str(resolved) in known_paths:
                     continue
                 child.unlink()
                 removed_files += 1
@@ -1630,7 +1681,13 @@ class Plugin:
                 failed.append(str(child))
                 decky.logger.error(f"Failed to delete unused track path {child}: {error}")
 
-        dirs = [path for path in downloads_root.rglob("*") if path.is_dir()]
+        dirs = set()
+        for path in plan["files"]:
+            parent = Path(path).parent
+            while parent != downloads_root and self._is_path_within(parent, downloads_root):
+                dirs.add(parent)
+                parent = parent.parent
+        dirs = list(dirs)
         dirs.sort(key=lambda path: len(path.parts), reverse=True)
         for child in dirs:
             try:
@@ -1648,8 +1705,148 @@ class Plugin:
             "removed": removed_files,
             "removed_files": removed_files,
             "removed_dirs": removed_dirs,
+            "removed_tracks": removed_tracks,
+            "inventory_complete": plan["inventory_complete"],
             "failed": failed,
         }
+
+    def _unused_tracks_plan(self) -> dict[str, Any]:
+        root = self._downloads_dir.resolve()
+        installed, shortcuts, steam_complete, shortcuts_complete = self._cleanup_game_inventory()
+        orphan_tracks: dict[str, dict[str, Any]] = {}
+        protected: set[str] = set()
+        for key, track in list(self._tracks.items()):
+            if not isinstance(track, dict) or not track.get("path"):
+                continue
+            path = Path(str(track["path"])).expanduser().resolve()
+            app_id = int(key) & 0xFFFFFFFF if str(key).lstrip("-").isdigit() else None
+            missing = app_id is not None and (
+                (app_id >= 0x80000000 and shortcuts_complete and app_id not in shortcuts)
+                or (0 < app_id < 0x80000000 and steam_complete and app_id not in installed)
+            )
+            if missing and self._is_path_within(path, root):
+                orphan_tracks[key] = dict(track)
+            else:
+                protected.add(str(path))
+        files: list[str] = []
+        if root.exists():
+            for directory, subdirs, names in os.walk(root, followlinks=False):
+                # Never walk links/junctions into user-owned folders.
+                subdirs[:] = [name for name in subdirs
+                    if not (Path(directory, name).is_symlink()
+                            or getattr(Path(directory, name).stat(), "st_file_attributes", 0) & 0x400)]
+                for name in names:
+                    path = Path(directory, name)
+                    if path.is_symlink() or path.suffix.lower().lstrip(".") not in SUPPORTED_AUDIO_EXTENSIONS:
+                        continue
+                    resolved = path.resolve()
+                    if self._is_path_within(resolved, root) and str(resolved) not in protected:
+                        files.append(str(resolved))
+        busy = self._active_audio_downloads > 0 or any(job.get("running") for job in self._discover_download_jobs.values())
+        return {"ok": not busy, "reason": "download_in_progress" if busy else "ready",
+                "files": files, "orphan_tracks": orphan_tracks,
+                "inventory_complete": {"steam": steam_complete, "shortcuts": shortcuts_complete}}
+
+    def _cleanup_game_inventory(self) -> tuple[set[int], set[int], bool, bool]:
+        """Installed manifests, not localconfig's history of previously played games."""
+        installed: set[int] = set()
+        shortcuts: set[int] = set()
+        roots = {base.parent.resolve() for base in self._steam_userdata_roots()
+                 if (base.parent / "steamapps").is_dir() or (base.parent / "steam.exe").is_file()}
+        steam_complete = bool(roots)
+        shortcuts_complete = bool(roots)
+        libraries: set[Path] = set()
+        for root in roots:
+            libraries.add(root / "steamapps")
+            config = root / "steamapps" / "libraryfolders.vdf"
+            try:
+                if config.exists():
+                    text = config.read_text(encoding="utf-8")
+                    if text.count("{") != text.count("}"):
+                        raise ValueError("Incomplete Steam library list")
+                    for value in re.findall(r'"path"\s+"((?:\\.|[^"\\])*)"', text, re.I):
+                        libraries.add(Path(value.replace("\\\\", "\\")) / "steamapps")
+                else:
+                    # An unavailable library list is not evidence of an uninstall.
+                    steam_complete = False
+            except (OSError, ValueError):
+                steam_complete = False
+            userdata = root / "userdata"
+            try:
+                accounts = [p for p in userdata.iterdir() if p.name.isdigit() and p.is_dir()]
+                if not accounts:
+                    shortcuts_complete = False
+                for account in accounts:
+                    folder = account / "config"
+                    if not folder.is_dir():
+                        shortcuts_complete = False
+                        continue
+                    path = folder / "shortcuts.vdf"
+                    if path.exists():
+                        shortcuts.update(self._cleanup_shortcut_ids(path.read_bytes()))
+            except (OSError, ValueError):
+                shortcuts_complete = False
+        for library in libraries:
+            try:
+                if not library.is_dir():
+                    steam_complete = False
+                    continue
+                for manifest in library.glob("appmanifest_*.acf"):
+                    text = manifest.read_text(encoding="utf-8")
+                    match = re.search(r'"appid"\s+"(\d+)"', text, re.I)
+                    if not match or text.count("{") != text.count("}"):
+                        steam_complete = False
+                    else:
+                        installed.add(int(match.group(1)))
+            except (OSError, ValueError):
+                steam_complete = False
+        return installed, shortcuts, steam_complete, shortcuts_complete
+
+    def _cleanup_shortcut_ids(self, data: bytes) -> set[int]:
+        # The display parser tolerates damaged files; deletion must not.
+        pos = 0
+        def text() -> str:
+            nonlocal pos
+            end = data.find(b"\0", pos)
+            if end < 0:
+                raise ValueError("Incomplete shortcut string")
+            value = data[pos:end].decode("utf-8", errors="strict")
+            pos = end + 1
+            return value
+        def read_object() -> dict[str, Any]:
+            nonlocal pos
+            result: dict[str, Any] = {}
+            while pos < len(data):
+                kind = data[pos]
+                pos += 1
+                if kind == 8:
+                    return result
+                key = text().lower()
+                if kind == 0:
+                    result[key] = read_object()
+                elif kind == 1:
+                    result[key] = text()
+                elif kind in (2, 7):
+                    size = 4 if kind == 2 else 8
+                    if pos + size > len(data):
+                        raise ValueError("Incomplete shortcut integer")
+                    result[key] = int.from_bytes(data[pos:pos + size], "little")
+                    pos += size
+                else:
+                    raise ValueError("Unsupported shortcut field")
+            raise ValueError("Incomplete shortcuts object")
+        root = read_object()
+        container = root.get("shortcuts")
+        if not isinstance(container, dict) or pos != len(data):
+            raise ValueError("Invalid shortcuts object")
+        ids: set[int] = set()
+        for entry in container.values():
+            if isinstance(entry, dict):
+                app_id = entry.get("appid")
+                if not isinstance(app_id, int):
+                    app_id = self._shortcut_app_id(str(entry.get("exe", "")), str(entry.get("appname", "")))
+                ids.add(app_id & 0xFFFFFFFF)
+        return ids
 
     async def _delete_downloaded_tracks_worker(self, job_id: int) -> None:
         try:

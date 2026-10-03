@@ -11,8 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED = {'node_modules', '.git', '.pnpm-store', '__pycache__', 'release',
             'node_modules-broken-copy', 'node_modules-copied-broken'}
 RUNTIME = ['plugin.json', 'package.json', 'main.py', 'dist/index.js', 'dist/index.js.map',
-           'LICENSE', 'NOTICE', 'README.md', 'CHANGELOG.md', 'HANDOVER_3.3.5.md',
-           'TEST_REPORT_3.3.5.md', 'BUILD_INFO_3.3.5.json', 'STEAM_SNAPSHOT_AUDIT_3.3.5.json',
+           'LICENSE', 'NOTICE', 'README.md', 'CHANGELOG.md', 'TEST_REPORT_3.3.7.md',
            'FFMPEG-LICENSE.txt', 'FFMPEG-README.txt', 'ffmpeg.exe', 'ffprobe.exe', 'yt-dlp.exe',
            'assets/logo.png', 'defaults/defaults.txt', 'py_modules/.keep']
 
@@ -60,7 +59,7 @@ def main() -> None:
         raise ValueError('Invalid or inconsistent manifest version')
     source = (ROOT / 'src/index.tsx').read_text(encoding='utf-8')
     source_map = json.loads((ROOT / 'dist/index.js.map').read_text(encoding='utf-8'))
-    if source not in source_map.get('sourcesContent', []):
+    if source not in [item.replace('\r\n', '\n') for item in source_map.get('sourcesContent', []) if isinstance(item, str)]:
         raise ValueError('Distribution is stale: rebuild from the current source')
     bundle = (ROOT / 'dist/index.js').read_text(encoding='utf-8')
     if f'"version":"{version}"' not in bundle and f'"version": "{version}"' not in bundle:

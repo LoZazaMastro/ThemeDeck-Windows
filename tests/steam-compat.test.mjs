@@ -5,6 +5,11 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const source = fs.readFileSync(new URL('../src/index.tsx', import.meta.url), 'utf8');
+const menuHelpersSource = fs.readFileSync(new URL('../src/pluginMenuSection.ts', import.meta.url), 'utf8');
+const menuHelpers = { exports: {} };
+vm.runInNewContext(ts.transpileModule(menuHelpersSource, { compilerOptions: {
+  target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS,
+}}).outputText, menuHelpers);
 const parsed = ts.createSourceFile('index.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const definitions = new Map();
 for (const statement of parsed.statements) {
@@ -46,11 +51,16 @@ function findTree(root, predicate) {
   }
   return visit(root);
 }
+function flattenMenu(node) {
+  if (Array.isArray(node)) return node.flatMap(flattenMenu);
+  if (!node || typeof node !== 'object') return [];
+  return [node, ...flattenMenu(node.props?.children)];
+}
 function harness(extra = {}) {
   const timers = new Map(); let id = 0;
   const patched = [];
   const context = {
-    console, AbortController, Map, Set, WeakSet,
+    console, AbortController, Map, Set, WeakSet, DeckyUI: {}, ...menuHelpers.exports,
     window: { SP_REACT: react, location: { pathname: '/library/details/42' },
       setTimeout: fn => { const key = ++id; timers.set(key, fn); return key; },
       clearTimeout: key => timers.delete(key),
@@ -123,8 +133,10 @@ test('context menu patches immutable returned children directly, exactly once', 
   for (let n = 0; n < 5; n++) {
     const result = menu.render();
     assert.ok(Object.isFrozen(result.props));
-    assert.equal(result.props.children.filter(child => child.key === 'themedeck-change-music').length, 1);
-    assert.equal(result.props.children[1].key, 'themedeck-change-music');
+    const entries = flattenMenu(result);
+    assert.equal(entries.filter(child => child.key === 'themedeck-change-music').length, 1);
+    const propertiesIndex = entries.findIndex(child => String(child.props?.onSelected).includes('AppProperties'));
+    assert.equal(entries[propertiesIndex - 1].key, 'themedeck-change-music');
   }
   assert.equal(h.patched.length, 2, 'no per-render inner patches leak');
   assert.equal(h.focused.at(-1), 42);
@@ -136,7 +148,7 @@ test('menu target changes between games and is not taken from a stale route', ()
   const h = menuHarness(); const dispose = h.context.patchContextMenuFocus();
   new h.Menu(42).render();
   const menu = new h.Menu(84);
-  const action = menu.render().props.children.find(child => child.key === 'themedeck-change-music');
+  const action = flattenMenu(menu.render()).find(child => child.key === 'themedeck-change-music');
   action.props.onSelected(); h.tick();
   assert.deepEqual(h.paths, ['/themedeck/84']);
   menu.componentWillUnmount(); assert.equal(h.focused.at(-1), null);

@@ -507,7 +507,7 @@ const LIBRARY_EXCLUDED_APP_IDS = new Set<number>([
 ]);
 
 const EN_STRINGS = {
-  introVersion: "ThemeDeck 3.3.5",
+  introVersion: "ThemeDeck 3.3.7",
   introAssign:
     "To assign music tracks, go to a game's page, select the gear icon, then Choose ThemeDeck music.",
   autoPlayLabel: "Auto play on game page",
@@ -658,7 +658,7 @@ const EN_STRINGS = {
   deleteUnusedDownloadedTracks: "Delete unused downloads",
   deleteUnusedDownloadedTracksTitle: "Delete unused downloaded files?",
   confirmDeleteUnusedDownloadedTracks:
-    "ThemeDeck removes only files it downloaded that are no longer assigned to a game, Ambient track, or Store track. Audio files chosen from your folders are left untouched.",
+    "ThemeDeck deletes downloaded music for uninstalled Steam games, removed non-Steam shortcuts, and unused tracks. Music shared with another game, Ambient, or Store stays available.",
   deletedUnusedDownloadedTracks: "Removed {files} unused files.",
   failedDeleteUnusedDownloadedTracks: "Couldn't delete unused downloads",
   noGamesFound: "No games found in library.",
@@ -1803,7 +1803,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
   Record<string, Partial<Record<I18nKey, string>>>
 > = {
   it: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     autoPlayDesc: "",
     gameMusicVolumeDesc: "",
     stopMusicAfterPlayDesc: "",
@@ -1845,7 +1845,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Cancella download non usati",
     deleteUnusedDownloadedTracksTitle: "Eliminare i download non usati?",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck rimuove solo i file scaricati da ThemeDeck che non sono più assegnati a un gioco, alla traccia Ambient o alla traccia Store. I file audio scelti dalle tue cartelle restano intatti.",
+      "ThemeDeck elimina la musica scaricata per i giochi Steam disinstallati, i collegamenti rimossi da Steam e le tracce inutilizzate. La musica condivisa con altri giochi, Ambiente o Negozio viene conservata.",
     deletedUnusedDownloadedTracks: "Rimossi {files} file non usati.",
     failedDeleteUnusedDownloadedTracks: "Impossibile cancellare i download non usati",
     ffmpegNormalizedFor: "FFmpeg: normalizzato per {game}",
@@ -1857,7 +1857,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento interruzione ambientale",
   },
   fr: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "Exclure des jeux de l'attribution automatique",
     autoAssignExclusionsTitle: "Exclusions de l'attribution automatique",
     autoAssignExclusionsDesc: "Les jeux cochés seront ignorés lors de l'attribution des pistes manquantes.",
@@ -1905,7 +1905,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Supprimer les téléchargements inutilisés",
     deleteUnusedDownloadedTracksTitle: "Supprimer les fichiers téléchargés inutilisés ?",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck supprime uniquement les fichiers qu'il a téléchargés et qui ne sont plus assignés à un jeu, à la piste d'ambiance ou à la piste Store. Les fichiers audio choisis dans vos dossiers ne sont pas touchés.",
+      "ThemeDeck supprime la musique téléchargée des jeux Steam désinstallés, des raccourcis retirés de Steam et les pistes inutilisées. La musique partagée avec un autre jeu, Ambiance ou Boutique est conservée.",
     deletedUnusedDownloadedTracks: "{files} fichiers inutilisés supprimés.",
     failedDeleteUnusedDownloadedTracks: "Impossible de supprimer les téléchargements inutilisés",
     ffmpegNormalizedFor: "FFmpeg : normalisé pour {game}",
@@ -1917,7 +1917,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportement d'interruption de l'ambiance",
   },
   es: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "Excluir juegos de la asignación automática",
     autoAssignExclusionsTitle: "Exclusiones de asignación automática",
     autoAssignExclusionsDesc: "Los juegos marcados se omitirán al asignar pistas faltantes.",
@@ -1965,7 +1965,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Eliminar descargas no usadas",
     deleteUnusedDownloadedTracksTitle: "¿Eliminar los archivos descargados no usados?",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck elimina solo los archivos que descargó y que ya no están asignados a un juego, a la pista ambiental o a la pista Store. Los archivos de audio elegidos desde tus carpetas no se tocan.",
+      "ThemeDeck elimina la música descargada de juegos de Steam desinstalados, accesos directos eliminados y pistas sin uso. La música compartida con otro juego, Ambiente o Tienda se conserva.",
     deletedUnusedDownloadedTracks: "Se eliminaron {files} archivos no usados.",
     failedDeleteUnusedDownloadedTracks: "No se pudieron eliminar las descargas no usadas",
     ffmpegNormalizedFor: "FFmpeg: normalizado para {game}",
@@ -1977,7 +1977,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamiento de interrupción ambiental",
   },
   pt: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos assinalados serão ignorados ao atribuir faixas em falta.",
@@ -2025,7 +2025,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Eliminar downloads não usados",
     deleteUnusedDownloadedTracksTitle: "Eliminar ficheiros descarregados não usados?",
     confirmDeleteUnusedDownloadedTracks:
-      "O ThemeDeck remove apenas os ficheiros que descarregou e que já não estão atribuídos a um jogo, à faixa ambiente ou à faixa Store. Os ficheiros de áudio escolhidos nas tuas pastas não são tocados.",
+      "O ThemeDeck elimina a música descarregada de jogos Steam desinstalados, atalhos removidos e faixas sem uso. A música partilhada com outro jogo, Ambiente ou Loja é mantida.",
     deletedUnusedDownloadedTracks: "Eliminados {files} ficheiros não usados.",
     failedDeleteUnusedDownloadedTracks: "Falha ao eliminar downloads não usados",
     ffmpegNormalizedFor: "FFmpeg: normalizado para {game}",
@@ -2037,7 +2037,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   "pt-br": {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "Excluir jogos da atribuição automática",
     autoAssignExclusionsTitle: "Exclusões da atribuição automática",
     autoAssignExclusionsDesc: "Os jogos marcados serão ignorados ao atribuir faixas ausentes.",
@@ -2085,7 +2085,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Excluir downloads não usados",
     deleteUnusedDownloadedTracksTitle: "Excluir arquivos baixados não usados?",
     confirmDeleteUnusedDownloadedTracks:
-      "O ThemeDeck remove apenas os arquivos que baixou e que não estão mais atribuídos a um jogo, à faixa ambiente ou à faixa Store. Os arquivos de áudio escolhidos nas suas pastas não são tocados.",
+      "O ThemeDeck exclui a música baixada de jogos Steam desinstalados, atalhos removidos e faixas sem uso. A música compartilhada com outro jogo, Ambiente ou Loja é mantida.",
     deletedUnusedDownloadedTracks: "{files} arquivos não usados excluídos.",
     failedDeleteUnusedDownloadedTracks: "Falha ao excluir downloads não usados",
     ffmpegNormalizedFor: "FFmpeg: normalizado para {game}",
@@ -2097,7 +2097,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Comportamento de interrupção ambiente",
   },
   de: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "Spiele von der automatischen Zuweisung ausschließen",
     autoAssignExclusionsTitle: "Ausnahmen für automatische Zuweisung",
     autoAssignExclusionsDesc: "Markierte Spiele werden beim Zuweisen fehlender Spuren übersprungen.",
@@ -2145,7 +2145,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Ungenutzte Downloads löschen",
     deleteUnusedDownloadedTracksTitle: "Ungenutzte heruntergeladene Dateien löschen?",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck entfernt nur Dateien, die ThemeDeck heruntergeladen hat und die keinem Spiel, keiner Umgebungsspur und keiner Store-Spur mehr zugewiesen sind. Audiodateien aus deinen Ordnern bleiben unberührt.",
+      "ThemeDeck löscht heruntergeladene Musik für deinstallierte Steam-Spiele, entfernte Steam-Verknüpfungen und ungenutzte Titel. Musik für andere Spiele, Hintergrundmusik oder den Shop bleibt erhalten.",
     deletedUnusedDownloadedTracks: "{files} ungenutzte Dateien gelöscht.",
     failedDeleteUnusedDownloadedTracks: "Ungenutzte Downloads konnten nicht gelöscht werden",
     ffmpegNormalizedFor: "FFmpeg: {game} normalisiert",
@@ -2157,7 +2157,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Unterbrechungsverhalten der Umgebungsspur",
   },
   nl: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "Games uitsluiten van automatische toewijzing",
     autoAssignExclusionsTitle: "Uitsluitingen voor automatische toewijzing",
     autoAssignExclusionsDesc: "Aangevinkte games worden overgeslagen bij het toewijzen van ontbrekende tracks.",
@@ -2205,7 +2205,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Ongebruikte downloads verwijderen",
     deleteUnusedDownloadedTracksTitle: "Ongebruikte gedownloade bestanden verwijderen?",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck verwijdert alleen bestanden die ThemeDeck heeft gedownload en die niet meer aan een game, ambient-track of Store-track zijn toegewezen. Audiobestanden uit je eigen mappen blijven staan.",
+      "ThemeDeck verwijdert gedownloade muziek voor verwijderde Steam-games, verwijderde snelkoppelingen en ongebruikte nummers. Muziek die een ander spel, Achtergrond of Winkel gebruikt, blijft behouden.",
     deletedUnusedDownloadedTracks: "{files} ongebruikte bestanden verwijderd.",
     failedDeleteUnusedDownloadedTracks: "Ongebruikte downloads konden niet worden verwijderd",
     ffmpegNormalizedFor: "FFmpeg: genormaliseerd voor {game}",
@@ -2217,7 +2217,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Onderbrekingsgedrag van ambient-track",
   },
   uk: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "Виключити ігри з автоматичного призначення",
     autoAssignExclusionsTitle: "Виключення автоматичного призначення",
     autoAssignExclusionsDesc: "Позначені ігри буде пропущено під час призначення відсутніх треків.",
@@ -2265,7 +2265,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "Видалити невикористані завантаження",
     deleteUnusedDownloadedTracksTitle: "Видалити невикористані завантажені файли?",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck видаляє лише файли, які він завантажив і які більше не призначені грі, фоновому треку або треку Store. Аудіофайли, вибрані з ваших папок, залишаються недоторканими.",
+      "ThemeDeck видаляє завантажену музику для видалених ігор Steam, видалених ярликів і невикористані треки. Музика, яку використовують інші ігри, фон або магазин, зберігається.",
     deletedUnusedDownloadedTracks: "Видалено невикористаних файлів: {files}.",
     failedDeleteUnusedDownloadedTracks: "Не вдалося видалити невикористані завантаження",
     ffmpegNormalizedFor: "FFmpeg: нормалізовано для {game}",
@@ -2277,7 +2277,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "Поведінка переривання фонового треку",
   },
   zh: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "从自动分配中排除游戏",
     autoAssignExclusionsTitle: "自动分配排除项",
     autoAssignExclusionsDesc: "分配缺失曲目时将跳过已勾选的游戏。",
@@ -2325,7 +2325,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "删除未使用的下载",
     deleteUnusedDownloadedTracksTitle: "删除未使用的已下载文件？",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck 只会删除由 ThemeDeck 下载且不再分配给游戏、环境曲目或商店曲目的文件。你从个人文件夹选择的音频文件不会被触碰。",
+      "ThemeDeck 会删除已卸载 Steam 游戏和已移除快捷方式的下载音乐，以及未使用曲目。其他游戏、环境音轨或商店共用的音乐会保留。",
     deletedUnusedDownloadedTracks: "已删除 {files} 个未使用文件。",
     failedDeleteUnusedDownloadedTracks: "无法删除未使用的下载",
     ffmpegNormalizedFor: "FFmpeg：已为 {game} 标准化",
@@ -2337,7 +2337,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     globalAmbientBehaviorAria: "环境曲目中断行为",
   },
   ja: {
-    introVersion: "ThemeDeck 3.3.5",
+    introVersion: "ThemeDeck 3.3.7",
     chooseAutoAssignExclusions: "自動割り当てからゲームを除外",
     autoAssignExclusionsTitle: "自動割り当ての除外設定",
     autoAssignExclusionsDesc: "チェックしたゲームは未設定トラックの割り当て時にスキップされます。",
@@ -2385,7 +2385,7 @@ const LOCALIZED_UI_OVERRIDES: Partial<
     deleteUnusedDownloadedTracks: "未使用のダウンロードを削除",
     deleteUnusedDownloadedTracksTitle: "未使用のダウンロード済みファイルを削除しますか？",
     confirmDeleteUnusedDownloadedTracks:
-      "ThemeDeck が削除するのは、ThemeDeck がダウンロードし、ゲーム、環境トラック、ストアトラックに割り当てられていないファイルだけです。個人フォルダーから選んだ音声ファイルには触れません。",
+      "ThemeDeck は、アンインストールした Steam ゲームや削除したショートカットのダウンロード音楽、未使用の曲を削除します。他のゲーム、環境トラック、ストアで共有する音楽は保持されます。",
     deletedUnusedDownloadedTracks: "{files} 個の未使用ファイルを削除しました。",
     failedDeleteUnusedDownloadedTracks: "未使用のダウンロードを削除できませんでした",
     ffmpegNormalizedFor: "FFmpeg: {game} を正規化しました",
@@ -3760,6 +3760,7 @@ const startLocationWatcher = () => {
     return;
   }
   const update = () => {
+    if (pluginDisposed || desktopModeActive || runningGameAppId !== null) return;
     const pathname = getLibraryPath();
     if (!pathname) {
       // Steam can briefly report an empty path during focus transitions; do not
@@ -5688,6 +5689,18 @@ const refreshExternalMediaState = async () => {
   if (pluginDisposed || externalMediaProbeInFlight) {
     return;
   }
+  // Media arbitration only matters when ThemeDeck can play a track. In desktop
+  // mode, during a game, or on pages with no music, avoid scanning other Steam
+  // renderers and opening CDP/WebSocket connections every few seconds.
+  if (desktopModeActive || runningGameAppId !== null ||
+      (playbackState.status !== "playing" && !resolveAutoTrackFromContext())) {
+    lastSteamCdpMediaActive = false;
+    lastLegacyExternalMediaActive = false;
+    lastSteamCdpMediaProbeAt = 0;
+    lastLegacyExternalMediaProbeAt = 0;
+    setExternalMediaActive(false);
+    return;
+  }
   externalMediaProbeInFlight = true;
   try {
     const steamMediaActive = await detectAudibleSteamMedia();
@@ -6065,6 +6078,7 @@ const startAutoPlaybackCoordinator = () => {
   window.addEventListener(NOW_PLAYING_ACTIVITY_EVENT, handleNowPlayingActivity);
   refreshStoreContext();
   autoPlaybackRouteInterval = window.setInterval(() => {
+    if (desktopModeActive || runningGameAppId !== null) return;
     scheduleAutoPlaybackFromContext();
     refreshStoreContext();
   }, STORE_CONTEXT_POLL_MS);

@@ -58,10 +58,10 @@ You can install and update ThemeDeck from the [Playhub](https://github.com/LoZaz
 
 The Windows release includes `yt-dlp.exe`, `ffmpeg.exe`, and `ffprobe.exe`; if YouTube changes its behavior, updating `yt-dlp` from the settings can restore search and download functionality.
 
-## Version 3.3.5
+## Version 3.3.7
 
 See [CHANGELOG.md](CHANGELOG.md) for fixes and
-[TEST_REPORT_3.3.5.md](TEST_REPORT_3.3.5.md) for validation and limitations.
+[TEST_REPORT_3.3.7.md](TEST_REPORT_3.3.7.md) for validation and limitations.
 Update with the Installer ZIP, not the project ZIP. Existing settings and
 assignments use the same storage. Fully restart Steam/Decky after updating.
 
